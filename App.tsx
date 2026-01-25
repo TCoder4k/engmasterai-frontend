@@ -7,6 +7,8 @@ import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import UserHome from './components/user/UserHome';
 import AdminDashboard from './components/admin/AdminDashboard';
+import ProfilePage from './components/shared/ProfilePage';
+import SecurityPage from './components/shared/SecurityPage';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +21,8 @@ const App: React.FC = () => {
         </Route>
         <Route path="/home" element={<UserHome />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/security" element={<SecurityPage />} />
       </Routes>
     </BrowserRouter>
   );

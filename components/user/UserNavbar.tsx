@@ -1,16 +1,22 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { NAV_ITEMS } from './constants';
 import { authService } from '../../services/authService';
+import AvatarMenu from '../shared/AvatarMenu';
 
 const UserNavbar: React.FC = () => {
   const navigate = useNavigate();
   const user = authService.getUser();
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
 
   const handleLogout = () => {
     authService.logout();
     navigate('/login');
+  };
+
+  const handleAvatarUpdate = (newAvatarUrl: string) => {
+    setAvatarUrl(newAvatarUrl);
   };
 
   return (
@@ -46,25 +52,20 @@ const UserNavbar: React.FC = () => {
             </div>
           </div>
 
-          {/* User Profile - Minimal Style */}
+          {/* User Profile with Avatar Menu */}
           <div className="flex items-center space-x-4">
             <button className="text-[13px] font-bold text-slate-400 hover:text-indigo-500 transition-colors mr-2">
                Hỗ trợ
             </button>
-            <div className="flex items-center space-x-3 bg-slate-50 p-1 rounded-full border border-slate-100 group cursor-pointer hover:bg-white hover:shadow-sm transition-all">
-               <div className="w-9 h-9 rounded-full border border-slate-200 overflow-hidden bg-indigo-100 flex items-center justify-center">
-                  <span className="text-indigo-600 font-bold text-sm">{user?.name?.charAt(0) || 'U'}</span>
-               </div>
-               <span className="text-[12px] font-bold text-slate-700 pr-3 uppercase tracking-tight">
-                 {user?.name?.split(' ')[0] || 'User'}
-               </span>
-            </div>
-            <button 
-              onClick={handleLogout}
-              className="text-[13px] font-bold text-rose-500 hover:text-rose-600 transition-colors"
-            >
-              Đăng xuất
-            </button>
+            <AvatarMenu
+              user={{
+                name: user?.name || 'User',
+                avatarUrl: avatarUrl,
+                role: (user?.role as 'USER' | 'ADMIN') || 'USER',
+              }}
+              onLogout={handleLogout}
+              onAvatarUpdate={handleAvatarUpdate}
+            />
           </div>
         </div>
       </div>

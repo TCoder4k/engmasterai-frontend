@@ -57,7 +57,7 @@ const UserHome: React.FC = () => {
       <footer className="py-12 border-t border-slate-100 bg-white">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
           <p className="text-[12px] font-bold text-slate-300 uppercase tracking-widest">
-            © 2024 EngmasterAI Platform
+            © 2026 EngmasterAI Platform
           </p>
           <div className="flex space-x-10 mt-6 md:mt-0">
             <span className="text-[12px] font-bold text-slate-400 hover:text-indigo-500 cursor-pointer transition-colors">Điều khoản</span>

@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Logo } from './Logo';
 import { authService } from '../../services/authService';
+import { getProfile } from '../../services/userService';
 
 export const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
@@ -35,11 +36,22 @@ export const RegisterForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await authService.register({
+      const response = await authService.register({
         name,
         email,
         password,
       });
+
+      // Save auth response
+      authService.saveAuth(response);
+
+      // Fetch full profile to get avatarUrl and other details
+      try {
+        const fullProfile = await getProfile();
+        localStorage.setItem('user', JSON.stringify(fullProfile));
+      } catch (profileErr) {
+        console.warn('Could not fetch full profile:', profileErr);
+      }
 
       setSuccess(true);
       setTimeout(() => {

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Logo } from './Logo';
 import { authService } from '../../services/authService';
+import { getProfile } from '../../services/userService';
 
 // Icon Components
 const Eye = ({ className }: { className?: string }) => (
@@ -65,6 +66,15 @@ export const LoginForm: React.FC = () => {
       });
 
       authService.saveAuth(response);
+
+      // Fetch full profile to get avatarUrl and other details
+      try {
+        const fullProfile = await getProfile();
+        // Update localStorage with complete profile including avatarUrl
+        localStorage.setItem('user', JSON.stringify(fullProfile));
+      } catch (profileErr) {
+        console.warn('Could not fetch full profile:', profileErr);
+      }
 
       // Redirect based on role
       if (response.user.role === 'ADMIN') {

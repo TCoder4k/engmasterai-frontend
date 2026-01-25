@@ -1,11 +1,23 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, Menu, ExternalLink } from 'lucide-react';
 import { authService } from '../../services/authService';
+import AvatarMenu from '../shared/AvatarMenu';
 
 const AdminHeader: React.FC = () => {
+  const navigate = useNavigate();
   const user = authService.getUser();
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/login');
+  };
+
+  const handleAvatarUpdate = (newAvatarUrl: string) => {
+    setAvatarUrl(newAvatarUrl);
+  };
 
   return (
     <header className="h-16 bg-white border-b border-slate-100 px-8 flex items-center justify-between sticky top-0 z-40">
@@ -43,15 +55,15 @@ const AdminHeader: React.FC = () => {
           <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white"></span>
         </button>
         
-        <div className="flex items-center space-x-3 pl-2">
-          <div className="text-right hidden sm:block">
-            <p className="text-xs font-bold text-slate-900 leading-none">{user?.name || 'Admin'}</p>
-            <p className="text-[10px] text-emerald-500 font-bold mt-1 uppercase">Super Admin</p>
-          </div>
-          <div className="w-9 h-9 rounded-full bg-indigo-100 border border-slate-200 overflow-hidden shadow-sm ring-2 ring-white flex items-center justify-center">
-            <span className="text-indigo-600 font-bold text-sm">{user?.name?.charAt(0) || 'A'}</span>
-          </div>
-        </div>
+        <AvatarMenu
+          user={{
+            name: user?.name || 'Admin',
+            avatarUrl: avatarUrl,
+            role: (user?.role as 'USER' | 'ADMIN') || 'ADMIN',
+          }}
+          onLogout={handleLogout}
+          onAvatarUpdate={handleAvatarUpdate}
+        />
       </div>
     </header>
   );
