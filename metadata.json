@@ -1,0 +1,8 @@
+
+{
+  "name": "EngMasterAI - Học Tiếng Anh Thông Minh",
+  "description": "A light, clean, and friendly educational platform designed for Vietnamese learners to practice English with AI.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
