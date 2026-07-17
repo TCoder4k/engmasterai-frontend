@@ -3,13 +3,22 @@ import React, { useState, useEffect } from 'react';
 import UserNavbar from './UserNavbar';
 import UserSidebar from './UserSidebar';
 import CourseCard from './CourseCard';
-import { COURSES } from './constants';
+import { getPublishedCourses } from '../../services/courseService';
+import { Course } from '../../types';
 
 const UserHome: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    getPublishedCourses()
+      .then((res) => setCourses(res.data))
+      .catch((err) => setCoursesError(err.message || 'Failed to load courses'));
   }, []);
 
   return (
@@ -29,8 +38,18 @@ const UserHome: React.FC = () => {
                 <div className="h-1 w-12 bg-indigo-500 mt-2.5 rounded-full"></div>
               </div>
 
+              {coursesError && (
+                <p className="text-sm font-medium text-red-500 mb-6">{coursesError}</p>
+              )}
+
+              {!coursesError && courses.length === 0 && (
+                <p className="text-sm font-medium text-slate-400">
+                  Chưa có khóa học nào được xuất bản.
+                </p>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                {COURSES.map((course) => (
+                {courses.map((course) => (
                   <CourseCard key={course.id} course={course} />
                 ))}
               </div>

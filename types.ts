@@ -21,3 +21,15 @@ export interface ChatMessage {
   role: 'user' | 'ai';
   text: string;
 }
+
+export type CourseType = 'GRAMMAR' | 'VOCABULARY' | 'LISTENING';
+
+export interface Course {
+  id: string;
+  title: string;
+  type: CourseType;
+  description: string;
+  thumbnail: string | null;
+  isPublished: boolean;
+  createdAt: string;
+}
