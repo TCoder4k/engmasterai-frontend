@@ -33,3 +33,25 @@ export interface Course {
   isPublished: boolean;
   createdAt: string;
 }
+
+export interface Lesson {
+  id: string;
+  courseId: string;
+  title: string;
+  description: string | null;
+  notes: string | null;
+  videoUrl: string | null;
+  pdfUrl: string | null;
+  audioUrl: string | null;
+  videoDurationMinutes: number | null;
+  estimatedStudyMinutes: number | null;
+  learningObjectives: string[];
+  orderIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ManagedLesson extends Lesson {
+  isPublished: boolean;
+  _count: { tasks: number };
+}
