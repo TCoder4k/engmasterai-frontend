@@ -94,10 +94,24 @@ export const authService = {
 
   getUser(): AuthResponse['user'] | null {
     const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    if (!userStr) return null;
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      // Corrupt localStorage value — treat as logged out rather than crashing
+      // route guards that read this at the app root.
+      return null;
+    }
   },
 
   isAuthenticated(): boolean {
     return !!this.getToken();
+  },
+
+  // Clears local auth state (used by handleAuthError on a 401/403 from any
+  // admin data call, and available for any other forced-logout path).
+  clearAuth(): void {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
   },
 };

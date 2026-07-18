@@ -34,6 +34,10 @@ export interface Course {
   createdAt: string;
 }
 
+export interface ManagedCourse extends Course {
+  _count: { lessons: number };
+}
+
 export interface Lesson {
   id: string;
   courseId: string;
