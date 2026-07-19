@@ -6,6 +6,7 @@ import {
   Users,
   BookOpen,
   BookText,
+  Library,
   Gamepad2,
   LineChart,
   Wallet,
@@ -71,6 +72,12 @@ const AdminSidebar: React.FC = () => {
         <NavLink to="/admin/courses" className={({ isActive }) => navLinkClass(isActive)}>
           <BookOpen size={20} />
           <span>Khóa học (Courses)</span>
+        </NavLink>
+
+        {/* No `end` — stays active on the nested /admin/vocab/libraries/:id/decks page too */}
+        <NavLink to="/admin/vocab" className={({ isActive }) => navLinkClass(isActive)}>
+          <Library size={20} />
+          <span>Từ vựng (Vocabulary)</span>
         </NavLink>
 
         {comingSoonItems.map((item, index) => (

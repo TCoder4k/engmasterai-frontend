@@ -59,3 +59,36 @@ export interface ManagedLesson extends Lesson {
   isPublished: boolean;
   _count: { tasks: number };
 }
+
+export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+
+export interface VocabLibrary {
+  id: string;
+  name: string;
+  description: string;
+  thumbnail: string | null;
+  isPublished: boolean;
+  orderIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ManagedVocabLibrary extends VocabLibrary {
+  _count: { decks: number };
+}
+
+export interface VocabDeck {
+  id: string;
+  libraryId: string;
+  name: string;
+  description: string | null;
+  thumbnail: string | null;
+  cefrLevel: CefrLevel | null;
+  orderIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ManagedVocabDeck extends VocabDeck {
+  isPublished: boolean;
+}
