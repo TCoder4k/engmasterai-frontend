@@ -1,12 +1,13 @@
 
 import React from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
   BookOpen,
   BookText,
   Library,
+  BookMarked,
   Gamepad2,
   LineChart,
   Wallet,
@@ -36,6 +37,14 @@ const comingSoonItems = [
 
 const AdminSidebar: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // "Từ vựng" covers /admin/vocab and its library/deck sub-routes, but must
+  // NOT stay highlighted on /admin/vocab/words — that's now its own distinct
+  // nav item ("Ngân hàng từ"), even though it's nested one level under the
+  // same /admin/vocab path prefix. NavLink's own prefix matching can't
+  // express that exclusion, so the active state is computed manually here.
+  const isVocabLibrariesActive =
+    location.pathname.startsWith('/admin/vocab') && !location.pathname.startsWith('/admin/vocab/words');
 
   const handleLogout = () => {
     authService.logout();
@@ -74,10 +83,19 @@ const AdminSidebar: React.FC = () => {
           <span>Khóa học (Courses)</span>
         </NavLink>
 
-        {/* No `end` — stays active on the nested /admin/vocab/libraries/:id/decks page too */}
-        <NavLink to="/admin/vocab" className={({ isActive }) => navLinkClass(isActive)}>
+        {/* Active state is computed manually (see isVocabLibrariesActive
+            above) rather than via NavLink's own prefix matching, so this
+            doesn't stay highlighted on /admin/vocab/words. */}
+        <NavLink to="/admin/vocab" className={() => navLinkClass(isVocabLibrariesActive)}>
           <Library size={20} />
           <span>Từ vựng (Vocabulary)</span>
+        </NavLink>
+
+        {/* No `end` — stays active on /admin/vocab/words/new and
+            /admin/vocab/words/:wordId/edit too. */}
+        <NavLink to="/admin/vocab/words" className={({ isActive }) => navLinkClass(isActive)}>
+          <BookMarked size={20} />
+          <span>Ngân hàng từ (Word Bank)</span>
         </NavLink>
 
         {comingSoonItems.map((item, index) => (

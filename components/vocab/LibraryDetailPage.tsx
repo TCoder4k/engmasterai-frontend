@@ -67,23 +67,23 @@ const LibraryDetailPage: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {decks.map((deck) => (
-                  // Deck cards are non-navigating info tiles this phase — there
-                  // are no words yet (DeckWord doesn't exist until Phase 2), so
-                  // a detail page would render nothing of value. Same "don't
-                  // present something as actionable if it isn't" principle the
-                  // admin sidebar's "Sắp có" badges already use.
-                  <div
+                  // Phase 2: decks now have real word content, so tiles link
+                  // into DeckDetailPage instead of being non-navigating info
+                  // cards (the Phase 1 placeholder is gone).
+                  <Link
                     key={deck.id}
-                    className="bg-white rounded-[24px] shadow-lg p-8 flex flex-col items-center text-center h-full border border-transparent"
+                    to={`/vocab/decks/${deck.id}`}
+                    state={{ libraryId: library.id }}
+                    className="bg-white rounded-[24px] shadow-lg p-8 flex flex-col items-center text-center h-full group transition-all duration-300 hover:border-indigo-100 border border-transparent"
                   >
-                    <div className="w-16 h-16 rounded-2xl border-4 border-slate-50 overflow-hidden bg-indigo-50 flex items-center justify-center text-indigo-400 mb-6">
+                    <div className="w-16 h-16 rounded-2xl border-4 border-slate-50 group-hover:border-indigo-50 overflow-hidden bg-indigo-50 flex items-center justify-center text-indigo-400 mb-6 transition-all duration-300">
                       {deck.thumbnail ? (
                         <img src={deck.thumbnail} alt={deck.name} className="w-full h-full object-cover" />
                       ) : (
                         <Layers size={26} />
                       )}
                     </div>
-                    <h3 className="text-[16px] font-extrabold text-slate-900 mb-2 leading-tight">
+                    <h3 className="text-[16px] font-extrabold text-slate-900 mb-2 leading-tight group-hover:text-indigo-500 transition-colors">
                       {deck.name}
                     </h3>
                     {deck.cefrLevel && (
@@ -97,9 +97,9 @@ const LibraryDetailPage: React.FC = () => {
                       </p>
                     )}
                     <span className="mt-auto text-[11px] font-bold text-slate-300 uppercase tracking-wide">
-                      Nội dung đang được xây dựng
+                      {deck._count.deckWords} từ vựng
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </>

@@ -41,14 +41,25 @@ const UserNavbar: React.FC = () => {
                   key={item.label}
                   href={item.href}
                   className={`text-[14px] font-bold transition-all duration-200 hover:text-indigo-500 ${
-                    item.isActive 
-                      ? 'text-indigo-500' 
+                    item.isActive
+                      ? 'text-indigo-500'
                       : 'text-slate-400'
                   }`}
                 >
                   {item.label}
                 </a>
               ))}
+              {/* The only real (router) link in this bar — NAV_ITEMS above
+                  are still mock `href="#"` entries, out of scope to fix
+                  here. Their hardcoded `isActive` styling doesn't coordinate
+                  with this link, so a mock item can still look "active"
+                  while actually on /vocab — a known, accepted cosmetic gap. */}
+              <Link
+                to="/vocab"
+                className="text-[14px] font-bold text-slate-400 hover:text-indigo-500 transition-all duration-200"
+              >
+                Từ vựng
+              </Link>
             </div>
           </div>
 

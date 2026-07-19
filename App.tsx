@@ -12,8 +12,13 @@ import AdminCourses from './components/admin/AdminCourses';
 import AdminLessons from './components/admin/AdminLessons';
 import AdminVocabLibraries from './components/admin/AdminVocabLibraries';
 import AdminVocabDecks from './components/admin/AdminVocabDecks';
+import AdminVocabWords from './components/admin/AdminVocabWords';
+import AdminVocabWordEditor from './components/admin/AdminVocabWordEditor';
+import AdminVocabDeckWords from './components/admin/AdminVocabDeckWords';
 import VocabLibraryPage from './components/vocab/VocabLibraryPage';
 import LibraryDetailPage from './components/vocab/LibraryDetailPage';
+import DeckDetailPage from './components/vocab/DeckDetailPage';
+import WordDetailPage from './components/vocab/WordDetailPage';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -35,6 +40,8 @@ const App: React.FC = () => {
         <Route element={<ProtectedRoute />}>
           <Route path="/vocab" element={<VocabLibraryPage />} />
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
+          <Route path="/vocab/decks/:id" element={<DeckDetailPage />} />
+          <Route path="/vocab/words/:id" element={<WordDetailPage />} />
         </Route>
 
         {/* /admin* requires an authenticated ADMIN; ProtectedRoute redirects
@@ -48,6 +55,10 @@ const App: React.FC = () => {
           <Route path="/admin/courses/:courseId/lessons" element={<AdminLessons />} />
           <Route path="/admin/vocab" element={<AdminVocabLibraries />} />
           <Route path="/admin/vocab/libraries/:libraryId/decks" element={<AdminVocabDecks />} />
+          <Route path="/admin/vocab/words" element={<AdminVocabWords />} />
+          <Route path="/admin/vocab/words/new" element={<AdminVocabWordEditor />} />
+          <Route path="/admin/vocab/words/:wordId/edit" element={<AdminVocabWordEditor />} />
+          <Route path="/admin/vocab/decks/:deckId/words" element={<AdminVocabDeckWords />} />
         </Route>
 
         <Route path="/profile" element={<ProfilePage />} />

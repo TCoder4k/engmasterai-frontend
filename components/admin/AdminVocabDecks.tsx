@@ -13,7 +13,7 @@ import {
   deleteDeck,
 } from '../../services/vocabDeckService';
 import { ManagedVocabDeck, CefrLevel } from '../../types';
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, ListChecks } from 'lucide-react';
 
 const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
@@ -131,8 +131,8 @@ const AdminVocabDecks: React.FC = () => {
       if (deck.isPublished) {
         await unpublishDeck(deck.id);
       } else {
-        // Phase 1: no content guard yet, so this always succeeds even with
-        // zero words attached (see Phase 1 plan's Handoff #2).
+        // Phase 2: the backend now rejects publishing a deck with zero
+        // words attached — the 400 surfaces via the catch below.
         await publishDeck(deck.id);
       }
       loadDecks();
@@ -141,6 +141,12 @@ const AdminVocabDecks: React.FC = () => {
     } finally {
       setPendingActionId(null);
     }
+  };
+
+  const goToWords = (deck: ManagedVocabDeck) => {
+    navigate(`/admin/vocab/decks/${deck.id}/words`, {
+      state: { deckName: deck.name, libraryId },
+    });
   };
 
   const handleDelete = async (deck: ManagedVocabDeck) => {
@@ -210,6 +216,7 @@ const AdminVocabDecks: React.FC = () => {
                   <tr className="bg-slate-50/50">
                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bộ từ</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">CEFR</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Số từ</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Trạng thái</th>
                     <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Thao tác</th>
                   </tr>
@@ -217,7 +224,7 @@ const AdminVocabDecks: React.FC = () => {
                 <tbody className="divide-y divide-slate-50">
                   {isLoading && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
+                      <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
                         Đang tải...
                       </td>
                     </tr>
@@ -225,7 +232,7 @@ const AdminVocabDecks: React.FC = () => {
 
                   {!isLoading && decks.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
+                      <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
                         Chưa có bộ từ nào. Bấm "Thêm bộ từ" để bắt đầu.
                       </td>
                     </tr>
@@ -248,6 +255,15 @@ const AdminVocabDecks: React.FC = () => {
                           <span className="text-[10px] font-bold text-slate-300">—</span>
                         )}
                       </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => goToWords(deck)}
+                          title="Quản lý từ"
+                          className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          {deck._count.deckWords} từ
+                        </button>
+                      </td>
                       <td className="px-6 py-4">
                         <button
                           onClick={() => togglePublish(deck)}
@@ -264,6 +280,14 @@ const AdminVocabDecks: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-1">
+                          <button
+                            onClick={() => goToWords(deck)}
+                            className="inline-flex items-center space-x-1.5 px-3 py-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all text-xs font-bold"
+                            title="Quản lý từ"
+                          >
+                            <ListChecks size={16} />
+                            <span className="hidden sm:inline">Quản lý từ</span>
+                          </button>
                           <button
                             onClick={() => openEdit(deck)}
                             className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
@@ -342,9 +366,6 @@ const AdminVocabDecks: React.FC = () => {
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
               />
             </div>
-            <p className="text-[11px] text-slate-400 -mt-2">
-              Chưa có từ vựng nào trong bộ từ này (tính năng thêm từ sẽ có ở giai đoạn tiếp theo) — bộ từ vẫn có thể xuất bản, nhưng sẽ trống cho đến khi có từ.
-            </p>
             <div className="flex justify-end space-x-3 pt-2">
               <button
                 type="button"
