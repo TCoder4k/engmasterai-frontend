@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { User, LogOut, ChevronDown, Shield, Camera } from 'lucide-react';
 import { uploadAvatar } from '../../services/userService';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export interface AvatarMenuUser {
   name: string;
@@ -13,9 +14,20 @@ interface AvatarMenuProps {
   user: AvatarMenuUser;
   onLogout: () => void;
   onAvatarUpdate?: (newAvatarUrl: string) => void;
+  // 'student' (default): theme-aware — follows global dark mode.
+  // 'admin': always light — the admin layout has no dark styling, so a
+  // dark dropdown on a light page would be the only dark element there.
+  variant?: 'student' | 'admin';
 }
 
-const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate }) => {
+// Joins the light classes with the dark: variants only for the student
+// variant, so the admin usage stays visually unchanged in dark mode.
+const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' ');
+
+const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate, variant = 'student' }) => {
+  const { t } = useTranslation();
+  const themed = variant === 'student';
+
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,16 +76,6 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
     }
   };
 
-  const getRoleLabel = (role: string) => {
-    return role === 'ADMIN' ? 'Quản trị viên' : 'Học viên';
-  };
-
-  const getRoleBadgeColor = (role: string) => {
-    return role === 'ADMIN' 
-      ? 'bg-amber-100 text-amber-700' 
-      : 'bg-indigo-100 text-indigo-700';
-  };
-
   const getInitial = (name: string) => {
     return name?.charAt(0)?.toUpperCase() || 'U';
   };
@@ -89,13 +91,13 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
     // Validate file type
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
     if (!allowedMimeTypes.includes(file.type)) {
-      setError('Chỉ chấp nhận file ảnh (JPEG, PNG, WebP)');
+      setError(t.avatar.onlyImages);
       return;
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      setError('Kích thước ảnh không được vượt quá 10MB');
+      setError(t.avatar.tooLarge);
       return;
     }
 
@@ -104,7 +106,7 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
 
     try {
       const userData = await uploadAvatar(file);
-      
+
       // Update local storage
       const currentUser = localStorage.getItem('user');
       if (currentUser) {
@@ -124,7 +126,7 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
       setTimeout(() => setIsOpen(false), 1000);
     } catch (err: any) {
       console.error('Avatar upload error:', err);
-      setError(err.message || 'Không thể tải ảnh lên');
+      setError(err.message || t.avatar.uploadFailed);
     } finally {
       setIsUploading(false);
     }
@@ -137,17 +139,21 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
         ref={buttonRef}
         onClick={toggleMenu}
         onKeyDown={handleKeyDown}
-        className="flex items-center space-x-2.5 bg-slate-50 hover:bg-white px-2 py-1.5 rounded-full border border-slate-200 hover:border-indigo-200 hover:shadow-md transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+        className={cx(
+          'flex items-center space-x-2.5 bg-slate-50 hover:bg-white px-2 py-1.5 rounded-full border border-slate-200 hover:border-indigo-200 hover:shadow-md transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2',
+          themed &&
+            'dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:hover:border-slate-600 dark:focus:ring-offset-slate-900',
+        )}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        aria-label="User menu"
+        aria-label={t.avatarMenu.openUserMenu}
       >
         {/* Avatar */}
         <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center ring-2 ring-white shadow-sm">
           {user.avatarUrl ? (
-            <img 
-              src={user.avatarUrl} 
-              alt={user.name} 
+            <img
+              src={user.avatarUrl}
+              alt={user.name}
               className="w-full h-full object-cover"
             />
           ) : (
@@ -158,13 +164,18 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
         </div>
 
         {/* Name */}
-        <span className="text-xs font-semibold text-slate-700 hidden sm:block max-w-[100px] truncate">
+        <span
+          className={cx(
+            'text-xs font-semibold text-slate-700 hidden sm:block max-w-[100px] truncate',
+            themed && 'dark:text-slate-200',
+          )}
+        >
           {user.name?.split(' ')[0] || 'User'}
         </span>
 
         {/* Chevron */}
-        <ChevronDown 
-          size={14} 
+        <ChevronDown
+          size={14}
           className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
@@ -172,17 +183,24 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
       {/* Dropdown Menu */}
       <div
         ref={menuRef}
-        className={`absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 transform transition-all duration-200 origin-top-right ${
-          isOpen 
-            ? 'opacity-100 scale-100 translate-y-0' 
-            : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'
-        }`}
+        className={cx(
+          'absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50 transform transition-all duration-200 origin-top-right',
+          themed && 'dark:bg-slate-900 dark:border-slate-700',
+          isOpen
+            ? 'opacity-100 scale-100 translate-y-0'
+            : 'opacity-0 scale-95 -translate-y-2 pointer-events-none',
+        )}
         role="menu"
         aria-orientation="vertical"
         aria-labelledby="user-menu"
       >
         {/* User Info Header */}
-        <div className="px-4 py-3.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border-b border-slate-100">
+        <div
+          className={cx(
+            'px-4 py-3.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border-b border-slate-100',
+            themed && 'dark:from-slate-800 dark:to-slate-800/60 dark:border-slate-700',
+          )}
+        >
           <div className="flex items-center space-x-3">
             <div className="relative group/avatar">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center ring-2 ring-white shadow-md">
@@ -192,9 +210,9 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
                   </div>
                 )}
                 {user.avatarUrl ? (
-                  <img 
-                    src={user.avatarUrl} 
-                    alt={user.name} 
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -207,7 +225,7 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
                 onClick={handleAvatarClick}
                 disabled={isUploading}
                 className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-white hover:bg-indigo-600 transition-colors shadow-md opacity-0 group-hover/avatar:opacity-100 disabled:opacity-50"
-                title="Thay đổi ảnh đại diện"
+                title={t.avatarMenu.changePhoto}
               >
                 <Camera size={10} />
               </button>
@@ -220,11 +238,17 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
               />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-900 truncate">
+              <p className={cx('text-sm font-bold text-slate-900 truncate', themed && 'dark:text-slate-100')}>
                 {user.name}
               </p>
-              <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${getRoleBadgeColor(user.role)}`}>
-                {getRoleLabel(user.role)}
+              <span
+                className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
+                  user.role === 'ADMIN'
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-indigo-100 text-indigo-700'
+                }`}
+              >
+                {user.role === 'ADMIN' ? t.roles.admin : t.roles.student}
               </span>
               {error && (
                 <p className="text-[10px] text-rose-500 mt-1">{error}</p>
@@ -238,50 +262,74 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate 
           <Link
             to="/profile"
             onClick={() => setIsOpen(false)}
-            className="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group"
+            className={cx(
+              'flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group',
+              themed && 'dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400',
+            )}
             role="menuitem"
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
+            <div
+              className={cx(
+                'w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors',
+                themed && 'dark:bg-slate-800 dark:group-hover:bg-slate-700',
+              )}
+            >
               <User size={16} className="text-slate-500 group-hover:text-indigo-600" />
             </div>
             <div>
-              <p className="font-semibold">Thông tin tài khoản</p>
-              <p className="text-[11px] text-slate-400 group-hover:text-indigo-500">Cập nhật hồ sơ cá nhân</p>
+              <p className="font-semibold">{t.avatarMenu.accountInfo}</p>
+              <p className="text-[11px] text-slate-400 group-hover:text-indigo-500">{t.avatarMenu.accountInfoHint}</p>
             </div>
           </Link>
 
           <Link
             to="/security"
             onClick={() => setIsOpen(false)}
-            className="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group"
+            className={cx(
+              'flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group',
+              themed && 'dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400',
+            )}
             role="menuitem"
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors">
+            <div
+              className={cx(
+                'w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors',
+                themed && 'dark:bg-slate-800 dark:group-hover:bg-slate-700',
+              )}
+            >
               <Shield size={16} className="text-slate-500 group-hover:text-indigo-600" />
             </div>
             <div>
-              <p className="font-semibold">Bảo mật tài khoản</p>
-              <p className="text-[11px] text-slate-400 group-hover:text-indigo-500">Thay đổi mật khẩu</p>
+              <p className="font-semibold">{t.avatarMenu.accountSecurity}</p>
+              <p className="text-[11px] text-slate-400 group-hover:text-indigo-500">{t.avatarMenu.accountSecurityHint}</p>
             </div>
           </Link>
 
           {/* Divider */}
-          <div className="my-1.5 mx-4 border-t border-slate-100"></div>
+          <div className={cx('my-1.5 mx-4 border-t border-slate-100', themed && 'dark:border-slate-700')}></div>
 
           <button
             onClick={() => {
               setIsOpen(false);
               onLogout();
             }}
-            className="flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors w-full group"
+            className={cx(
+              'flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-rose-50 hover:text-rose-600 transition-colors w-full group',
+              themed && 'dark:text-slate-300 dark:hover:bg-rose-500/10 dark:hover:text-rose-400',
+            )}
             role="menuitem"
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-rose-100 flex items-center justify-center transition-colors">
+            <div
+              className={cx(
+                'w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-rose-100 flex items-center justify-center transition-colors',
+                themed && 'dark:bg-slate-800 dark:group-hover:bg-rose-500/10',
+              )}
+            >
               <LogOut size={16} className="text-slate-500 group-hover:text-rose-500" />
             </div>
             <div className="text-left">
-              <p className="font-semibold">Đăng xuất</p>
-              <p className="text-[11px] text-slate-400 group-hover:text-rose-400">Thoát khỏi tài khoản</p>
+              <p className="font-semibold">{t.avatarMenu.logout}</p>
+              <p className="text-[11px] text-slate-400 group-hover:text-rose-400">{t.avatarMenu.logoutHint}</p>
             </div>
           </button>
         </div>

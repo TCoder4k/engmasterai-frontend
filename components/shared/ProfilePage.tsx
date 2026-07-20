@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, User, Mail, Save, Check, AlertCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { getProfile, updateProfile, uploadAvatar } from '../../services/userService';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface UserProfile {
   id: string;
@@ -12,8 +13,11 @@ interface UserProfile {
   role: string;
 }
 
+// Serves both roles (the back link is role-aware), so it deliberately keeps
+// its own standalone header rather than adopting the student sidebar shell.
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const user = authService.getUser();
 
@@ -34,6 +38,7 @@ const ProfilePage: React.FC = () => {
   // Load user profile on mount
   useEffect(() => {
     loadProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProfile = async () => {
@@ -76,13 +81,13 @@ const ProfilePage: React.FC = () => {
     // Validate file type
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
     if (!allowedMimeTypes.includes(file.type)) {
-      setError('Chỉ chấp nhận file ảnh (JPEG, PNG, WebP)');
+      setError(t.avatar.onlyImages);
       return;
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-      setError('Kích thước ảnh không được vượt quá 10MB');
+      setError(t.avatar.tooLarge);
       return;
     }
 
@@ -99,7 +104,7 @@ const ProfilePage: React.FC = () => {
 
     try {
       const userData = await uploadAvatar(file);
-      
+
       // Update profile state
       setProfile(prev => ({ ...prev, avatarUrl: userData.avatarUrl || '' }));
       setAvatarPreview(null);
@@ -115,7 +120,7 @@ const ProfilePage: React.FC = () => {
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err: any) {
       console.error('Avatar upload error:', err);
-      setError(err.message || 'Không thể tải ảnh lên. Vui lòng thử lại.');
+      setError(err.message || t.avatar.uploadFailed);
       setAvatarPreview(null);
     } finally {
       setIsUploading(false);
@@ -129,7 +134,7 @@ const ProfilePage: React.FC = () => {
     // Check what has changed
     const updates: any = {};
     const currentUser = authService.getUser();
-    
+
     if (profile.name !== currentUser?.name) {
       updates.name = profile.name;
     }
@@ -139,7 +144,7 @@ const ProfilePage: React.FC = () => {
 
     // Nothing to update
     if (Object.keys(updates).length === 0) {
-      setError('Không có thay đổi nào để lưu');
+      setError(t.profile.noChanges);
       return;
     }
 
@@ -169,7 +174,7 @@ const ProfilePage: React.FC = () => {
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err: any) {
       console.error('Profile update error:', err);
-      setError(err.message || 'Không thể cập nhật thông tin. Vui lòng thử lại.');
+      setError(err.message || t.common.loadFailed);
     } finally {
       setIsLoading(false);
     }
@@ -184,28 +189,29 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
-      <header className="bg-white border-b border-slate-100 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-6 py-4">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link 
+            <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+              <Link
                 to={getBackLink()}
-                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                aria-label={t.common.back}
+                className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-500 dark:hover:text-indigo-400 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
               >
                 <ArrowLeft size={20} />
               </Link>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900">Thông tin tài khoản</h1>
-                <p className="text-xs text-slate-500">Quản lý hồ sơ cá nhân của bạn</p>
+              <div className="min-w-0">
+                <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{t.profile.title}</h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.profile.subtitle}</p>
               </div>
             </div>
-            <Link to={getBackLink()} className="flex items-center space-x-2">
+            <Link to={getBackLink()} className="flex items-center space-x-2 flex-shrink-0">
               <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">E</span>
               </div>
-              <span className="text-lg font-bold text-slate-900 hidden sm:block">
+              <span className="text-lg font-bold text-slate-900 dark:text-white hidden sm:block">
                 Engmaster<span className="text-indigo-500">AI</span>
               </span>
             </Link>
@@ -214,10 +220,10 @@ const ProfilePage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
           {/* Profile Header */}
-          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-8 py-10">
+          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 sm:px-8 py-10">
             <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
               {/* Avatar */}
               <div className="relative group">
@@ -228,8 +234,8 @@ const ProfilePage: React.FC = () => {
                     </div>
                   )}
                   {avatarPreview || profile.avatarUrl ? (
-                    <img 
-                      src={avatarPreview || profile.avatarUrl} 
+                    <img
+                      src={avatarPreview || profile.avatarUrl}
                       alt={profile.name}
                       className="w-full h-full object-cover"
                     />
@@ -242,6 +248,8 @@ const ProfilePage: React.FC = () => {
                 <button
                   onClick={handleAvatarClick}
                   disabled={isUploading}
+                  aria-label={t.avatarMenu.changePhoto}
+                  title={t.avatarMenu.changePhoto}
                   className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition-colors border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Camera size={18} />
@@ -256,108 +264,108 @@ const ProfilePage: React.FC = () => {
               </div>
 
               {/* User Info */}
-              <div className="text-center sm:text-left">
-                <h2 className="text-2xl font-bold text-white">{profile.name}</h2>
-                <p className="text-indigo-100 text-sm mt-1">{profile.email}</p>
+              <div className="text-center sm:text-left min-w-0">
+                <h2 className="text-2xl font-bold text-white break-words">{profile.name}</h2>
+                <p className="text-indigo-100 text-sm mt-1 break-words">{profile.email}</p>
                 <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${
-                  profile.role === 'ADMIN' 
-                    ? 'bg-amber-400/20 text-amber-100' 
+                  profile.role === 'ADMIN'
+                    ? 'bg-amber-400/20 text-amber-100'
                     : 'bg-white/20 text-white'
                 }`}>
-                  {profile.role === 'ADMIN' ? 'Quản trị viên' : 'Học viên'}
+                  {profile.role === 'ADMIN' ? t.roles.admin : t.roles.student}
                 </span>
               </div>
             </div>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-8">
+          <form onSubmit={handleSubmit} className="p-6 sm:p-8">
             {/* Success Message */}
             {isSaved && (
-              <div className="mb-6 flex items-center space-x-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+              <div className="mb-6 flex items-center space-x-3 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl">
+                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <Check size={16} className="text-white" />
                 </div>
-                <p className="text-sm font-medium text-emerald-700">
-                  Thông tin đã được cập nhật thành công!
+                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                  {t.profile.saved}
                 </p>
               </div>
             )}
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 flex items-center space-x-3 p-4 bg-rose-50 border border-rose-200 rounded-xl">
-                <div className="w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center">
+              <div className="mb-6 flex items-center space-x-3 p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl">
+                <div className="w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <AlertCircle size={16} className="text-white" />
                 </div>
-                <p className="text-sm font-medium text-rose-700">{error}</p>
+                <p className="text-sm font-medium text-rose-700 dark:text-rose-400">{error}</p>
               </div>
             )}
 
             <div className="space-y-6">
               {/* Display Name */}
               <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-slate-700 mb-2">
-                  Tên hiển thị
+                <label htmlFor="name" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  {t.profile.displayName}
                 </label>
                 <div className="relative">
-                  <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     id="name"
                     name="name"
                     value={profile.name}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
-                    placeholder="Nhập tên hiển thị"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
+                    placeholder={t.profile.displayNamePlaceholder}
                   />
                 </div>
-                <p className="mt-2 text-xs text-slate-400">
-                  Tên này sẽ được hiển thị trên hồ sơ của bạn
+                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                  {t.profile.displayNameHint}
                 </p>
               </div>
 
               {/* Email (Read-only) */}
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
-                  Địa chỉ email
+                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                  {t.profile.email}
                 </label>
                 <div className="relative">
-                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input
                     type="email"
                     id="email"
                     name="email"
                     value={profile.email}
                     readOnly
-                    className="w-full pl-12 pr-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed"
                   />
                 </div>
-                <p className="mt-2 text-xs text-slate-400">
-                  Email không thể thay đổi
+                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+                  {t.profile.emailHint}
                 </p>
               </div>
             </div>
 
             {/* Submit Button */}
-            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-slate-400">
-                Nhấn "Lưu thay đổi" để cập nhật thông tin
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                {t.profile.saveHint}
               </p>
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-lg shadow-indigo-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-lg shadow-indigo-500/25 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>Đang lưu...</span>
+                    <span>{t.profile.saving}</span>
                   </>
                 ) : (
                   <>
                     <Save size={18} />
-                    <span>Lưu thay đổi</span>
+                    <span>{t.profile.saveChanges}</span>
                   </>
                 )}
               </button>

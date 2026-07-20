@@ -22,9 +22,15 @@ import WordDetailPage from './components/vocab/WordDetailPage';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
+import { ThemeProvider } from './theme/ThemeProvider';
+import { LanguageProvider } from './i18n/LanguageProvider';
 
 const App: React.FC = () => {
   return (
+    // Theme + language are app-global so every student-facing page (and any
+    // future course/lesson page) can consume them — not just the dashboard.
+    <ThemeProvider>
+    <LanguageProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -65,6 +71,8 @@ const App: React.FC = () => {
         <Route path="/security" element={<SecurityPage />} />
       </Routes>
     </BrowserRouter>
+    </LanguageProvider>
+    </ThemeProvider>
   );
 };
 

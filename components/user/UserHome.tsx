@@ -1,91 +1,150 @@
-
-import React, { useState, useEffect } from 'react';
-import UserNavbar from './UserNavbar';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import StudentLayout from './StudentLayout';
+import ContinueLearningCard from './ContinueLearningCard';
+import LearningTrackCard from './LearningTrackCard';
 import UserSidebar from './UserSidebar';
 import CourseCard from './CourseCard';
+import { authService } from '../../services/authService';
 import { getPublishedCourses } from '../../services/courseService';
-import { Course } from '../../types';
+import { Course, CourseType } from '../../types';
+import { useTranslation } from '../../i18n/useTranslation';
+
+const TRACK_TYPES: CourseType[] = ['GRAMMAR', 'VOCABULARY', 'LISTENING'];
 
 const UserHome: React.FC = () => {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { t } = useTranslation();
+  const user = authService.getUser();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesError, setCoursesError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setIsLoaded(true);
-  }, []);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<CourseType | null>(null);
 
   useEffect(() => {
     getPublishedCourses()
       .then((res) => setCourses(res.data))
-      .catch((err) => setCoursesError(err.message || 'Failed to load courses'));
+      .catch((err) => setCoursesError(err.message || t.common.loadFailed));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Header search + track filter both narrow the recommended grid
+  // client-side — the only real course feed this page has.
+  const filteredCourses = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return courses.filter((course) => {
+      if (typeFilter && course.type !== typeFilter) return false;
+      if (!query) return true;
+      return (
+        course.title.toLowerCase().includes(query) ||
+        course.description.toLowerCase().includes(query)
+      );
+    });
+  }, [courses, search, typeFilter]);
+
+  const firstName = user?.name?.split(' ').pop() || 'Learner';
+
+  const clearFilters = () => {
+    setSearch('');
+    setTypeFilter(null);
+  };
+
   return (
-    <div className={`min-h-screen flex flex-col transition-opacity duration-700 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-      <UserNavbar />
+    <StudentLayout search={{ value: search, onChange: setSearch }}>
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-6 lg:items-start max-w-[1400px]">
+        {/* ---- Content ---- */}
+        <div className="flex-1 min-w-0 space-y-8 lg:space-y-10">
+          <div>
+            <h1 className="text-2xl sm:text-[28px] font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              {t.dashboard.welcomeBack}, {firstName}! 👋
+            </h1>
+            <p className="text-[15px] text-slate-500 dark:text-slate-400 font-medium mt-1">
+              {t.dashboard.keepLearning}
+            </p>
+          </div>
 
-      <main className="flex-grow py-16 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
-          
-          <div className="flex flex-col lg:flex-row gap-16">
-            {/* Main Content Area - Wide Spacing */}
-            <div className="flex-grow">
-              <div className="mb-12">
-                <h2 className="text-[22px] font-black text-slate-900 uppercase tracking-tight">
-                  Khóa học của tôi
-                </h2>
-                <div className="h-1 w-12 bg-indigo-500 mt-2.5 rounded-full"></div>
-              </div>
+          <ContinueLearningCard />
 
-              {coursesError && (
-                <p className="text-sm font-medium text-red-500 mb-6">{coursesError}</p>
-              )}
+          {/* Learning Tracks — horizontal snap carousel on phones, 3-col
+              grid from md up. The carousel's own overflow is intentional;
+              the negative margins keep it inside the page padding so the
+              page itself never scrolls horizontally. */}
+          <section aria-label={t.dashboard.learningTracks}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                {t.dashboard.learningTracks}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setTypeFilter(null)}
+                className="flex items-center space-x-1 text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg px-1"
+              >
+                <span>{t.common.viewAll}</span>
+                <ArrowRight size={15} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 -mx-4 px-4 pb-2 sm:-mx-6 sm:px-6 md:grid md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0 md:pb-0">
+              {TRACK_TYPES.map((type) => (
+                <LearningTrackCard
+                  key={type}
+                  type={type}
+                  active={typeFilter === type}
+                  onSelect={() =>
+                    setTypeFilter((current) => (current === type ? null : type))
+                  }
+                />
+              ))}
+            </div>
+          </section>
 
-              {!coursesError && courses.length === 0 && (
-                <p className="text-sm font-medium text-slate-400">
-                  Chưa có khóa học nào được xuất bản.
-                </p>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-                {courses.map((course) => (
-                  <CourseCard key={course.id} course={course} />
-                ))}
-              </div>
+          {/* Recommended for You — the page's real data feed (GET /courses),
+              narrowed by the search and track filter. */}
+          <section aria-label={t.dashboard.recommendedForYou}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
+                {t.dashboard.recommendedForYou}
+              </h2>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="flex items-center space-x-1 text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg px-1"
+              >
+                <span>{t.common.viewAll}</span>
+                <ArrowRight size={15} aria-hidden="true" />
+              </button>
             </div>
 
-            {/* Sidebar Area - Fixed width for clean look */}
-            <div className="w-full lg:w-[340px] flex-shrink-0">
-              <UserSidebar />
+            {coursesError && (
+              <p className="text-sm font-medium text-rose-500">{coursesError}</p>
+            )}
+
+            {!coursesError && filteredCourses.length === 0 && (
+              <p className="text-sm font-medium text-slate-400 dark:text-slate-500">
+                {courses.length === 0 ? t.dashboard.noCoursesYet : t.dashboard.noCoursesFound}
+              </p>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredCourses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
             </div>
+          </section>
+
+          {/* On phones/tablets the widgets flow here, below the courses,
+              as normal full-width sections (no narrow side column). */}
+          <div className="lg:hidden">
+            <UserSidebar />
           </div>
         </div>
-      </main>
 
-      {/* Floating Support Button - Subtle & Professional */}
-      <div className="fixed bottom-10 right-10 z-50 group">
-        <div className="w-16 h-16 bg-white border border-slate-100 shadow-xl rounded-[20px] flex items-center justify-center cursor-pointer active:scale-95 transition-all hover:bg-slate-50 group">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
+        {/* ---- Desktop-only right widget column ---- */}
+        <div className="hidden lg:block w-80 flex-shrink-0">
+          <UserSidebar />
         </div>
       </div>
-      
-      {/* Footer - Minimalist */}
-      <footer className="py-12 border-t border-slate-100 bg-white">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-[12px] font-bold text-slate-300 uppercase tracking-widest">
-            © 2026 EngmasterAI Platform
-          </p>
-          <div className="flex space-x-10 mt-6 md:mt-0">
-            <span className="text-[12px] font-bold text-slate-400 hover:text-indigo-500 cursor-pointer transition-colors">Điều khoản</span>
-            <span className="text-[12px] font-bold text-slate-400 hover:text-indigo-500 cursor-pointer transition-colors">Bảo mật</span>
-            <span className="text-[12px] font-bold text-slate-400 hover:text-indigo-500 cursor-pointer transition-colors">Học tập</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </StudentLayout>
   );
 };
 

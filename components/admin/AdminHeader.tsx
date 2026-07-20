@@ -55,7 +55,10 @@ const AdminHeader: React.FC = () => {
           <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white"></span>
         </button>
         
+        {/* variant="admin": the admin layout has no dark mode, so the menu
+            must stay light even when the global .dark class is set. */}
         <AvatarMenu
+          variant="admin"
           user={{
             name: user?.name || 'Admin',
             avatarUrl: avatarUrl,

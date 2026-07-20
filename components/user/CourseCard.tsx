@@ -1,51 +1,73 @@
-
 import React from 'react';
+import { BookOpen, BookMarked, Headphones } from 'lucide-react';
 import { Course } from '../../types';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface CourseCardProps {
   course: Course;
 }
 
-const TYPE_LABELS: Record<Course['type'], string> = {
-  GRAMMAR: 'Ngữ pháp',
-  VOCABULARY: 'Từ vựng',
-  LISTENING: 'Nghe',
+// Per-type chip/tile styling for the "Recommended for You" card design.
+// Labels come from the shared track translations (single source with the
+// Learning Tracks section).
+const TYPE_STYLES: Record<
+  Course['type'],
+  { key: 'grammar' | 'vocabulary' | 'listening'; chipClass: string; tileClass: string; icon: React.ReactNode }
+> = {
+  GRAMMAR: {
+    key: 'grammar',
+    chipClass: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400',
+    tileClass: 'bg-indigo-100 text-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-400',
+    icon: <BookOpen size={28} />,
+  },
+  VOCABULARY: {
+    key: 'vocabulary',
+    chipClass: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
+    tileClass: 'bg-emerald-100 text-emerald-400 dark:bg-emerald-500/15 dark:text-emerald-400',
+    icon: <BookMarked size={28} />,
+  },
+  LISTENING: {
+    key: 'listening',
+    chipClass: 'bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400',
+    tileClass: 'bg-sky-100 text-sky-400 dark:bg-sky-500/15 dark:text-sky-400',
+    icon: <Headphones size={28} />,
+  },
 };
 
+// Display card — deliberately no CTA button: there is no student course/lesson
+// detail page yet, so presenting one would be a dead action (the same
+// non-actionable principle the rest of the student UI follows).
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+  const { t } = useTranslation();
+  const style = TYPE_STYLES[course.type];
+
   return (
-    <div className="bg-white rounded-[24px] shadow-lg p-8 flex flex-col items-center text-center h-full group transition-all duration-300 hover:border-indigo-100 border border-transparent relative">
-      <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-wider mb-4">
-        {TYPE_LABELS[course.type]}
-      </span>
-
-      <h3 className="text-[18px] font-extrabold text-slate-900 mb-8 leading-tight group-hover:text-indigo-500 transition-colors">
-        {course.title}
-      </h3>
-
-      <div className="relative mb-8">
-        <div className="w-32 h-32 rounded-full border-4 border-slate-50 group-hover:border-indigo-50 overflow-hidden p-1 bg-white transition-all duration-300">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 hover:shadow-md transition-all group">
+      <div className="flex items-start justify-between space-x-4">
+        <div className="min-w-0">
+          <span className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded-md ${style.chipClass}`}>
+            {t.tracks[style.key].label}
+          </span>
+          <h3 className="text-[15px] font-extrabold text-slate-900 dark:text-slate-100 mt-2.5 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            {course.title}
+          </h3>
+        </div>
+        <div
+          className={`w-16 h-16 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 ${
+            course.thumbnail ? '' : style.tileClass
+          }`}
+          aria-hidden={course.thumbnail ? undefined : 'true'}
+        >
           {course.thumbnail ? (
-            <img
-              src={course.thumbnail}
-              alt={course.title}
-              className="w-full h-full object-cover rounded-full grayscale-[0.2] group-hover:grayscale-0 transition-all"
-            />
+            <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full rounded-full bg-slate-100" />
+            style.icon
           )}
         </div>
       </div>
-
-      <p className="text-slate-500 text-[14px] leading-relaxed mb-10 px-2 h-14 overflow-hidden font-medium">
+      <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-3 leading-relaxed line-clamp-2">
         {course.description}
       </p>
-
-      <div className="w-full mt-auto">
-        <button className="w-full py-4 bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-[15px] rounded-2xl transition-all shadow-md shadow-indigo-100 active:scale-95">
-          Bắt đầu học
-        </button>
-      </div>
     </div>
   );
 };
