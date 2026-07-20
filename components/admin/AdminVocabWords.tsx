@@ -305,7 +305,7 @@ const AdminVocabWords: React.FC = () => {
         <Modal title="Nhập từ vựng từ CSV" onClose={() => setIsImportOpen(false)}>
           <form onSubmit={submitImport} className="space-y-4">
             {importError && (
-              <div className="bg-rose-50 border border-rose-100 text-rose-600 text-sm font-medium px-4 py-3 rounded-xl whitespace-pre-wrap">
+              <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-sm font-medium px-4 py-3 rounded-xl whitespace-pre-wrap">
                 {importError}
               </div>
             )}
@@ -322,7 +322,7 @@ const AdminVocabWords: React.FC = () => {
               Tải file mẫu (CSV)
             </button>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Chọn file CSV</label>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Chọn file CSV</label>
               <input
                 type="file"
                 accept=".csv,text/csv"
@@ -337,7 +337,7 @@ const AdminVocabWords: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsImportOpen(false)}
-                className="px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                className="px-4 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
               >
                 Đóng
               </button>

@@ -164,6 +164,27 @@ const en = {
     en: 'English',
     vi: 'Tiếng Việt',
   },
+  course: {
+    catalogTitle: 'Courses',
+    backToCourses: 'Back to courses',
+    noLessonsYet: 'No lessons in this course yet.',
+  },
+  lesson: {
+    backToCourse: 'Back to course',
+    minutesUnit: 'min',
+    notesFallbackTitle: 'Lesson notes',
+    videoUnavailable: "This lesson's video couldn't be shown right now.",
+    videoWatchAgainPrompt: 'You already watched this video. Watch again?',
+    videoWatchAgain: 'Watch again',
+    videoResumeDismiss: 'Dismiss',
+    stepperLabel: 'Lesson progress',
+    stepOverview: 'Overview',
+    stepVideo: 'Video',
+    stepNotes: 'Notes',
+    stepMiniCheckSoon: 'Mini check (soon)',
+    nextLesson: 'Next lesson',
+    courseComplete: "You've completed this course!",
+  },
 };
 
 export type TranslationDict = typeof en;
@@ -326,6 +347,27 @@ const vi: TranslationDict = {
   languages: {
     en: 'English',
     vi: 'Tiếng Việt',
+  },
+  course: {
+    catalogTitle: 'Khóa học',
+    backToCourses: 'Quay lại khóa học',
+    noLessonsYet: 'Khóa học này chưa có bài học nào.',
+  },
+  lesson: {
+    backToCourse: 'Quay lại khóa học',
+    minutesUnit: 'phút',
+    notesFallbackTitle: 'Ghi chú bài học',
+    videoUnavailable: 'Video của bài học này hiện không thể hiển thị.',
+    videoWatchAgainPrompt: 'Bạn đã xem video này. Xem lại chứ?',
+    videoWatchAgain: 'Xem lại',
+    videoResumeDismiss: 'Bỏ qua',
+    stepperLabel: 'Tiến trình bài học',
+    stepOverview: 'Tổng quan',
+    stepVideo: 'Video',
+    stepNotes: 'Ghi chú',
+    stepMiniCheckSoon: 'Kiểm tra nhanh (sắp có)',
+    nextLesson: 'Bài học tiếp theo',
+    courseComplete: 'Bạn đã hoàn thành khóa học này!',
   },
 };
 

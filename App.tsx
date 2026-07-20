@@ -19,6 +19,9 @@ import VocabLibraryPage from './components/vocab/VocabLibraryPage';
 import LibraryDetailPage from './components/vocab/LibraryDetailPage';
 import DeckDetailPage from './components/vocab/DeckDetailPage';
 import WordDetailPage from './components/vocab/WordDetailPage';
+import CourseCatalogPage from './components/course/CourseCatalogPage';
+import CourseDetailPage from './components/course/CourseDetailPage';
+import LessonPage from './components/lesson/LessonPage';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -40,14 +43,18 @@ const App: React.FC = () => {
         </Route>
         <Route path="/home" element={<UserHome />} />
 
-        {/* /vocab* requires any authenticated user (no role prop) — gated
-            from day one per the Vocabulary architecture, rather than
+        {/* /vocab* and /courses* require any authenticated user (no role
+            prop) — gated from day one per the Vocabulary architecture and
+            the Student Learning Experience design (Sprint 1), rather than
             inheriting the /home-and-/profile route-protection gap. */}
         <Route element={<ProtectedRoute />}>
           <Route path="/vocab" element={<VocabLibraryPage />} />
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
           <Route path="/vocab/decks/:id" element={<DeckDetailPage />} />
           <Route path="/vocab/words/:id" element={<WordDetailPage />} />
+          <Route path="/courses" element={<CourseCatalogPage />} />
+          <Route path="/courses/:id" element={<CourseDetailPage />} />
+          <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
         </Route>
 
         {/* /admin* requires an authenticated ADMIN; ProtectedRoute redirects

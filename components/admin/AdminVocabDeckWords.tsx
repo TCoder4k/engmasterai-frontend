@@ -228,7 +228,7 @@ const AdminVocabDeckWords: React.FC = () => {
         <Modal title="Gắn từ từ Ngân hàng từ" onClose={() => setIsAttachOpen(false)}>
           <div className="space-y-4">
             {attachError && (
-              <div className="bg-rose-50 border border-rose-100 text-rose-600 text-sm font-medium px-4 py-3 rounded-xl">
+              <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-sm font-medium px-4 py-3 rounded-xl">
                 {attachError}
               </div>
             )}
@@ -245,7 +245,7 @@ const AdminVocabDeckWords: React.FC = () => {
                 placeholder="Tìm từ trong ngân hàng..."
                 value={bankSearch}
                 onChange={(e) => setBankSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
               />
             </div>
 
@@ -283,7 +283,7 @@ const AdminVocabDeckWords: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsAttachOpen(false)}
-                className="px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                className="px-4 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
               >
                 Đóng
               </button>

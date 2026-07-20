@@ -1,5 +1,19 @@
+import { clearRecentActivity } from './recentActivity';
+import { clearAllVideoProgress } from './videoProgress';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Fired whenever the authenticated user changes (login, logout, forced
+// logout on 401/403). Client-side-only listeners (e.g. ThemeProvider, which
+// scopes the theme preference per user) re-sync off this, since a SPA
+// login/logout navigates without remounting app-root providers.
+export const AUTH_CHANGED_EVENT = 'emai:auth-changed';
+
+const emitAuthChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+  }
+};
 
 export interface RegisterRequest {
   name: string;
@@ -72,6 +86,8 @@ export const authService = {
     const token = localStorage.getItem('accessToken');
     if (!token) return;
 
+    const user = this.getUser();
+
     await fetch(`${API_BASE_URL}/auth/logout`, {
       method: 'POST',
       headers: {
@@ -81,11 +97,24 @@ export const authService = {
 
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+
+    // Clear this student's local Continue Learning / video-resume state so
+    // a shared device never surfaces it under the next logged-in account.
+    // The per-user theme preference is deliberately NOT cleared — it stays
+    // under its own scoped key so the same student keeps their choice on a
+    // later login.
+    if (user) {
+      clearRecentActivity(user.id);
+      clearAllVideoProgress(user.id);
+    }
+
+    emitAuthChanged();
   },
 
   saveAuth(response: AuthResponse): void {
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('user', JSON.stringify(response.user));
+    emitAuthChanged();
   },
 
   getToken(): string | null {
@@ -113,5 +142,6 @@ export const authService = {
   clearAuth(): void {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    emitAuthChanged();
   },
 };

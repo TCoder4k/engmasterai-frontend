@@ -335,88 +335,88 @@ const AdminLessons: React.FC = () => {
         >
           <form onSubmit={editingLesson ? submitEdit : submitCreate} className="space-y-4">
             {formError && (
-              <div className="bg-rose-50 border border-rose-100 text-rose-600 text-sm font-medium px-4 py-3 rounded-xl">
+              <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400 text-sm font-medium px-4 py-3 rounded-xl">
                 {formError}
               </div>
             )}
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tiêu đề</label>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Tiêu đề</label>
               <input
                 type="text"
                 required
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Mô tả (tùy chọn)</label>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Mô tả (tùy chọn)</label>
               <textarea
                 rows={2}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Video URL (https)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Video URL (https)</label>
                 <input
                   type="text"
                   placeholder="https://..."
                   value={form.videoUrl}
                   onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Audio URL (https)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Audio URL (https)</label>
                 <input
                   type="text"
                   placeholder="https://..."
                   value={form.audioUrl}
                   onChange={(e) => setForm((f) => ({ ...f, audioUrl: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                 />
               </div>
             </div>
-            <p className="text-[11px] text-slate-400 -mt-2">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 -mt-2">
               Cần ít nhất video hoặc audio để xuất bản (publish).
             </p>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">PDF URL (tùy chọn, https)</label>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">PDF URL (tùy chọn, https)</label>
               <input
                 type="text"
                 placeholder="https://..."
                 value={form.pdfUrl}
                 onChange={(e) => setForm((f) => ({ ...f, pdfUrl: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Thời lượng video (phút)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Thời lượng video (phút)</label>
                 <input
                   type="number"
                   min={0}
                   value={form.videoDurationMinutes}
                   onChange={(e) => setForm((f) => ({ ...f, videoDurationMinutes: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Thời gian học dự kiến (phút)</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Thời gian học dự kiến (phút)</label>
                 <input
                   type="number"
                   min={0}
                   value={form.estimatedStudyMinutes}
                   onChange={(e) => setForm((f) => ({ ...f, estimatedStudyMinutes: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
                 Mục tiêu học tập (mỗi dòng 1 mục, tối đa 10)
               </label>
               <textarea
@@ -424,25 +424,25 @@ const AdminLessons: React.FC = () => {
                 value={form.learningObjectives}
                 onChange={(e) => setForm((f) => ({ ...f, learningObjectives: e.target.value }))}
                 placeholder={'Ví dụ:\nHiểu cấu trúc thì hiện tại đơn\nPhân biệt hiện tại đơn và hiện tại tiếp diễn'}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
                 Ghi chú giáo viên / transcript (tùy chọn, chưa hiển thị cho học viên)
               </label>
               <textarea
                 rows={3}
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
               />
             </div>
             <div className="flex justify-end space-x-3 pt-2">
               <button
                 type="button"
                 onClick={closeModals}
-                className="px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors"
+                className="px-4 py-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors"
               >
                 Hủy
               </button>

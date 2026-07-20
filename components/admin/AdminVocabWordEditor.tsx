@@ -54,7 +54,7 @@ const TagInput: React.FC<{ label: string; values: string[]; onChange: (values: s
 
   return (
     <div>
-      <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">{label}</label>
+      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">{label}</label>
       <div className="flex flex-wrap gap-2 mb-2">
         {values.map((v) => (
           <span
@@ -80,7 +80,7 @@ const TagInput: React.FC<{ label: string; values: string[]; onChange: (values: s
             }
           }}
           placeholder="Nhập rồi bấm Enter..."
-          className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+          className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
         />
         <button
           type="button"
@@ -301,31 +301,31 @@ const AdminVocabWordEditor: React.FC = () => {
               <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">Thông tin cơ bản</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Từ</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Từ</label>
                   <input
                     type="text"
                     required
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Phiên âm (IPA)</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Phiên âm (IPA)</label>
                   <input
                     type="text"
                     value={ipa}
                     onChange={(e) => setIpa(e.target.value)}
                     placeholder="/həˈloʊ/"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Cấp độ CEFR</label>
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Cấp độ CEFR</label>
                   <select
                     value={cefrLevel}
                     onChange={(e) => setCefrLevel(e.target.value as CefrLevel | '')}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                   >
                     <option value="">— Không chọn —</option>
                     {CEFR_LEVELS.map((level) => (
@@ -339,13 +339,13 @@ const AdminVocabWordEditor: React.FC = () => {
             <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-4">
               <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">Âm thanh & Hình ảnh</h2>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Audio URL</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Audio URL</label>
                 <div className="flex space-x-2">
                   <input
                     type="text"
                     value={audioUrl}
                     onChange={(e) => setAudioUrl(e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                   />
                   {isEditing && (
                     <label className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer">
@@ -366,13 +366,13 @@ const AdminVocabWordEditor: React.FC = () => {
                 )}
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Image URL</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Image URL</label>
                 <div className="flex space-x-2">
                   <input
                     type="text"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                   />
                   {isEditing && (
                     <label className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer">
@@ -408,7 +408,7 @@ const AdminVocabWordEditor: React.FC = () => {
                   <select
                     value={row.partOfSpeech}
                     onChange={(e) => updateMeaning(index, { partOfSpeech: e.target.value as PartOfSpeech | '' })}
-                    className="w-40 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    className="w-40 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                   >
                     <option value="">— Loại từ —</option>
                     {PART_OF_SPEECH_OPTIONS.map((pos) => (
@@ -421,7 +421,7 @@ const AdminVocabWordEditor: React.FC = () => {
                     value={row.meaning}
                     onChange={(e) => updateMeaning(index, { meaning: e.target.value })}
                     placeholder="Nghĩa của từ..."
-                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                   />
                   {meanings.length > 1 && (
                     <button
@@ -456,14 +456,14 @@ const AdminVocabWordEditor: React.FC = () => {
                       value={row.sentence}
                       onChange={(e) => updateExample(index, { sentence: e.target.value })}
                       placeholder="Câu ví dụ..."
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                     />
                     <input
                       type="text"
                       value={row.translation}
                       onChange={(e) => updateExample(index, { translation: e.target.value })}
                       placeholder="Bản dịch (tùy chọn)..."
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
                     />
                   </div>
                   <button

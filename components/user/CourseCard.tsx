@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { BookOpen, BookMarked, Headphones } from 'lucide-react';
 import { Course } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -34,15 +35,18 @@ const TYPE_STYLES: Record<
   },
 };
 
-// Display card — deliberately no CTA button: there is no student course/lesson
-// detail page yet, so presenting one would be a dead action (the same
-// non-actionable principle the rest of the student UI follows).
+// Now a real link into Course Detail (/courses/:id) — the student Lesson
+// flow exists (Student Learning Experience design, Sprint 1), so this is
+// no longer a dead action.
 const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
   const { t } = useTranslation();
   const style = TYPE_STYLES[course.type];
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 hover:shadow-md transition-all group">
+    <Link
+      to={`/courses/${course.id}`}
+      className="block bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 hover:shadow-md transition-all group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+    >
       <div className="flex items-start justify-between space-x-4">
         <div className="min-w-0">
           <span className={`inline-block text-[11px] font-bold px-2.5 py-1 rounded-md ${style.chipClass}`}>
@@ -68,7 +72,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
       <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-3 leading-relaxed line-clamp-2">
         {course.description}
       </p>
-    </div>
+    </Link>
   );
 };
 

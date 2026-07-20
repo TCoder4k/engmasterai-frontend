@@ -9,17 +9,34 @@
     <script>
       // Class-based dark mode — the ThemeProvider toggles .dark on <html>.
       tailwind.config = { darkMode: 'class' };
-      // Apply the stored/system theme before first paint so a dark-mode user
-      // never sees a light flash. ThemeProvider reads this class on mount.
+      // Apply the correct PER-USER theme before first paint so there's no
+      // flash and no cross-account leak. Must mirror ThemeProvider's
+      // resolveTheme(): admin is always light; otherwise the current user's
+      // own scoped preference (engmasterai:theme:<userId>), else system.
       (function () {
         try {
-          var stored = localStorage.getItem('theme');
-          if (
-            stored === 'dark' ||
-            (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)
-          ) {
-            document.documentElement.classList.add('dark');
+          var uid = 'guest';
+          var role = null;
+          var raw = localStorage.getItem('user');
+          if (raw) {
+            try {
+              var u = JSON.parse(raw);
+              if (u) {
+                uid = u.id || 'guest';
+                role = u.role || null;
+              }
+            } catch (e) {}
           }
+          var dark;
+          if (role === 'ADMIN') {
+            dark = false;
+          } else {
+            var stored = localStorage.getItem('engmasterai:theme:' + uid);
+            dark =
+              stored === 'dark' ||
+              (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          }
+          document.documentElement.classList.toggle('dark', dark);
         } catch (e) {}
       })();
     </script>
@@ -33,6 +50,20 @@
       }
       .font-display {
         font-family: 'Quicksand', sans-serif;
+      }
+      /* Lesson YouTube embed: the IFrame API replaces our target <div> with
+         a bare <iframe> that inherits none of its classes. This static rule
+         forces that injected iframe to fill the 16:9 frame the instant it
+         exists — no dependency on the player's async onReady, which can lag
+         on mobile and otherwise leaves the iframe mispositioned and
+         unclickable. Static (not Tailwind-JIT) so it's guaranteed present
+         before the iframe is ever created. */
+      .yt-player-frame > iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
       }
     </style>
   <script type="importmap">

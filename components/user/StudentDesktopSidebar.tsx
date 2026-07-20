@@ -29,10 +29,10 @@ const StudentDesktopSidebar: React.FC = () => {
 
   // Entries with no student-facing page yet — rendered disabled with a badge
   // rather than as dead links (AdminSidebar's established convention).
-  const comingSoonNav = [
-    { icon: <BookOpen size={20} />, label: t.nav.myCourses },
-    { icon: <Headphones size={20} />, label: t.nav.practice },
-  ];
+  // "My Courses" flips to a real link now that /courses exists (Student
+  // Learning Experience design, Sprint 1); Practice stays disabled until
+  // the Practice Hub ships.
+  const comingSoonNav = [{ icon: <Headphones size={20} />, label: t.nav.practice }];
 
   return (
     <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col h-screen sticky top-0 overflow-hidden flex-shrink-0">
@@ -45,6 +45,11 @@ const StudentDesktopSidebar: React.FC = () => {
         <NavLink to="/home" end className={({ isActive }) => navLinkClass(isActive)}>
           <Home size={20} aria-hidden="true" />
           <span>{t.nav.dashboard}</span>
+        </NavLink>
+
+        <NavLink to="/courses" className={({ isActive }) => navLinkClass(isActive)}>
+          <BookOpen size={20} aria-hidden="true" />
+          <span>{t.nav.myCourses}</span>
         </NavLink>
 
         {comingSoonNav.map((item) => (
