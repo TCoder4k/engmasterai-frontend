@@ -5,7 +5,7 @@
 **Repo layout**
 
 - **Backend:** engmasterai-backend — NestJS API, Prisma schema, auth, Cloudinary, Redis integration.
-- **Frontend:** engmasterai-frontend — React + Vite client, routes for public/auth/user/admin pages, integrates with backend APIs and Google GenAI client.
+- **Frontend:** engmasterai-frontend — React + Vite client, routes for public/auth/user/admin pages, integrates with backend APIs. The AI demo (`services/geminiService.ts`) is a permanent, deterministic mock — no Gemini/GenAI key or network call is involved (see Sprint 01C in `docs/memory.md`).
 
 **Quick Start (local)**
 
@@ -32,24 +32,28 @@ npm run dev
 ```env
 DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
 PORT=3000
-FRONTEND_URL=http://localhost:5174
+CORS_ALLOWED_ORIGINS=http://localhost:5174
 JWT_SECRET=your_jwt_secret
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 ```
 
-- Frontend minimal `.env` keys (if used by frontend):
+See `engmasterai-backend/.env.example` for the full list, including auth
+rate-limit and trust-proxy variables added in Sprint 01C.
+
+- Frontend minimal `.env` keys (see `engmasterai-frontend/.env.example`):
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000
-GEMINI_API_KEY=your_google_genai_key
+VITE_API_URL=http://localhost:3000
 ```
+
+No Gemini/AI key is needed — the AI demo is a permanent mock.
 
 **Backend — summary**
 
 - **Framework:** `NestJS` with modules in `src/`.
-- **Entry point:** [engmasterai-backend/src/main.ts](engmasterai-backend/src/main.ts#L1) — creates app, enables CORS using `FRONTEND_URL`, sets `ValidationPipe`.
+- **Entry point:** [engmasterai-backend/src/main.ts](engmasterai-backend/src/main.ts#L1) — creates app, enables CORS against a validated `CORS_ALLOWED_ORIGINS` allowlist, sets `ValidationPipe`.
 - **Root module:** [engmasterai-backend/src/app.module.ts](engmasterai-backend/src/app.module.ts#L1) — imports `PrismaModule`, `SharedModule`, `AuthModule`, `UserModule`.
 - **Auth:** JWT + Passport. See `engmasterai-backend/src/auth` for controllers, `jwt.strategy.ts`, guards, DTOs and `auth.service.ts` for flows.
 - **Database:** Prisma (PostgreSQL). Schema at [engmasterai-backend/prisma/schema.prisma](engmasterai-backend/prisma/schema.prisma#L1) — models: `User`, `Course`, `Lesson`, `LessonTask`, `Question`, `LessonTaskProgress`, `Vocabulary`, `LessonVocabulary`.
@@ -63,8 +67,8 @@ GEMINI_API_KEY=your_google_genai_key
 - **Entry:** [engmasterai-frontend/index.tsx](engmasterai-frontend/index.tsx#L1) mounts `App`.
 - **Routing:** [engmasterai-frontend/App.tsx](engmasterai-frontend/App.tsx#L1) — routes for `/`, `/login`, `/register`, `/home`, `/admin`, `/profile`, `/security`.
 - **Components:** organized under `components/` (admin, auth, shared, user). Key pages: `HomePage`, `UserHome`, `AdminDashboard`, `ProfilePage`.
-- **Services:** API wrappers in `services/` — `authService.ts`, `userService.ts`, `geminiService.ts` (GenAI integration).
-- **Dependencies of note:** `@google/genai` for generative features; `react-router-dom` for routing.
+- **Services:** API wrappers in `services/` — `authService.ts`, `userService.ts`, `geminiService.ts` (a permanent deterministic mock — no real Gemini/GenAI integration, no key, no network call).
+- **Dependencies of note:** `react-router-dom` for routing.
 
 **Database & data model highlights**
 
@@ -105,13 +109,10 @@ npm run preview
 **Common troubleshooting & notes for an agent**
 
 - Ensure `DATABASE_URL` points to a reachable Postgres instance and run Prisma migrations if needed (Prisma CLI present in backend).
-- CORS: backend reads `FRONTEND_URL` from env; if frontend dev runs on a different port update that var.
-- Secrets: `JWT_SECRET`, Cloudinary creds, and `GEMINI_API_KEY` must be provided by the operator — never commit them.
+- CORS: backend validates `CORS_ALLOWED_ORIGINS` at startup (comma-separated exact origins, no wildcard); if frontend dev runs on a different port, update that var.
+- Secrets: `JWT_SECRET` and Cloudinary creds must be provided by the operator — never commit them. No Gemini/AI key exists anywhere in this project.
 
 **Next actions an agent could take**
 
-- Add `engmasterai-backend/.env.example` and `engmasterai-frontend/.env.example` (I can generate these).
 - Run backend tests and report failures.
-- Validate frontend `authService` uses `VITE_API_BASE_URL` and matches backend routes.
-
-If you want, I can now generate `.env.example` files and a top-level `README.md` with the same content.
+- Validate frontend `authService` uses `VITE_API_URL` and matches backend routes.

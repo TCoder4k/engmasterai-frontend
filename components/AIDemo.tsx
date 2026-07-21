@@ -1,24 +1,32 @@
 
 import React, { useState } from 'react';
-import { Send, BookOpen, CheckCircle, Lightbulb, Heart, RotateCcw } from 'lucide-react';
-import { getCorrection } from '../services/geminiService';
+import { Send, BookOpen, CheckCircle, Lightbulb, Heart, RotateCcw, AlertTriangle } from 'lucide-react';
+import { CorrectionResult, getCorrection } from '../services/geminiService';
 
 const AIDemo: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<CorrectionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleTest = async () => {
     if (!input.trim()) return;
     setIsLoading(true);
-    const data = await getCorrection(input);
-    setResult(data);
-    setIsLoading(false);
+    setError(null);
+    try {
+      const data = await getCorrection(input);
+      setResult(data);
+    } catch {
+      setError('Không thể tạo phản hồi lúc này. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const reset = () => {
     setInput('');
     setResult(null);
+    setError(null);
   };
 
   return (
@@ -65,8 +73,8 @@ const AIDemo: React.FC = () => {
                   </>
                 )}
               </button>
-              {result && (
-                <button 
+              {(result || error) && (
+                <button
                   onClick={reset}
                   className="p-4 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 transition-colors"
                 >
@@ -82,7 +90,7 @@ const AIDemo: React.FC = () => {
 
           {/* Result Side */}
           <div className="relative min-h-[300px]">
-            {!result && !isLoading && (
+            {!result && !isLoading && !error && (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed border-indigo-200 rounded-3xl">
                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
                   <BookOpen className="text-indigo-300 w-8 h-8" />
@@ -105,8 +113,25 @@ const AIDemo: React.FC = () => {
               </div>
             )}
 
+            {error && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center space-y-4 p-8 border-2 border-dashed border-red-200 rounded-3xl">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md">
+                  <AlertTriangle className="text-red-400 w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-red-700">Đã xảy ra lỗi</h4>
+                  <p className="text-slate-500 text-sm">{error}</p>
+                </div>
+              </div>
+            )}
+
             {result && (
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-indigo-50 space-y-6 animate-in zoom-in-95 duration-500">
+                <div className="flex items-center justify-end">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
+                    Demo preview — không phải phản hồi AI thật
+                  </span>
+                </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-emerald-600 font-bold uppercase text-xs tracking-wider">
                     <CheckCircle size={14} /> Câu trả lời đúng
