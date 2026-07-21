@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Logo } from './Logo';
-import { authService } from '../../services/authService';
+import { GoogleSignInButton } from './GoogleSignInButton';
+import { AccountLinkRequiredError, authService } from '../../services/authService';
 import { getProfile } from '../../services/userService';
 
 export const RegisterForm: React.FC = () => {
@@ -16,6 +17,76 @@ export const RegisterForm: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [linkEmail, setLinkEmail] = useState<string | null>(null);
+  const [pendingCredential, setPendingCredential] = useState<string | null>(null);
+  const [linkPassword, setLinkPassword] = useState('');
+  const [linkError, setLinkError] = useState('');
+
+  // Unlike the password-register flow below (which shows a success message
+  // and delays redirecting to /login), a successful Google sign-in already
+  // IS an authenticated session — enter it immediately, same as LoginForm.
+  const enterSession = async (response: Awaited<ReturnType<typeof authService.googleLogin>>) => {
+    authService.saveAuth(response);
+    try {
+      const fullProfile = await getProfile();
+      authService.updateStoredUser(fullProfile);
+    } catch (profileErr) {
+      console.warn('Could not fetch full profile:', profileErr);
+    }
+    if (response.user.role === 'ADMIN') {
+      navigate('/admin');
+    } else {
+      navigate('/home');
+    }
+  };
+
+  const handleGoogleCredential = async (credential: string) => {
+    if (isGoogleLoading) return;
+    setError('');
+    setIsGoogleLoading(true);
+    try {
+      const response = await authService.googleLogin(credential);
+      await enterSession(response);
+    } catch (err: any) {
+      if (err instanceof AccountLinkRequiredError) {
+        setPendingCredential(credential);
+        setLinkEmail(err.email);
+      } else {
+        setError(err.message || 'Đăng ký bằng Google thất bại.');
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const handleConfirmLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pendingCredential) return;
+    setLinkError('');
+    setIsGoogleLoading(true);
+    try {
+      const response = await authService.confirmGoogleLink(
+        pendingCredential,
+        linkPassword,
+      );
+      await enterSession(response);
+    } catch (err: any) {
+      setLinkError(
+        err.message || 'Liên kết Google thất bại. Vui lòng kiểm tra mật khẩu.',
+      );
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const cancelGoogleLink = () => {
+    setPendingCredential(null);
+    setLinkEmail(null);
+    setLinkPassword('');
+    setLinkError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,22 +269,47 @@ export const RegisterForm: React.FC = () => {
           ) : 'ĐĂNG KÝ NGAY'}
         </button>
 
-        <div className="relative my-10">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t-2 border-slate-100"></span>
+        {linkEmail ? (
+          <div className="p-5 my-10 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl space-y-4">
+            <p className="text-sm font-semibold text-slate-700">
+              Tài khoản <span className="font-black">{linkEmail}</span> đã tồn tại. Nhập mật khẩu để liên kết với Google.
+            </p>
+            {linkError && (
+              <p className="text-red-600 text-sm font-semibold">{linkError}</p>
+            )}
+            <form onSubmit={handleConfirmLink} className="space-y-3">
+              <input
+                type="password"
+                required
+                value={linkPassword}
+                onChange={(e) => setLinkPassword(e.target.value)}
+                placeholder="Mật khẩu hiện tại"
+                className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all font-medium"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={isGoogleLoading}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl disabled:opacity-70 transition-all"
+                >
+                  {isGoogleLoading ? 'Đang liên kết...' : 'Liên kết tài khoản'}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelGoogleLink}
+                  className="px-5 py-3 bg-white border-2 border-slate-100 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-all"
+                >
+                  Huỷ
+                </button>
+              </div>
+            </form>
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-slate-50 text-slate-500 font-bold uppercase tracking-widest">Hoặc</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className="w-full py-4 bg-white border-2 border-slate-100 text-slate-700 font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-slate-50 hover:border-slate-200 transition-all active:scale-[0.98] shadow-sm"
-        >
-          <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
-          Đăng ký bằng Google
-        </button>
+        ) : (
+          <GoogleSignInButton
+            text="signup_with"
+            onCredential={handleGoogleCredential}
+          />
+        )}
 
         <p className="text-center text-slate-600 mt-10 font-medium">
           Đã có tài khoản?{' '}

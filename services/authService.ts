@@ -55,6 +55,21 @@ export interface ErrorResponse {
   }>;
 }
 
+// Thrown by googleLogin() when the backend returns 409/ACCOUNT_LINK_REQUIRED
+// — a verified Google email matches an existing local (password-based)
+// account with no linked Google identity yet. Distinct from every other
+// auth error so the UI can render the link-confirmation panel instead of a
+// generic error banner (see engmasterai-backend's
+// AccountLinkRequiredException / docs/adr/004-google-auth.md).
+export class AccountLinkRequiredError extends Error {
+  email: string;
+  constructor(email: string, message: string) {
+    super(message);
+    this.name = 'AccountLinkRequiredError';
+    this.email = email;
+  }
+}
+
 // POST /auth/refresh's body — access token only (no `message`, no `user`;
 // see engmasterai-backend/src/auth/auth.controller.ts's refresh()).
 export interface RefreshResponse {
@@ -105,6 +120,59 @@ export const authService = {
       },
       body: JSON.stringify(data),
     });
+
+    if (!response.ok) {
+      const error: ErrorResponse = await response.json();
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  // POST /auth/google — the credential is the GIS-issued ID token JWT
+  // (Sprint 02A). Same credentials/header convention as register()/login().
+  // Reuses AuthResponse: on success this is indistinguishable from a
+  // password login/register response, so callers use the exact same
+  // saveAuth()/navigate-by-role sequence.
+  async googleLogin(credential: string): Promise<AuthResponse> {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/auth/google`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ credential }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      if (response.status === 409 && error?.code === 'ACCOUNT_LINK_REQUIRED') {
+        throw new AccountLinkRequiredError(error.email, error.message);
+      }
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  // POST /auth/google/link — confirms an account-link-required response by
+  // proving the existing local account's password. `credential` is the same
+  // GIS ID token googleLogin() was called with (valid ~1 hour).
+  async confirmGoogleLink(
+    credential: string,
+    password: string,
+  ): Promise<AuthResponse> {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/auth/google/link`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ credential, password }),
+      },
+    );
 
     if (!response.ok) {
       const error: ErrorResponse = await response.json();

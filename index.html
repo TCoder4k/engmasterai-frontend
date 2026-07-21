@@ -41,6 +41,13 @@
       })();
     </script>
     <link rel="icon" type="image/png" href="/Icon.png">
+    <!-- Google Identity Services (Sprint 02A) — loaded async/defer so it
+         never blocks first paint. services/googleAuth.ts waits for
+         window.google.accounts.id to exist before calling into it; this tag
+         only starts the fetch as early as possible. Harmless if
+         VITE_GOOGLE_CLIENT_ID is unset — components/auth/GoogleSignInButton
+         simply never calls initialize()/renderButton() in that case. -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
