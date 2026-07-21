@@ -41,13 +41,15 @@ const App: React.FC = () => {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
         </Route>
-        <Route path="/home" element={<UserHome />} />
-
-        {/* /vocab* and /courses* require any authenticated user (no role
-            prop) — gated from day one per the Vocabulary architecture and
-            the Student Learning Experience design (Sprint 1), rather than
-            inheriting the /home-and-/profile route-protection gap. */}
+        {/* /home, /vocab*, /courses*, /profile, /security all require any
+            authenticated user (no role prop). /home, /profile, /security
+            used to have no ProtectedRoute wrapper at all (Sprint 01B closed
+            that gap — see docs/memory.md); each page's own ad-hoc
+            self-redirect useEffect was removed in the same change, since
+            this wrapper now does that job (and does it before the page's
+            own JSX ever renders, not one tick after). */}
         <Route element={<ProtectedRoute />}>
+          <Route path="/home" element={<UserHome />} />
           <Route path="/vocab" element={<VocabLibraryPage />} />
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
           <Route path="/vocab/decks/:id" element={<DeckDetailPage />} />
@@ -55,6 +57,8 @@ const App: React.FC = () => {
           <Route path="/courses" element={<CourseCatalogPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/security" element={<SecurityPage />} />
         </Route>
 
         {/* /admin* requires an authenticated ADMIN; ProtectedRoute redirects
@@ -73,9 +77,6 @@ const App: React.FC = () => {
           <Route path="/admin/vocab/words/:wordId/edit" element={<AdminVocabWordEditor />} />
           <Route path="/admin/vocab/decks/:deckId/words" element={<AdminVocabDeckWords />} />
         </Route>
-
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/security" element={<SecurityPage />} />
       </Routes>
     </BrowserRouter>
     </LanguageProvider>

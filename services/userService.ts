@@ -1,4 +1,5 @@
 import { throwApiError } from './apiError';
+import { apiFetch } from './apiFetch';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -45,44 +46,22 @@ export interface ChangePasswordDto {
   newPassword: string;
 }
 
-// Get auth token and header
-const getAuthHeader = () => {
-  const token = localStorage.getItem('accessToken');
-  return {
-    'Authorization': `Bearer ${token}`
-  };
-};
-
 // Get current user profile
 export const getProfile = async (): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/users/me`, {
-    headers: getAuthHeader()
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to load profile');
-  }
-
+  const response = await apiFetch(`${API_BASE_URL}/users/me`);
+  if (!response.ok) return throwApiError(response, 'Failed to load profile');
   return response.json();
 };
 
 // Update user profile (name, email, password)
 export const updateProfile = async (data: UpdateUserDto): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/users/me`, {
+  const response = await apiFetch(`${API_BASE_URL}/users/me`, {
     method: 'PUT',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to update profile');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to update profile');
   return response.json();
 };
 
@@ -91,17 +70,12 @@ export const uploadAvatar = async (file: File): Promise<User> => {
   const formData = new FormData();
   formData.append('avatar', file);
 
-  const response = await fetch(`${API_BASE_URL}/users/me/avatar`, {
+  const response = await apiFetch(`${API_BASE_URL}/users/me/avatar`, {
     method: 'POST',
-    headers: getAuthHeader(),
-    body: formData
+    body: formData,
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to upload avatar');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to upload avatar');
   return response.json();
 };
 
@@ -110,23 +84,16 @@ export const changePassword = async (
   currentPassword: string,
   newPassword: string
 ): Promise<{ message: string }> => {
-  const response = await fetch(`${API_BASE_URL}/users/me/password`, {
+  const response = await apiFetch(`${API_BASE_URL}/users/me/password`, {
     method: 'POST',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ 
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       currentPassword,
-      newPassword 
+      newPassword
     })
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to change password');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to change password');
   return response.json();
 };
 
@@ -140,9 +107,7 @@ export const getUsers = async (page?: number, limit?: number): Promise<UserListR
   if (limit) params.set('limit', String(limit));
 
   const query = params.toString();
-  const response = await fetch(`${API_BASE_URL}/users${query ? `?${query}` : ''}`, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiFetch(`${API_BASE_URL}/users${query ? `?${query}` : ''}`);
 
   if (!response.ok) return throwApiError(response, 'Failed to load users');
   return response.json();
@@ -151,12 +116,9 @@ export const getUsers = async (page?: number, limit?: number): Promise<UserListR
 // Admin update of any user (PUT /users/:id) — may change role/level/totalPoints,
 // unlike the self-service updateProfile above.
 export const updateUserAsAdmin = async (id: string, dto: AdminUpdateUserInput): Promise<User> => {
-  const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/users/${id}`, {
     method: 'PUT',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
 
@@ -166,9 +128,8 @@ export const updateUserAsAdmin = async (id: string, dto: AdminUpdateUserInput): 
 
 // Delete a user (DELETE /users/:id -> 204 No Content). No body to parse.
 export const deleteUser = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/users/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to delete user');

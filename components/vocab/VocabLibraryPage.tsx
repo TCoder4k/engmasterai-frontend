@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import { getPublishedLibraries } from '../../services/vocabLibraryService';
+import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary } from '../../types';
 import { Library as LibraryIcon } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -11,6 +12,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 // the architecture explicitly rejects showing fabricated numbers.
 const VocabLibraryPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [libraries, setLibraries] = useState<VocabLibrary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,7 @@ const VocabLibraryPage: React.FC = () => {
   useEffect(() => {
     getPublishedLibraries()
       .then((res) => setLibraries(res.data))
-      .catch((err) => setError(err.message || t.common.loadFailed))
+      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

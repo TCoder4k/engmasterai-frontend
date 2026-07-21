@@ -46,8 +46,11 @@ const AdminSidebar: React.FC = () => {
   const isVocabLibrariesActive =
     location.pathname.startsWith('/admin/vocab') && !location.pathname.startsWith('/admin/vocab/words');
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    const { degraded } = await authService.logout();
+    if (degraded) {
+      console.warn('Logout: server-side session revocation could not be confirmed.');
+    }
     navigate('/login');
   };
 

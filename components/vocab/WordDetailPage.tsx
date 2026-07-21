@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import { getWord } from '../../services/vocabWordService';
+import { handleAuthError } from '../../services/apiError';
 import { VocabWordDetail } from '../../types';
 import { ArrowLeft, Volume2 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -30,6 +31,7 @@ const WordDetailPage: React.FC = () => {
   const location = useLocation();
   const state = location.state as { deckId?: string; deckName?: string } | null;
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [word, setWord] = useState<VocabWordDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +43,7 @@ const WordDetailPage: React.FC = () => {
     setError(null);
     getWord(id)
       .then(setWord)
-      .catch((err) => setError(err.message || t.common.loadFailed))
+      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

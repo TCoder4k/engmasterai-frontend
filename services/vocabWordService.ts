@@ -6,6 +6,7 @@ import {
   PartOfSpeech,
 } from '../types';
 import { throwApiError, ApiError } from './apiError';
+import { apiFetch } from './apiFetch';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -81,13 +82,6 @@ export interface CsvImportResult {
   };
 }
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('accessToken');
-  return {
-    'Authorization': `Bearer ${token}`,
-  };
-};
-
 // --- Admin-only functions (ADMIN role required server-side) ---
 
 export const getManagedWords = async (
@@ -100,9 +94,7 @@ export const getManagedWords = async (
   if (params.cefrLevel) query.set('cefrLevel', params.cefrLevel);
 
   const qs = query.toString();
-  const response = await fetch(`${API_BASE_URL}/vocab/words/manage${qs ? `?${qs}` : ''}`, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/manage${qs ? `?${qs}` : ''}`);
 
   if (!response.ok) return throwApiError(response, 'Failed to load word bank');
   return response.json();
@@ -112,21 +104,16 @@ export const getManagedWords = async (
 // a deep-linkable/refresh-safe load, unlike the modal-based admin pages
 // that seed from an already-fetched list row.
 export const getManagedWord = async (id: string): Promise<ManagedVocabWord> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/words/manage/${id}`, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/manage/${id}`);
 
   if (!response.ok) return throwApiError(response, 'Failed to load word');
   return response.json();
 };
 
 export const createWord = async (dto: CreateVocabWordDto): Promise<ManagedVocabWord> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/words`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words`, {
     method: 'POST',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
 
@@ -135,12 +122,9 @@ export const createWord = async (dto: CreateVocabWordDto): Promise<ManagedVocabW
 };
 
 export const updateWord = async (id: string, dto: UpdateVocabWordDto): Promise<ManagedVocabWord> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/words/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/${id}`, {
     method: 'PATCH',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
 
@@ -152,9 +136,8 @@ export const updateWord = async (id: string, dto: UpdateVocabWordDto): Promise<M
 // while the word is attached to any deck — surface error.message as-is so
 // the admin knows to detach it first.
 export const deleteWord = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/words/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to delete word');
@@ -167,9 +150,8 @@ export const importWordsCsv = async (file: File): Promise<CsvImportResult> => {
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${API_BASE_URL}/vocab/words/import`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/import`, {
     method: 'POST',
-    headers: getAuthHeader(),
     body: formData,
   });
 
@@ -196,9 +178,8 @@ export const uploadWordAudio = async (id: string, file: File): Promise<ManagedVo
   const formData = new FormData();
   formData.append('audio', file);
 
-  const response = await fetch(`${API_BASE_URL}/vocab/words/${id}/audio`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/${id}/audio`, {
     method: 'POST',
-    headers: getAuthHeader(),
     body: formData,
   });
 
@@ -210,9 +191,8 @@ export const uploadWordImage = async (id: string, file: File): Promise<ManagedVo
   const formData = new FormData();
   formData.append('image', file);
 
-  const response = await fetch(`${API_BASE_URL}/vocab/words/${id}/image`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/${id}/image`, {
     method: 'POST',
-    headers: getAuthHeader(),
     body: formData,
   });
 
@@ -225,14 +205,8 @@ export const uploadWordImage = async (id: string, file: File): Promise<ManagedVo
 // The visibility seam: 404s unless the word sits on >=1 published deck of a
 // published library.
 export const getWord = async (id: string): Promise<VocabWordDetail> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/words/${id}`, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiFetch(`${API_BASE_URL}/vocab/words/${id}`);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to load word');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to load word');
   return response.json();
 };

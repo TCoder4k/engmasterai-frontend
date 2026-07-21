@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import LessonVideoPlayer from './video/LessonVideoPlayer';
 import GrammarLessonContent from './grammar/GrammarLessonContent';
@@ -11,6 +11,7 @@ import Skeleton from '../shared/Skeleton';
 import { getLesson, getCourseLessons } from '../../services/lessonService';
 import { getPublishedCourse } from '../../services/courseService';
 import { authService } from '../../services/authService';
+import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
 import { parseGrammarNotes, ParsedGrammarNotes } from './grammar/parseGrammarNotes';
 import { Course, Lesson } from '../../types';
@@ -27,6 +28,7 @@ const EMPTY_PARSED: ParsedGrammarNotes = { sections: [], fallbackText: null };
 const LessonPage: React.FC = () => {
   const { courseId, lessonId } = useParams<{ courseId: string; lessonId: string }>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -44,7 +46,7 @@ const LessonPage: React.FC = () => {
         setCourse(courseRes);
         setSiblingLessons(lessonsRes.data);
       })
-      .catch((err) => setError(err.message || t.common.loadFailed))
+      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, lessonId]);

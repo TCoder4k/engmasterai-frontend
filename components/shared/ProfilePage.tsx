@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, User, Mail, Save, Check, AlertCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { getProfile, updateProfile, uploadAvatar } from '../../services/userService';
+import { handleAuthError } from '../../services/apiError';
 import { useTranslation } from '../../i18n/useTranslation';
 
 interface UserProfile {
@@ -51,18 +52,11 @@ const ProfilePage: React.FC = () => {
         avatarUrl: userData.avatarUrl || '',
         role: userData.role,
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load profile:', err);
-      setError(err.message);
+      setError(handleAuthError(err, navigate));
     }
   };
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      navigate('/login');
-    }
-  }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -118,9 +112,9 @@ const ProfilePage: React.FC = () => {
 
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Avatar upload error:', err);
-      setError(err.message || t.avatar.uploadFailed);
+      setError(handleAuthError(err, navigate) || t.avatar.uploadFailed);
       setAvatarPreview(null);
     } finally {
       setIsUploading(false);
@@ -172,9 +166,9 @@ const ProfilePage: React.FC = () => {
 
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Profile update error:', err);
-      setError(err.message || t.common.loadFailed);
+      setError(handleAuthError(err, navigate) || t.common.loadFailed);
     } finally {
       setIsLoading(false);
     }

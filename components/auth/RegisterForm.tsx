@@ -45,10 +45,12 @@ export const RegisterForm: React.FC = () => {
       // Save auth response
       authService.saveAuth(response);
 
-      // Fetch full profile to get avatarUrl and other details
+      // Fetch full profile to get avatarUrl and other details — routed
+      // through authService so AUTH_CHANGED_EVENT fires for this update too
+      // (see the matching note in LoginForm.tsx).
       try {
         const fullProfile = await getProfile();
-        localStorage.setItem('user', JSON.stringify(fullProfile));
+        authService.updateStoredUser(fullProfile);
       } catch (profileErr) {
         console.warn('Could not fetch full profile:', profileErr);
       }

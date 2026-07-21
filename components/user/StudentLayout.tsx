@@ -28,8 +28,11 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children, search }) => {
   const user = authService.getUser();
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    const { degraded } = await authService.logout();
+    if (degraded) {
+      console.warn('Logout: server-side session revocation could not be confirmed.');
+    }
     navigate('/login');
   };
 

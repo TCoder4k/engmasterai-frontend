@@ -67,11 +67,13 @@ export const LoginForm: React.FC = () => {
 
       authService.saveAuth(response);
 
-      // Fetch full profile to get avatarUrl and other details
+      // Fetch full profile to get avatarUrl and other details (AuthResponse
+      // itself doesn't carry avatarUrl). Routed through authService so
+      // AUTH_CHANGED_EVENT fires for this update too, not just the initial
+      // saveAuth — a raw second localStorage write here used to skip it.
       try {
         const fullProfile = await getProfile();
-        // Update localStorage with complete profile including avatarUrl
-        localStorage.setItem('user', JSON.stringify(fullProfile));
+        authService.updateStoredUser(fullProfile);
       } catch (profileErr) {
         console.warn('Could not fetch full profile:', profileErr);
       }

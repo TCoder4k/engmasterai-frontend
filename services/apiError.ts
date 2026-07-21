@@ -17,6 +17,19 @@ export class ApiError extends Error {
   }
 }
 
+// Thrown only by apiFetch.ts, only when a 401 could not be resolved by a
+// silent refresh (refresh itself failed, or the retried request 401s
+// again). This is the one error type that means "the session is over" —
+// apiFetch never navigates or clears storage itself (it's transport-only);
+// this typed error is how it hands that decision to the session layer
+// (handleAuthError below) without depending on React Router.
+export class AuthExpiredError extends ApiError {
+  constructor(message = 'Session expired') {
+    super(message, 401);
+    this.name = 'AuthExpiredError';
+  }
+}
+
 // Reads the backend's { message } error body (or falls back to a generic
 // message) and throws an ApiError carrying the HTTP status.
 export const throwApiError = async (response: Response, fallback: string): Promise<never> => {
@@ -30,15 +43,26 @@ export const throwApiError = async (response: Response, fallback: string): Promi
   throw new ApiError(message, response.status);
 };
 
-// Shared 401/403 handling for admin data-fetching pages. Tokens live 10
-// minutes with no refresh flow, so any page can hit an expired session
-// mid-use; this keeps "clear auth + bounce to /login" in one place instead
-// of being copy-pasted into every screen's .catch. Any other error is left
-// to the caller to display as a normal message.
+// The one place the app decides what an auth-adjacent failure means for the
+// session (Sprint 01B). apiFetch (transport-only, no navigation) has already
+// tried a silent refresh for any 401 before this ever runs — so by the time
+// an error reaches here, a 401/AuthExpiredError means the session is
+// genuinely over, not just momentarily stale.
+//
+// 401 / AuthExpiredError -> the session is unrecoverable: clear auth and
+//   redirect to /login exactly once.
+// 403 -> a permission failure, not a session failure (e.g. a demoted admin's
+//   still-valid token hitting an ADMIN-only route). Never clears auth or
+//   redirects — the calling page shows the message inline.
+// 429 / 503 -> rate-limited / infrastructure-unavailable. Also never an auth
+//   failure — surfaced as a normal retryable message.
 export const handleAuthError = (error: unknown, navigate: (path: string) => void): string => {
   const message = error instanceof Error ? error.message : 'Something went wrong';
 
-  if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+  const isSessionOver =
+    error instanceof AuthExpiredError || (error instanceof ApiError && error.status === 401);
+
+  if (isSessionOver) {
     authService.clearAuth();
     navigate('/login');
   }

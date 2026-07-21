@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import StudentLayout from './StudentLayout';
 import ContinueLearningCard from './ContinueLearningCard';
@@ -7,6 +8,7 @@ import UserSidebar from './UserSidebar';
 import CourseCard from './CourseCard';
 import { authService } from '../../services/authService';
 import { getPublishedCourses } from '../../services/courseService';
+import { handleAuthError } from '../../services/apiError';
 import { Course, CourseType } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 
@@ -14,6 +16,7 @@ const TRACK_TYPES: CourseType[] = ['GRAMMAR', 'VOCABULARY', 'LISTENING'];
 
 const UserHome: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const user = authService.getUser();
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -25,7 +28,7 @@ const UserHome: React.FC = () => {
   useEffect(() => {
     getPublishedCourses()
       .then((res) => setCourses(res.data))
-      .catch((err) => setCoursesError(err.message || t.common.loadFailed));
+      .catch((err) => setCoursesError(handleAuthError(err, navigate) || t.common.loadFailed));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

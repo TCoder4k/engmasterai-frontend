@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import { getPublishedLibrary } from '../../services/vocabLibraryService';
 import { getPublishedDecksByLibrary } from '../../services/vocabDeckService';
+import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary, VocabDeck } from '../../types';
 import { ArrowLeft, Layers } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -10,6 +11,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 const LibraryDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [library, setLibrary] = useState<VocabLibrary | null>(null);
   const [decks, setDecks] = useState<VocabDeck[]>([]);
@@ -25,7 +27,7 @@ const LibraryDetailPage: React.FC = () => {
         setLibrary(libraryRes);
         setDecks(decksRes.data);
       })
-      .catch((err) => setError(err.message || t.common.loadFailed))
+      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

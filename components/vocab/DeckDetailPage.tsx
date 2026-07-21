@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import { getPublishedDeck, getPublishedDeckWords } from '../../services/vocabDeckService';
+import { handleAuthError } from '../../services/apiError';
 import { VocabDeck, VocabWordListItem } from '../../types';
 import { ArrowLeft, Layers, Volume2 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -11,6 +12,7 @@ const DeckDetailPage: React.FC = () => {
   const location = useLocation();
   const state = location.state as { libraryId?: string } | null;
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [deck, setDeck] = useState<VocabDeck | null>(null);
   const [words, setWords] = useState<VocabWordListItem[]>([]);
@@ -26,7 +28,7 @@ const DeckDetailPage: React.FC = () => {
         setDeck(deckRes);
         setWords(wordsRes.data);
       })
-      .catch((err) => setError(err.message || t.common.loadFailed))
+      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

@@ -10,8 +10,16 @@ const AdminHeader: React.FC = () => {
   const user = authService.getUser();
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    const { degraded } = await authService.logout();
+    if (degraded) {
+      // Server-side revocation couldn't be confirmed (Redis unreachable, or
+      // the request never reached the backend) — the frontend session is
+      // still fully cleared and the redirect still happens; this is just a
+      // best-effort heads-up in the console (no new UI affordance this
+      // sprint — see docs/memory.md Sprint 01B notes).
+      console.warn('Logout: server-side session revocation could not be confirmed.');
+    }
     navigate('/login');
   };
 

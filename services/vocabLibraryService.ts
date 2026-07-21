@@ -1,5 +1,6 @@
 import { VocabLibrary, ManagedVocabLibrary } from '../types';
 import { throwApiError } from './apiError';
+import { apiFetch } from './apiFetch';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -35,13 +36,6 @@ export interface UpdateVocabLibraryDto {
   thumbnail?: string;
 }
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('accessToken');
-  return {
-    'Authorization': `Bearer ${token}`,
-  };
-};
-
 // Get published libraries (public, no auth required — the anonymous-browsable shelf).
 export const getPublishedLibraries = async (
   page?: number,
@@ -52,25 +46,17 @@ export const getPublishedLibraries = async (
   if (limit) params.set('limit', String(limit));
 
   const query = params.toString();
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries${query ? `?${query}` : ''}`);
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries${query ? `?${query}` : ''}`);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to load vocabulary libraries');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to load vocabulary libraries');
   return response.json();
 };
 
 // Get a single published library by id (public, no auth required).
 export const getPublishedLibrary = async (id: string): Promise<VocabLibrary> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries/${id}`);
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries/${id}`);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to load vocabulary library');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to load vocabulary library');
   return response.json();
 };
 
@@ -86,9 +72,7 @@ export const getManagedLibraries = async (
   if (limit) params.set('limit', String(limit));
 
   const query = params.toString();
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries/manage${query ? `?${query}` : ''}`, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries/manage${query ? `?${query}` : ''}`);
 
   if (!response.ok) return throwApiError(response, 'Failed to load vocabulary libraries');
   return response.json();
@@ -96,12 +80,9 @@ export const getManagedLibraries = async (
 
 // Create a library (always starts as an unpublished draft).
 export const createLibrary = async (dto: CreateVocabLibraryDto): Promise<VocabLibrary> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries`, {
     method: 'POST',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
 
@@ -110,12 +91,9 @@ export const createLibrary = async (dto: CreateVocabLibraryDto): Promise<VocabLi
 };
 
 export const updateLibrary = async (id: string, dto: UpdateVocabLibraryDto): Promise<VocabLibrary> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries/${id}`, {
     method: 'PATCH',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
 
@@ -124,9 +102,8 @@ export const updateLibrary = async (id: string, dto: UpdateVocabLibraryDto): Pro
 };
 
 export const publishLibrary = async (id: string): Promise<VocabLibrary> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries/${id}/publish`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries/${id}/publish`, {
     method: 'PATCH',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to publish vocabulary library');
@@ -134,9 +111,8 @@ export const publishLibrary = async (id: string): Promise<VocabLibrary> => {
 };
 
 export const unpublishLibrary = async (id: string): Promise<VocabLibrary> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries/${id}/unpublish`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries/${id}/unpublish`, {
     method: 'PATCH',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to unpublish vocabulary library');
@@ -147,9 +123,8 @@ export const unpublishLibrary = async (id: string): Promise<VocabLibrary> => {
 // The backend rejects (400) if the library still has decks — surface
 // error.message to the admin as-is so they know to remove decks first.
 export const deleteLibrary = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/vocab/libraries/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/vocab/libraries/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to delete vocabulary library');

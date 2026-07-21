@@ -1,5 +1,6 @@
 import { Course, CourseType, ManagedCourse } from '../types';
 import { throwApiError } from './apiError';
+import { apiFetch } from './apiFetch';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -37,13 +38,6 @@ export interface UpdateCourseDto {
   thumbnail?: string;
 }
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('accessToken');
-  return {
-    'Authorization': `Bearer ${token}`,
-  };
-};
-
 // Get published courses (public, no auth required)
 export const getPublishedCourses = async (
   page?: number,
@@ -56,25 +50,17 @@ export const getPublishedCourses = async (
   if (type) params.set('type', type);
 
   const query = params.toString();
-  const response = await fetch(`${API_BASE_URL}/courses${query ? `?${query}` : ''}`);
+  const response = await apiFetch(`${API_BASE_URL}/courses${query ? `?${query}` : ''}`);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to load courses');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to load courses');
   return response.json();
 };
 
 // Get a single published course by id (public, no auth required)
 export const getPublishedCourse = async (id: string): Promise<Course> => {
-  const response = await fetch(`${API_BASE_URL}/courses/${id}`);
+  const response = await apiFetch(`${API_BASE_URL}/courses/${id}`);
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to load course');
-  }
-
+  if (!response.ok) return throwApiError(response, 'Failed to load course');
   return response.json();
 };
 
@@ -92,9 +78,7 @@ export const getManagedCourses = async (
   if (type) params.set('type', type);
 
   const query = params.toString();
-  const response = await fetch(`${API_BASE_URL}/courses/manage${query ? `?${query}` : ''}`, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiFetch(`${API_BASE_URL}/courses/manage${query ? `?${query}` : ''}`);
 
   if (!response.ok) return throwApiError(response, 'Failed to load courses');
   return response.json();
@@ -102,12 +86,9 @@ export const getManagedCourses = async (
 
 // Create a course (always starts as an unpublished draft).
 export const createCourse = async (dto: CreateCourseDto): Promise<Course> => {
-  const response = await fetch(`${API_BASE_URL}/courses`, {
+  const response = await apiFetch(`${API_BASE_URL}/courses`, {
     method: 'POST',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
 
@@ -116,12 +97,9 @@ export const createCourse = async (dto: CreateCourseDto): Promise<Course> => {
 };
 
 export const updateCourse = async (id: string, dto: UpdateCourseDto): Promise<Course> => {
-  const response = await fetch(`${API_BASE_URL}/courses/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/courses/${id}`, {
     method: 'PATCH',
-    headers: {
-      ...getAuthHeader(),
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(dto),
   });
 
@@ -130,9 +108,8 @@ export const updateCourse = async (id: string, dto: UpdateCourseDto): Promise<Co
 };
 
 export const publishCourse = async (id: string): Promise<Course> => {
-  const response = await fetch(`${API_BASE_URL}/courses/${id}/publish`, {
+  const response = await apiFetch(`${API_BASE_URL}/courses/${id}/publish`, {
     method: 'PATCH',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to publish course');
@@ -140,9 +117,8 @@ export const publishCourse = async (id: string): Promise<Course> => {
 };
 
 export const unpublishCourse = async (id: string): Promise<Course> => {
-  const response = await fetch(`${API_BASE_URL}/courses/${id}/unpublish`, {
+  const response = await apiFetch(`${API_BASE_URL}/courses/${id}/unpublish`, {
     method: 'PATCH',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to unpublish course');
@@ -153,9 +129,8 @@ export const unpublishCourse = async (id: string): Promise<Course> => {
 // The backend rejects (400) if the course still has lessons — surface
 // error.message to the admin as-is so they know to remove lessons first.
 export const deleteCourse = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/courses/${id}`, {
+  const response = await apiFetch(`${API_BASE_URL}/courses/${id}`, {
     method: 'DELETE',
-    headers: getAuthHeader(),
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to delete course');

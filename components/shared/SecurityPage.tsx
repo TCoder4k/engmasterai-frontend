@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Lock, Key, Check, AlertCircle, Shield, Eye, EyeOff } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { changePassword } from '../../services/userService';
+import { handleAuthError } from '../../services/apiError';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // Serves both roles (the back link is role-aware), so it deliberately keeps
@@ -30,13 +31,6 @@ const SecurityPage: React.FC = () => {
   const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
     setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
   };
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      navigate('/login');
-    }
-  }, [navigate]);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -79,9 +73,9 @@ const SecurityPage: React.FC = () => {
       setPasswords({ current: '', new: '', confirm: '' });
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Password change error:', err);
-      setError(err.message || t.common.loadFailed);
+      setError(handleAuthError(err, navigate) || t.common.loadFailed);
     } finally {
       setIsLoading(false);
     }

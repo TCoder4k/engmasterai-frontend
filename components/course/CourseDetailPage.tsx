@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import LessonListItem from './LessonListItem';
 import EmptyState from '../shared/EmptyState';
@@ -8,6 +8,7 @@ import Skeleton from '../shared/Skeleton';
 import { getPublishedCourse } from '../../services/courseService';
 import { getCourseLessons } from '../../services/lessonService';
 import { authService } from '../../services/authService';
+import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, BookOpen } from 'lucide-react';
@@ -22,6 +23,7 @@ const TRACK_KEY: Record<Course['type'], 'grammar' | 'vocabulary' | 'listening'> 
 const CourseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -37,7 +39,7 @@ const CourseDetailPage: React.FC = () => {
         setCourse(courseRes);
         setLessons(lessonsRes.data);
       })
-      .catch((err) => setError(err.message || t.common.loadFailed))
+      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);

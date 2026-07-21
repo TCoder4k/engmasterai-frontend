@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import CourseCard from '../user/CourseCard';
 import EmptyState from '../shared/EmptyState';
 import ErrorState from '../shared/ErrorState';
 import Skeleton from '../shared/Skeleton';
 import { getPublishedCourses } from '../../services/courseService';
+import { handleAuthError } from '../../services/apiError';
 import { Course } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 
@@ -12,6 +14,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 // grid is a curated preview of this same GET /courses feed.
 const CourseCatalogPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +22,7 @@ const CourseCatalogPage: React.FC = () => {
   useEffect(() => {
     getPublishedCourses()
       .then((res) => setCourses(res.data))
-      .catch((err) => setError(err.message || t.common.loadFailed))
+      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
