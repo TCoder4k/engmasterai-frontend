@@ -17,4 +17,12 @@ export default defineConfig(() => ({
       '@': path.resolve(__dirname, '.'),
     },
   },
+  // Vitest reads its config from this same `test` key — no separate
+  // vitest.config.ts, so dev/build/test all share one alias/plugin setup.
+  // Added for the Google account-link regression tests; scoped to jsdom
+  // only where a component needs a DOM (see individual test files).
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+  },
 }));

@@ -12,6 +12,8 @@ export interface User {
   totalPoints: number;
   level: number;
   createdAt: string;
+  // Sprint 02B — derived server-side from emailVerifiedAt !== null.
+  emailVerified: boolean;
 }
 
 export interface UserListResponse {

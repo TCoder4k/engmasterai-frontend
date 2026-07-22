@@ -98,7 +98,7 @@ export const LoginForm: React.FC = () => {
 
   const handleConfirmLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pendingCredential) return;
+    if (!pendingCredential || isGoogleLoading) return; // duplicate-submission guard, same convention as handleGoogleCredential
     setLinkError('');
     setIsGoogleLoading(true);
     try {
@@ -108,9 +108,33 @@ export const LoginForm: React.FC = () => {
       );
       await enterSession(response);
     } catch (err: any) {
-      setLinkError(
-        err.message || 'Liên kết Google thất bại. Vui lòng kiểm tra mật khẩu.',
-      );
+      // POST /auth/google/link's exact response contract (auth.service.ts's
+      // linkGoogle(), verified against auth.service.google.spec.ts):
+      // 403 = generic "wrong password / unknown email / Google-only target
+      // account" (never distinguished, by design — enumeration avoidance);
+      // 401 = the Google credential itself is invalid/expired (~1h TTL) —
+      // NOT a signed-in-session expiring, since the user isn't authenticated
+      // yet at this point in the flow, so this must never be treated the
+      // way apiFetch/handleAuthError treats an authenticated 401. This
+      // endpoint is deliberately called via fetchWithTimeout, never
+      // apiFetch, for exactly this reason (see authService.ts).
+      const statusCode = err?.statusCode as number | undefined;
+      if (statusCode === 403) {
+        setLinkError('Mật khẩu không chính xác.');
+        setLinkPassword('');
+      } else if (statusCode === 401) {
+        setLinkError(
+          'Phiên xác thực Google đã hết hạn. Vui lòng đăng nhập lại bằng Google.',
+        );
+      } else if (statusCode === 409) {
+        setLinkError('Tài khoản Google này đã được liên kết với một tài khoản khác.');
+      } else if (statusCode === 429) {
+        setLinkError('Bạn đã thử quá nhiều lần. Vui lòng thử lại sau ít phút.');
+      } else if (statusCode === 503) {
+        setLinkError('Đăng nhập Google hiện không khả dụng. Vui lòng thử lại sau.');
+      } else {
+        setLinkError('Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối và thử lại.');
+      }
     } finally {
       setIsGoogleLoading(false);
     }
@@ -143,6 +167,59 @@ export const LoginForm: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // The account-link confirmation form is rendered as its own, top-level
+  // <form> — never nested inside the main login <form> below. HTML forbids
+  // nested <form> elements; nesting them here previously caused this form's
+  // submit event to bubble into the outer login form's onSubmit handler as
+  // well (submit events bubble, and nothing called stopPropagation()),
+  // firing an unrelated authService.login() call with the outer form's own
+  // (stale/empty) email+password on every link-confirmation attempt. This
+  // branch removes the possibility structurally rather than patching around it.
+  if (linkEmail) {
+    return (
+      <div className="w-full max-w-md p-2">
+        <Logo />
+        <form onSubmit={handleConfirmLink} className="space-y-6">
+          <div className="p-5 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl space-y-4">
+            <p className="text-sm font-semibold text-slate-700">
+              Tài khoản <span className="font-black">{linkEmail}</span> đã tồn tại. Nhập mật khẩu để liên kết với Google.
+            </p>
+            {linkError && (
+              <p role="alert" className="text-red-600 text-sm font-semibold">
+                {linkError}
+              </p>
+            )}
+            <input
+              type="password"
+              required
+              autoFocus
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              placeholder="Mật khẩu hiện tại"
+              className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all font-medium"
+            />
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={isGoogleLoading}
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl disabled:opacity-70 transition-all"
+              >
+                {isGoogleLoading ? 'Đang liên kết...' : 'Liên kết tài khoản'}
+              </button>
+              <button
+                type="button"
+                onClick={cancelGoogleLink}
+                className="px-5 py-3 bg-white border-2 border-slate-100 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-all"
+              >
+                Huỷ
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md p-2">
@@ -266,47 +343,10 @@ export const LoginForm: React.FC = () => {
           )}
         </button>
 
-        {linkEmail ? (
-          <div className="p-5 my-10 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl space-y-4">
-            <p className="text-sm font-semibold text-slate-700">
-              Tài khoản <span className="font-black">{linkEmail}</span> đã tồn tại. Nhập mật khẩu để liên kết với Google.
-            </p>
-            {linkError && (
-              <p className="text-red-600 text-sm font-semibold">{linkError}</p>
-            )}
-            <form onSubmit={handleConfirmLink} className="space-y-3">
-              <input
-                type="password"
-                required
-                value={linkPassword}
-                onChange={(e) => setLinkPassword(e.target.value)}
-                placeholder="Mật khẩu hiện tại"
-                className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all font-medium"
-              />
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={isGoogleLoading}
-                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl disabled:opacity-70 transition-all"
-                >
-                  {isGoogleLoading ? 'Đang liên kết...' : 'Liên kết tài khoản'}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelGoogleLink}
-                  className="px-5 py-3 bg-white border-2 border-slate-100 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-all"
-                >
-                  Huỷ
-                </button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <GoogleSignInButton
-            text="continue_with"
-            onCredential={handleGoogleCredential}
-          />
-        )}
+        <GoogleSignInButton
+          text="continue_with"
+          onCredential={handleGoogleCredential}
+        />
 
         <p className="text-center text-slate-600 mt-10 font-medium">
           Chưa có tài khoản?{' '}

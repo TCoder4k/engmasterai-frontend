@@ -49,6 +49,16 @@ export const throwApiError = async (response: Response, fallback: string): Promi
 // an error reaches here, a 401/AuthExpiredError means the session is
 // genuinely over, not just momentarily stale.
 //
+// This function must only ever be called for requests made through
+// apiFetch — i.e., requests made by an already-authenticated caller. It
+// must never be wired up to credential-entry endpoints (login, register,
+// Google sign-in/link, email verification, future password-recovery
+// endpoints) — those don't have a session to expire yet, so a 401 there
+// means something entirely different (e.g. an expired Google credential),
+// never "your session is over." Those endpoints are called via
+// fetchWithTimeout directly, specifically so they can never reach this
+// function — see authService.ts's own doc comment on that invariant.
+//
 // 401 / AuthExpiredError -> the session is unrecoverable: clear auth and
 //   redirect to /login exactly once.
 // 403 -> a permission failure, not a session failure (e.g. a demoted admin's

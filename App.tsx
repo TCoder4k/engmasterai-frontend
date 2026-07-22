@@ -5,6 +5,7 @@ import HomePage from './components/HomePage';
 import { AuthLayout } from './components/auth/AuthLayout';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
+import { VerifyEmailPage } from './components/auth/VerifyEmailPage';
 import UserHome from './components/user/UserHome';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminUsers from './components/admin/AdminUsers';
@@ -40,6 +41,10 @@ const App: React.FC = () => {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
+          {/* Public — the email link lands here; see VerifyEmailPage's own
+              doc comment for why this is a GET page that fires an explicit
+              POST, not a bare backend GET link (Sprint 02B). */}
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
         </Route>
         {/* /home, /vocab*, /courses*, /profile, /security all require any
             authenticated user (no role prop). /home, /profile, /security

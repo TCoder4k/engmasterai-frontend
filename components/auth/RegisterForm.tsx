@@ -17,6 +17,9 @@ export const RegisterForm: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [emailDeliveryStatus, setEmailDeliveryStatus] = useState<
+    'sent' | 'failed' | undefined
+  >(undefined);
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [linkEmail, setLinkEmail] = useState<string | null>(null);
@@ -63,7 +66,7 @@ export const RegisterForm: React.FC = () => {
 
   const handleConfirmLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pendingCredential) return;
+    if (!pendingCredential || isGoogleLoading) return; // duplicate-submission guard, same convention as handleGoogleCredential
     setLinkError('');
     setIsGoogleLoading(true);
     try {
@@ -73,9 +76,25 @@ export const RegisterForm: React.FC = () => {
       );
       await enterSession(response);
     } catch (err: any) {
-      setLinkError(
-        err.message || 'Liên kết Google thất bại. Vui lòng kiểm tra mật khẩu.',
-      );
+      // See LoginForm.tsx's identical handler for the full reasoning behind
+      // this status-code mapping (POST /auth/google/link's exact contract).
+      const statusCode = err?.statusCode as number | undefined;
+      if (statusCode === 403) {
+        setLinkError('Mật khẩu không chính xác.');
+        setLinkPassword('');
+      } else if (statusCode === 401) {
+        setLinkError(
+          'Phiên xác thực Google đã hết hạn. Vui lòng đăng nhập lại bằng Google.',
+        );
+      } else if (statusCode === 409) {
+        setLinkError('Tài khoản Google này đã được liên kết với một tài khoản khác.');
+      } else if (statusCode === 429) {
+        setLinkError('Bạn đã thử quá nhiều lần. Vui lòng thử lại sau ít phút.');
+      } else if (statusCode === 503) {
+        setLinkError('Đăng nhập Google hiện không khả dụng. Vui lòng thử lại sau.');
+      } else {
+        setLinkError('Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối và thử lại.');
+      }
     } finally {
       setIsGoogleLoading(false);
     }
@@ -126,6 +145,12 @@ export const RegisterForm: React.FC = () => {
         console.warn('Could not fetch full profile:', profileErr);
       }
 
+      // Sprint 02B: honest, not assumed — the account is created either
+      // way, but whether the verification email actually went out is a
+      // real, separate fact reported by the backend (see
+      // docs/sprints/sprint-02B-email-verification.md's Email Sending
+      // Failure Semantics).
+      setEmailDeliveryStatus(response.emailDeliveryStatus);
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
@@ -141,11 +166,62 @@ export const RegisterForm: React.FC = () => {
     }
   };
 
+  // The account-link confirmation form is rendered as its own, top-level
+  // <form> — never nested inside the main register <form> below. See
+  // LoginForm.tsx's identical branch for the full reasoning (nested <form>
+  // elements let this form's submit event bubble into the outer form's
+  // onSubmit, firing an unrelated authService.register() call on every
+  // link-confirmation attempt).
+  if (linkEmail) {
+    return (
+      <div className="w-full max-w-md p-2">
+        <Logo />
+        <form onSubmit={handleConfirmLink} className="space-y-6">
+          <div className="p-5 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl space-y-4">
+            <p className="text-sm font-semibold text-slate-700">
+              Tài khoản <span className="font-black">{linkEmail}</span> đã tồn tại. Nhập mật khẩu để liên kết với Google.
+            </p>
+            {linkError && (
+              <p role="alert" className="text-red-600 text-sm font-semibold">
+                {linkError}
+              </p>
+            )}
+            <input
+              type="password"
+              required
+              autoFocus
+              value={linkPassword}
+              onChange={(e) => setLinkPassword(e.target.value)}
+              placeholder="Mật khẩu hiện tại"
+              className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all font-medium"
+            />
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                disabled={isGoogleLoading}
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl disabled:opacity-70 transition-all"
+              >
+                {isGoogleLoading ? 'Đang liên kết...' : 'Liên kết tài khoản'}
+              </button>
+              <button
+                type="button"
+                onClick={cancelGoogleLink}
+                className="px-5 py-3 bg-white border-2 border-slate-100 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-all"
+              >
+                Huỷ
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-md p-2">
       {/* Logo Section */}
       <Logo />
-      
+
       <div className="text-center mb-8">
         <p className="text-slate-500 font-bold">Tham gia cùng hàng nghìn học viên tại EngMasterAI</p>
       </div>
@@ -154,7 +230,11 @@ export const RegisterForm: React.FC = () => {
         {/* Success Message */}
         {success && (
           <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-            <p className="text-green-600 text-sm font-semibold">Đăng ký thành công! Đang chuyển đến trang đăng nhập...</p>
+            <p className="text-green-600 text-sm font-semibold">
+              {emailDeliveryStatus === 'failed'
+                ? 'Đăng ký thành công! Chúng tôi chưa gửi được email xác nhận — bạn có thể gửi lại sau khi đăng nhập. Đang chuyển đến trang đăng nhập...'
+                : 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản. Đang chuyển đến trang đăng nhập...'}
+            </p>
           </div>
         )}
 
@@ -269,47 +349,10 @@ export const RegisterForm: React.FC = () => {
           ) : 'ĐĂNG KÝ NGAY'}
         </button>
 
-        {linkEmail ? (
-          <div className="p-5 my-10 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl space-y-4">
-            <p className="text-sm font-semibold text-slate-700">
-              Tài khoản <span className="font-black">{linkEmail}</span> đã tồn tại. Nhập mật khẩu để liên kết với Google.
-            </p>
-            {linkError && (
-              <p className="text-red-600 text-sm font-semibold">{linkError}</p>
-            )}
-            <form onSubmit={handleConfirmLink} className="space-y-3">
-              <input
-                type="password"
-                required
-                value={linkPassword}
-                onChange={(e) => setLinkPassword(e.target.value)}
-                placeholder="Mật khẩu hiện tại"
-                className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all font-medium"
-              />
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={isGoogleLoading}
-                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl disabled:opacity-70 transition-all"
-                >
-                  {isGoogleLoading ? 'Đang liên kết...' : 'Liên kết tài khoản'}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelGoogleLink}
-                  className="px-5 py-3 bg-white border-2 border-slate-100 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-all"
-                >
-                  Huỷ
-                </button>
-              </div>
-            </form>
-          </div>
-        ) : (
-          <GoogleSignInButton
-            text="signup_with"
-            onCredential={handleGoogleCredential}
-          />
-        )}
+        <GoogleSignInButton
+          text="signup_with"
+          onCredential={handleGoogleCredential}
+        />
 
         <p className="text-center text-slate-600 mt-10 font-medium">
           Đã có tài khoản?{' '}

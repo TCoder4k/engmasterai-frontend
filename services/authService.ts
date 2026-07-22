@@ -8,6 +8,14 @@ import { fetchWithTimeout } from './fetchTimeout';
 // which point both modules have finished initializing (standard for two
 // singleton services that call into each other).
 import { refreshCoordinator } from './refreshCoordinator';
+// A second, identically-safe circular import (Sprint 02B): apiFetch.ts
+// already imports authService for getToken()/apiFetch's own 401-retry path;
+// resendVerification() below needs apiFetch's Authorization-header +
+// refresh-on-401 behavior (it's an authenticated call), so authService now
+// imports apiFetch back. Same safety reasoning as the refreshCoordinator
+// cycle above — only referenced inside function bodies, never at
+// module-evaluation time.
+import { apiFetch } from './apiFetch';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -43,8 +51,15 @@ export interface AuthResponse {
     email: string;
     role: string;
     avatarUrl?: string;
+    // Sprint 02B — derived server-side from emailVerifiedAt !== null; the
+    // raw timestamp itself is never sent to the client.
+    emailVerified: boolean;
   };
   accessToken: string;
+  // Only ever present on register()'s response — omitted (undefined) for
+  // login/googleLogin/confirmGoogleLink, since only registration triggers a
+  // verification-email send. Never exposes provider failure detail.
+  emailDeliveryStatus?: 'sent' | 'failed';
 }
 
 export interface ErrorResponse {
@@ -85,6 +100,24 @@ export interface LogoutResult {
   degraded: boolean;
 }
 
+// Architectural invariant (do not weaken when touching any of these
+// methods): register(), login(), googleLogin(), confirmGoogleLink(), and
+// verifyEmail() — plus any future forgot-password/reset-password call —
+// are all credential-entry endpoints called before the caller holds a
+// valid session. They must always use fetchWithTimeout directly, never
+// apiFetch. apiFetch's 401 handling exists to silently refresh an
+// AUTHENTICATED caller's expired access token and, failing that, raise a
+// typed AuthExpiredError meaning "your existing session is over" — a
+// concept that doesn't apply here, since there is no existing session yet.
+// Routing any of these through apiFetch would make a 401 caused by, e.g.,
+// an expired Google credential in confirmGoogleLink() get silently
+// reinterpreted as "your session expired," which is simply the wrong
+// question for an endpoint whose entire job is establishing a session in
+// the first place. Every method below instead throws the raw parsed error
+// body (carrying `statusCode`/`message`) so the calling form can render a
+// specific, safe, inline message and decide for itself whether to retry —
+// never a global logout/redirect (see apiError.ts's handleAuthError doc
+// comment for the authenticated-request side of this same boundary).
 export const authService = {
   async register(data: RegisterRequest): Promise<AuthResponse> {
     // credentials: 'include' is required here (not just on refresh/logout)
@@ -176,6 +209,54 @@ export const authService = {
 
     if (!response.ok) {
       const error: ErrorResponse = await response.json();
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  // POST /auth/email-verification/verify (Sprint 02B) — public, token is
+  // the credential. Called by VerifyEmailPage's own explicit POST on
+  // mount (never a bare GET link — see docs/sprints/sprint-02B-email-verification.md's
+  // Frontend Flow). On failure, throws the raw parsed error body (same
+  // convention as googleLogin/confirmGoogleLink above) so the caller can
+  // branch on `err.statusCode`/`err.message` to pick the right page state.
+  async verifyEmail(
+    token: string,
+  ): Promise<{ message: string; alreadyVerified?: boolean }> {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/auth/email-verification/verify`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token }),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  // POST /auth/email-verification/resend (Sprint 02B) — authenticated; no
+  // email is ever supplied by the caller, identity comes from the bearer
+  // token apiFetch attaches. Uses apiFetch (not fetchWithTimeout directly)
+  // specifically so an expired access token is transparently refreshed and
+  // retried once, exactly like every other authenticated call in this app.
+  async resendVerification(): Promise<{ message: string; delivered?: boolean }> {
+    const response = await apiFetch(
+      `${API_BASE_URL}/auth/email-verification/resend`,
+      { method: 'POST' },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
       throw error;
     }
 

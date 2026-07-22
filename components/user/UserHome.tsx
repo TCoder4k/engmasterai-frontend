@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import StudentLayout from './StudentLayout';
+import { EmailVerificationBanner } from '../auth/EmailVerificationBanner';
 import ContinueLearningCard from './ContinueLearningCard';
 import LearningTrackCard from './LearningTrackCard';
 import UserSidebar from './UserSidebar';
@@ -55,6 +56,7 @@ const UserHome: React.FC = () => {
 
   return (
     <StudentLayout search={{ value: search, onChange: setSearch }}>
+      <EmailVerificationBanner />
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-6 lg:items-start max-w-[1400px]">
         {/* ---- Content ---- */}
         <div className="flex-1 min-w-0 space-y-8 lg:space-y-10">
