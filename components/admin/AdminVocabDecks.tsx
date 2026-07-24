@@ -48,6 +48,10 @@ const AdminVocabDecks: React.FC = () => {
 
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
 
+  const [isBulkPublishing, setIsBulkPublishing] = useState(false);
+  const [bulkPublishProgress, setBulkPublishProgress] = useState<{ done: number; total: number } | null>(null);
+  const [bulkPublishFailures, setBulkPublishFailures] = useState<{ name: string; message: string }[]>([]);
+
   const loadDecks = () => {
     if (!libraryId) return;
     setIsLoading(true);
@@ -143,6 +147,44 @@ const AdminVocabDecks: React.FC = () => {
     }
   };
 
+  // Publishes every currently-draft deck in this library one at a time via
+  // the existing single-deck publishDeck endpoint (no bulk endpoint exists,
+  // and a ~50-row admin action doesn't need one). Each deck is independent —
+  // one failure (e.g. the backend's "needs at least one word" guard) is
+  // recorded and reported, never silently swallowed, and never aborts the
+  // rest of the run.
+  const handleBulkPublishAll = async () => {
+    const draftDecks = decks.filter((deck) => !deck.isPublished);
+    if (draftDecks.length === 0) return;
+    if (
+      !window.confirm(
+        `Công khai tất cả ${draftDecks.length} bộ từ đang ở trạng thái bản nháp? Hành động này sẽ công khai từng bộ một.`,
+      )
+    ) {
+      return;
+    }
+
+    setIsBulkPublishing(true);
+    setBulkPublishFailures([]);
+    setBulkPublishProgress({ done: 0, total: draftDecks.length });
+    setError(null);
+
+    const failures: { name: string; message: string }[] = [];
+    for (let i = 0; i < draftDecks.length; i++) {
+      const deck = draftDecks[i];
+      try {
+        await publishDeck(deck.id);
+      } catch (err) {
+        failures.push({ name: deck.name, message: handleAuthError(err, navigate) });
+      }
+      setBulkPublishProgress({ done: i + 1, total: draftDecks.length });
+    }
+
+    setBulkPublishFailures(failures);
+    setIsBulkPublishing(false);
+    loadDecks();
+  };
+
   const goToWords = (deck: ManagedVocabDeck) => {
     navigate(`/admin/vocab/decks/${deck.id}/words`, {
       state: { deckName: deck.name, libraryId },
@@ -194,18 +236,48 @@ const AdminVocabDecks: React.FC = () => {
                   : `Thư viện ID: ${libraryId} · sắp xếp theo orderIndex.`}
               </p>
             </div>
-            <button
-              onClick={openCreate}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
-            >
-              <Plus size={16} />
-              <span>Thêm bộ từ</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleBulkPublishAll}
+                disabled={isBulkPublishing || decks.filter((deck) => !deck.isPublished).length === 0}
+                title="Công khai tất cả các bộ từ đang ở trạng thái bản nháp"
+                className="flex items-center space-x-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Eye size={16} />
+                <span>
+                  {isBulkPublishing && bulkPublishProgress
+                    ? `Đang công khai... (${bulkPublishProgress.done}/${bulkPublishProgress.total})`
+                    : 'Công khai tất cả'}
+                </span>
+              </button>
+              <button
+                onClick={openCreate}
+                className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
+              >
+                <Plus size={16} />
+                <span>Thêm bộ từ</span>
+              </button>
+            </div>
           </div>
 
           {error && (
             <div className="bg-rose-50 border border-rose-100 text-rose-600 text-sm font-medium px-4 py-3 rounded-2xl">
               {error}
+            </div>
+          )}
+
+          {bulkPublishFailures.length > 0 && (
+            <div className="bg-amber-50 border border-amber-100 text-amber-700 text-sm font-medium px-4 py-3 rounded-2xl space-y-1">
+              <p className="font-bold">
+                Hoàn tất với {bulkPublishFailures.length} bộ từ không công khai được:
+              </p>
+              <ul className="list-disc pl-5 space-y-0.5">
+                {bulkPublishFailures.map((failure) => (
+                  <li key={failure.name}>
+                    <span className="font-semibold">{failure.name}</span>: {failure.message}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

@@ -25,6 +25,10 @@ import WordDetailPage from './components/vocab/WordDetailPage';
 import CourseCatalogPage from './components/course/CourseCatalogPage';
 import CourseDetailPage from './components/course/CourseDetailPage';
 import LessonPage from './components/lesson/LessonPage';
+import PracticeHubPage from './components/practice/PracticeHubPage';
+import VocabPracticeSessionPage from './components/practice/vocab/VocabPracticeSessionPage';
+import ListeningCatalogPage from './components/practice/listening/ListeningCatalogPage';
+import ListeningLessonPage from './components/practice/listening/ListeningLessonPage';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -70,6 +74,18 @@ const App: React.FC = () => {
           <Route path="/courses" element={<CourseCatalogPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
+          {/* Sprint 03A/B/C — Practice Hub. /practice/vocab/:deckId hosts the
+              client-side-only vocabulary practice modes (flashcard/dictation/
+              games); /practice/listening hosts the seeded listening
+              dictation workspace. No SRS persistence yet — see the practice
+              migration plan's phasing. */}
+          <Route path="/practice" element={<PracticeHubPage />} />
+          <Route path="/practice/vocab/:deckId" element={<VocabPracticeSessionPage />} />
+          {/* Sprint 03E: /practice/listening is the lesson CATALOG; the
+              actual dictation exercise lives at :lessonId. Both survive a
+              direct refresh (registered routes, no client-only state). */}
+          <Route path="/practice/listening" element={<ListeningCatalogPage />} />
+          <Route path="/practice/listening/:lessonId" element={<ListeningLessonPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
         </Route>

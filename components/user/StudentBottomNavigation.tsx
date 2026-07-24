@@ -18,7 +18,7 @@ const StudentBottomNavigation: React.FC = () => {
     { label: t.nav.home, icon: <Home size={21} />, to: '/home', end: true },
     { label: t.nav.courses, icon: <BookOpen size={21} />, to: '/courses' },
     { label: t.nav.vocabulary, icon: <BookMarked size={21} />, to: '/vocab' },
-    { label: t.nav.practice, icon: <Headphones size={21} /> },
+    { label: t.nav.listening, icon: <Headphones size={21} />, to: '/practice/listening' },
     { label: t.nav.profile, icon: <UserIcon size={21} />, to: '/profile' },
   ];
 

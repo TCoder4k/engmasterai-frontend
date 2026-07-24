@@ -27,18 +27,20 @@ const navLinkClass = (isActive: boolean) =>
 const StudentDesktopSidebar: React.FC = () => {
   const { t } = useTranslation();
 
-  // Entries with no student-facing page yet — rendered disabled with a badge
-  // rather than as dead links (AdminSidebar's established convention).
-  // "My Courses" flips to a real link now that /courses exists (Student
-  // Learning Experience design, Sprint 1); Practice stays disabled until
-  // the Practice Hub ships.
-  const comingSoonNav = [{ icon: <Headphones size={20} />, label: t.nav.practice }];
-
   return (
     <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col h-screen sticky top-0 overflow-hidden flex-shrink-0">
-      <div className="p-6 flex items-center space-x-2.5">
-        <GraduationCap size={30} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
-        <span className="text-xl font-extrabold text-slate-900 dark:text-white">EngMasterAI</span>
+      <div className="p-6">
+        {/* The whole brand area is a real router link back to the Dashboard
+            (Sprint 03E) — client-side navigation, keyboard focusable, no
+            clickable <div>. */}
+        <NavLink
+          to="/home"
+          aria-label={t.nav.goToDashboard}
+          className="flex items-center space-x-2.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        >
+          <GraduationCap size={30} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+          <span className="text-xl font-extrabold text-slate-900 dark:text-white">EngMasterAI</span>
+        </NavLink>
       </div>
 
       <nav aria-label={t.nav.mainNavigation} className="flex-1 px-4 space-y-1 overflow-y-auto">
@@ -52,21 +54,15 @@ const StudentDesktopSidebar: React.FC = () => {
           <span>{t.nav.myCourses}</span>
         </NavLink>
 
-        {comingSoonNav.map((item) => (
-          <div
-            key={item.label}
-            aria-disabled="true"
-            className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 dark:text-slate-600 cursor-not-allowed select-none"
-          >
-            <span className="flex items-center space-x-3">
-              {item.icon}
-              <span>{item.label}</span>
-            </span>
-            <span className="text-[9px] font-bold uppercase bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 px-1.5 py-0.5 rounded-md">
-              {t.common.soon}
-            </span>
-          </div>
-        ))}
+        {/* Sprint 03D: the generic "Practice" nav item is replaced by a
+            dedicated Listening entry — Vocabulary practice is reached via
+            the Vocabulary section below instead (see VocabLibraryPage ->
+            LibraryDetailPage's deck list). /practice (the hub) remains an
+            internal compatibility route, no longer primary navigation. */}
+        <NavLink to="/practice/listening" className={({ isActive }) => navLinkClass(isActive)}>
+          <Headphones size={20} aria-hidden="true" />
+          <span>{t.nav.listening}</span>
+        </NavLink>
 
         <NavLink to="/vocab" className={({ isActive }) => navLinkClass(isActive)}>
           <BookMarked size={20} aria-hidden="true" />

@@ -87,11 +87,15 @@ export interface VocabDeck {
   orderIndex: number;
   createdAt: string;
   updatedAt: string;
+  // Real word count — VocabDeckService's USER_SELECT (backend) already
+  // includes this on both public deck endpoints (GET /vocab/decks/:id and
+  // GET /vocab/libraries/:id/decks); this type was simply missing it even
+  // though LibraryDetailPage/DeckDetailPage already read it at runtime.
+  _count: { deckWords: number };
 }
 
 export interface ManagedVocabDeck extends VocabDeck {
   isPublished: boolean;
-  _count: { deckWords: number };
 }
 
 export type PartOfSpeech =

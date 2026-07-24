@@ -72,6 +72,86 @@
         height: 100%;
         border: 0;
       }
+      /* Practice UI (Sprint 03A+): flip-card helpers for FlashcardSession —
+         plain CSS 3D transform, no animation library. */
+      .practice-flip-card {
+        perspective: 1000px;
+      }
+      .practice-flip-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        transform-style: preserve-3d;
+      }
+      .practice-flip-card-face {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+      }
+      .practice-flip-card-face-back {
+        transform: rotateY(180deg);
+      }
+      /* Sprint 03E fix: the flipped class lives on the SAME element as
+         practice-flip-card-inner (see FlashcardSession), so this must be a
+         compound selector — the original descendant selector
+         (".practice-flip-card-flipped .practice-flip-card-inner") never
+         matched anything, which is why cards never flipped. Kept outside
+         any media query: the flip STATE must always apply; only the
+         transition is motion. */
+      .practice-flip-card-inner.practice-flip-card-flipped {
+        transform: rotateY(180deg);
+      }
+      /* Sprint 03G: a soft glow around the Listening completion checkmark.
+         The glow itself is always visible; only its gentle pulse is gated
+         under reduced-motion below, matching every other animation here. */
+      .practice-summary-glow {
+        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.12), 0 0 24px 4px rgba(16, 185, 129, 0.25);
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .practice-flip-card-inner {
+          transition: transform 0.4s;
+        }
+        @keyframes practice-fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .practice-fade-in {
+          animation: practice-fade-in 0.2s ease-out;
+        }
+        /* Celebration burst (Sprint 03E): a short (<800ms) CSS particle
+           burst near the answer area — no confetti package, no full-screen
+           overlay. Each particle reads its direction from CSS vars set
+           inline by CelebrationBurst.tsx. */
+        @keyframes practice-burst-particle {
+          0% { opacity: 1; transform: translate(0, 0) scale(1); }
+          100% { opacity: 0; transform: translate(var(--burst-x), var(--burst-y)) scale(0.4); }
+        }
+        .practice-burst-particle {
+          animation: practice-burst-particle 0.7s ease-out forwards;
+        }
+        /* Honest indeterminate "speaking" bars for TTS playback (no fake
+           duration/progress — TTS has no reliable duration). */
+        @keyframes practice-speaking-bar {
+          0%, 100% { transform: scaleY(0.35); }
+          50% { transform: scaleY(1); }
+        }
+        .practice-speaking-bar {
+          animation: practice-speaking-bar 0.9s ease-in-out infinite;
+          transform-origin: center bottom;
+        }
+        @keyframes practice-summary-glow-pulse {
+          0%, 100% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.10), 0 0 20px 2px rgba(16, 185, 129, 0.20); }
+          50% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0.16), 0 0 32px 8px rgba(16, 185, 129, 0.32); }
+        }
+        .practice-summary-glow {
+          animation: practice-summary-glow-pulse 2.2s ease-in-out infinite;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .practice-burst-particle {
+          display: none;
+        }
+      }
     </style>
   <script type="importmap">
 {
