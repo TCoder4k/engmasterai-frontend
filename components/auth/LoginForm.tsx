@@ -314,7 +314,12 @@ export const LoginForm: React.FC = () => {
               </button>
             </div>
             <div className="flex justify-end pr-2 pt-2">
-              <a href="#" className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors">Quên mật khẩu?</a>
+              <Link
+                to="/forgot-password"
+                className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+              >
+                Quên mật khẩu?
+              </Link>
             </div>
           </div>
         </div>

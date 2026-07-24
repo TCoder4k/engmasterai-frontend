@@ -6,6 +6,8 @@ import { AuthLayout } from './components/auth/AuthLayout';
 import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { VerifyEmailPage } from './components/auth/VerifyEmailPage';
+import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import UserHome from './components/user/UserHome';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminUsers from './components/admin/AdminUsers';
@@ -45,6 +47,12 @@ const App: React.FC = () => {
               doc comment for why this is a GET page that fires an explicit
               POST, not a bare backend GET link (Sprint 02B). */}
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          {/* Public (Sprint 02C) — forgot/reset password. Unlike
+              /verify-email, /reset-password's page load is side-effect-free;
+              the actual POST only fires on form submit (see
+              ResetPasswordPage's own doc comment). */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Route>
         {/* /home, /vocab*, /courses*, /profile, /security all require any
             authenticated user (no role prop). /home, /profile, /security
