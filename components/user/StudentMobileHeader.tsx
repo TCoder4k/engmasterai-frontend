@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { GraduationCap, Search, X } from 'lucide-react';
 import AvatarMenu, { AvatarMenuUser } from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
@@ -30,12 +31,18 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
   return (
     <header className="lg:hidden sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
       <div className="flex items-center justify-between px-3 sm:px-4 h-16 gap-2">
-        <div className="flex items-center space-x-2 min-w-0">
+        {/* The brand area is a real router link back to the Dashboard
+            (Sprint 03E) — same behavior as the desktop sidebar's brand. */}
+        <Link
+          to="/home"
+          aria-label={t.nav.goToDashboard}
+          className="flex items-center space-x-2 min-w-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        >
           <GraduationCap size={26} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-base font-extrabold text-slate-900 dark:text-white hidden sm:block">
             EngMasterAI
           </span>
-        </div>
+        </Link>
 
         <div className="flex items-center space-x-1 sm:space-x-1.5">
           {search && (
