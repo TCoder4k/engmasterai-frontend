@@ -4,9 +4,12 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import { VocabWordListItem } from '../../../types';
 import { isTtsSupported, speakText } from '../../../services/tts';
 import { playCorrect, playIncorrect } from '../../../services/feedbackSounds';
+import { submitReview, isVersionConflict, ReviewRating } from '../../../services/learningService';
 import CelebrationBurst from '../CelebrationBurst';
+import RatingButtons from './RatingButtons';
 import { useAudioPlayback, formatAudioTime } from '../useAudioPlayback';
 import { useVocabSession } from './useVocabSession';
+import { useReviewIntentKey } from '../reviewIntentKey';
 import { SessionResult } from '../types';
 
 interface DictationSessionProps {
@@ -22,7 +25,12 @@ const normalize = (value: string): string =>
 // progress bar), real currentTime/duration playback progress for recorded
 // audio (never fabricated for TTS — that gets an honest indeterminate
 // speaking animation instead), and correct/incorrect sound + celebration
-// feedback layered on top of the mandatory visual feedback.
+// feedback layered on top of the mandatory visual feedback. Sprint 04C:
+// checking the answer only *suggests* a rating (correct -> GOOD, incorrect
+// -> AGAIN) — typed-answer correctness alone can't distinguish "knew it
+// cold" from "barely got it", so advancing now requires an explicit
+// Again/Hard/Good/Easy click (the suggestion is pre-highlighted, not
+// pre-submitted) rather than a second Enter/submit.
 const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }) => {
   const { t } = useTranslation();
   const { currentWord, index, total, correctCount, isComplete, answer } = useVocabSession(words);
@@ -30,6 +38,9 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [burstKey, setBurstKey] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { resolve: resolveClientReviewId, clear: clearReviewIntent } = useReviewIntentKey();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const audio = useAudioPlayback(currentWord?.audioUrl ?? null);
@@ -43,6 +54,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
     setTypedText('');
     setFeedback(null);
     setIsSpeaking(false);
+    setSubmitError(null);
     inputRef.current?.focus();
   }, [currentWord?.id]);
 
@@ -52,6 +64,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
   const hasAudioSource = Boolean(currentWord.audioUrl) || isTtsSupported();
   const answeredCount = Math.min(index, total);
   const progressPercent = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+  const suggestedRating: ReviewRating | undefined = feedback ? (feedback === 'correct' ? 'GOOD' : 'AGAIN') : undefined;
 
   const handlePlay = () => {
     if (currentWord.audioUrl) {
@@ -67,10 +80,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (feedback) {
-      answer(feedback === 'correct');
-      return;
-    }
+    if (feedback) return; // already checked — waiting for an explicit rating, not a second Enter
     const isCorrect = normalize(typedText) === normalize(currentWord.text);
     setFeedback(isCorrect ? 'correct' : 'incorrect');
     if (isCorrect) {
@@ -78,6 +88,34 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
       setBurstKey((k) => k + 1);
     } else {
       playIncorrect();
+    }
+  };
+
+  const handleRate = async (rating: ReviewRating) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await submitReview(currentWord.id, {
+        rating,
+        practiceMode: 'DICTATION',
+        // Stable per (word, rating) intent — a retry after a version
+        // conflict or a timeout MUST reuse the key, or the backend's
+        // idempotency guard cannot dedupe it. See reviewIntentKey.ts.
+        clientReviewId: resolveClientReviewId(currentWord.id, rating),
+      });
+      clearReviewIntent();
+      answer(rating !== 'AGAIN');
+    } catch (error) {
+      // A version conflict just means another request touched this word's
+      // progress underneath us — let the user simply try the rating again
+      // rather than surfacing a scary error for something that isn't their
+      // fault (Dictation shows no preview to refresh, unlike Flashcard).
+      if (!isVersionConflict(error)) {
+        setSubmitError(t.common.loadFailed);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -234,12 +272,28 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
             </div>
           )}
 
-          <button
-            type="submit"
-            className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-          >
-            {feedback ? t.practice.nextWord : t.practice.checkAnswer}
-          </button>
+          {!feedback && (
+            <button
+              type="submit"
+              className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            >
+              {t.practice.checkAnswer}
+            </button>
+          )}
+
+          {feedback && (
+            <div className="practice-fade-in space-y-2">
+              {submitError && (
+                <p role="alert" className="text-xs font-semibold text-rose-500 text-center">
+                  {submitError}
+                </p>
+              )}
+              <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 text-center">
+                {t.practice.suggestedRatingHint}
+              </p>
+              <RatingButtons previewIntervals={null} suggested={suggestedRating} disabled={isSubmitting} onRate={handleRate} />
+            </div>
+          )}
         </form>
       </div>
     </div>

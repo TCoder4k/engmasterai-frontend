@@ -9,9 +9,11 @@ interface SessionSummaryProps {
   onExit: () => void;
 }
 
-// End-of-session card — client-side-only, discarded on navigation away.
-// Never labeled as saved progress (see practice.sessionOnlyNotice on the
-// session pages themselves).
+// End-of-session card — this component itself is client-side-only and
+// discarded on navigation away. Note: as of Sprint 04, Flashcard's
+// Again/Hard/Good/Easy ratings ARE persisted server-side (real SRS
+// progress) even though this summary card is not; only Dictation's
+// suggested-rating flow and Games' score remain purely session-local.
 const SessionSummary: React.FC<SessionSummaryProps> = ({ result, onRestart, onExit }) => {
   const { t } = useTranslation();
   const percent = result.totalCards > 0 ? Math.round((result.correctCount / result.totalCards) * 100) : 0;

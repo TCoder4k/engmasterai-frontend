@@ -2,11 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import { getPublishedDeck, getPublishedDeckWords } from '../../services/vocabDeckService';
+import { getDeckProgress, DeckProgress } from '../../services/learningService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabDeck, VocabWordListItem } from '../../types';
 import { ArrowLeft, Layers, Volume2 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
+// /vocab/decks/:id — dictionary-mode browsing for a single deck.
+//
+// Sprint 04D: gains a real learning summary and a real practice action.
+// A genuinely empty deck deliberately gets NEITHER — no percentages (they
+// would all be a meaningless 0%) and no practice link (it would open a
+// broken, wordless session).
 const DeckDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
@@ -18,6 +25,7 @@ const DeckDetailPage: React.FC = () => {
   const [words, setWords] = useState<VocabWordListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [progress, setProgress] = useState<DeckProgress | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -32,6 +40,36 @@ const DeckDetailPage: React.FC = () => {
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Supplementary — a progress failure leaves the deck browsable without a
+  // summary rather than failing the whole page.
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    getDeckProgress(id)
+      .then((res) => {
+        if (!cancelled) setProgress(res);
+      })
+      .catch(() => {
+        // Intentionally silent — see the comment above.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Same rules as the deck rows on LibraryDetailPage: due words win, then
+  // fully-mastered, then untouched, then partial.
+  const practiceAction = (() => {
+    if (!progress || progress.totalWords === 0) return null;
+    if (progress.dueWords > 0) {
+      return { label: t.vocab.reviewDueAction, to: `/practice/review?deckId=${id}` };
+    }
+    const flashcardHref = `/practice/vocab/${id}?mode=flashcard`;
+    if (progress.masteredWords === progress.totalWords) return { label: t.vocab.practiceAgain, to: flashcardHref };
+    if (progress.newWords === progress.totalWords) return { label: t.vocab.startPractice, to: flashcardHref };
+    return { label: t.vocab.continuePractice, to: flashcardHref };
+  })();
 
   const playAudio = (url: string) => {
     new Audio(url).play().catch(() => {
@@ -82,6 +120,49 @@ const DeckDetailPage: React.FC = () => {
               <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
                 {deck._count.deckWords} {t.vocab.wordsUnit}
               </p>
+
+              {/* Real learning summary + action. Rendered only when the deck
+                  actually has words — an empty deck would otherwise show a
+                  row of meaningless 0% figures and a link into a session
+                  with nothing in it. */}
+              {progress && progress.totalWords > 0 && (
+                <div className="mt-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-bold">
+                    <span className="text-indigo-600 dark:text-indigo-400">
+                      {t.vocab.startedLabel}: {progress.startedPercent}%
+                    </span>
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      {t.vocab.masteredLabel}: {progress.masteredPercent}%
+                    </span>
+                    {progress.dueWords > 0 && (
+                      <span className="text-amber-600 dark:text-amber-400">
+                        {t.vocab.dueTodayLabel}: {progress.dueWords}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+                    <span>
+                      {t.vocab.newUnit}: {progress.newWords}
+                    </span>
+                    <span>
+                      {t.vocab.learningUnit}: {progress.learningWords}
+                    </span>
+                    <span>
+                      {t.vocab.reviewUnit}: {progress.reviewWords}
+                    </span>
+                  </div>
+
+                  {practiceAction && (
+                    <Link
+                      to={practiceAction.to}
+                      className="inline-flex px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                    >
+                      {practiceAction.label}
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Genuinely reachable, not a defensive placeholder: decks

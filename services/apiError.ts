@@ -9,11 +9,17 @@ import { authService } from './authService';
 // distinction in every .catch.
 export class ApiError extends Error {
   status: number;
+  // Optional body-level error code (e.g. Sprint 04's 'IDEMPOTENCY_KEY_REUSED'
+  // / 'VERSION_CONFLICT') — most endpoints don't send one, so this stays
+  // undefined for them. Lets a caller distinguish two different 409s (or
+  // any other status) without inventing a second exception type per case.
+  code?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -34,13 +40,15 @@ export class AuthExpiredError extends ApiError {
 // message) and throws an ApiError carrying the HTTP status.
 export const throwApiError = async (response: Response, fallback: string): Promise<never> => {
   let message = fallback;
+  let code: string | undefined;
   try {
     const body = await response.json();
     if (body?.message) message = body.message;
+    if (typeof body?.code === 'string') code = body.code;
   } catch {
     // Empty/non-JSON error body — keep the fallback message.
   }
-  throw new ApiError(message, response.status);
+  throw new ApiError(message, response.status, code);
 };
 
 // The one place the app decides what an auth-adjacent failure means for the

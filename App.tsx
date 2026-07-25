@@ -27,6 +27,7 @@ import CourseDetailPage from './components/course/CourseDetailPage';
 import LessonPage from './components/lesson/LessonPage';
 import PracticeHubPage from './components/practice/PracticeHubPage';
 import VocabPracticeSessionPage from './components/practice/vocab/VocabPracticeSessionPage';
+import ReviewSessionPage from './components/practice/review/ReviewSessionPage';
 import ListeningCatalogPage from './components/practice/listening/ListeningCatalogPage';
 import ListeningLessonPage from './components/practice/listening/ListeningLessonPage';
 import ProfilePage from './components/shared/ProfilePage';
@@ -75,12 +76,16 @@ const App: React.FC = () => {
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
           {/* Sprint 03A/B/C — Practice Hub. /practice/vocab/:deckId hosts the
-              client-side-only vocabulary practice modes (flashcard/dictation/
-              games); /practice/listening hosts the seeded listening
-              dictation workspace. No SRS persistence yet — see the practice
-              migration plan's phasing. */}
+              vocabulary practice modes (flashcard/dictation/games);
+              /practice/listening hosts the seeded listening dictation
+              workspace. As of Sprint 04C, Flashcard's ratings are real,
+              persisted per-user SRS progress — see that component's own
+              header comment. /practice/review (Sprint 04D) is the
+              dedicated due-queue review session, separate from whole-deck
+              Flashcard practice. */}
           <Route path="/practice" element={<PracticeHubPage />} />
           <Route path="/practice/vocab/:deckId" element={<VocabPracticeSessionPage />} />
+          <Route path="/practice/review" element={<ReviewSessionPage />} />
           {/* Sprint 03E: /practice/listening is the lesson CATALOG; the
               actual dictation exercise lives at :lessonId. Both survive a
               direct refresh (registered routes, no client-only state). */}

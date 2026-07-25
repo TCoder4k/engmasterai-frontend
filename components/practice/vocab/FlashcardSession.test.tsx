@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import FlashcardSession from './FlashcardSession';
 import { VocabWordListItem } from '../../../types';
+import { ApiError } from '../../../services/apiError';
 
 // getWord is a real network call (student word-detail endpoint) — mocked so
 // the back-face EXAMPLE section can be tested without a live backend. Every
@@ -13,10 +14,34 @@ vi.mock('../../../services/vocabWordService', () => ({
   getWord: vi.fn(),
 }));
 
+// Sprint 04C: getWordProgress/submitReview are real network calls too —
+// mocked the same way, while isVersionConflict/isIdempotencyKeyReused (pure
+// predicates over ApiError, no network) stay real via importActual.
+vi.mock('../../../services/learningService', async () => {
+  const actual = await vi.importActual<typeof import('../../../services/learningService')>(
+    '../../../services/learningService',
+  );
+  return { ...actual, getWordProgress: vi.fn(), submitReview: vi.fn() };
+});
+
 import { getWord } from '../../../services/vocabWordService';
+import { getWordProgress, submitReview } from '../../../services/learningService';
 
 beforeEach(() => {
   (getWord as ReturnType<typeof vi.fn>).mockResolvedValue({ examples: [] });
+  (getWordProgress as ReturnType<typeof vi.fn>).mockResolvedValue({
+    progress: null,
+    previewIntervals: { again: 1, hard: 1, good: 1, easy: 4 },
+  });
+  (submitReview as ReturnType<typeof vi.fn>).mockResolvedValue({
+    state: 'REVIEW',
+    intervalDays: 1,
+    nextReviewAt: new Date().toISOString(),
+    easeFactor: 2.5,
+    repetitions: 1,
+    lapses: 0,
+    version: 1,
+  });
 });
 
 // Sprint 03E regression tests for the flip fix: the original CSS used a
@@ -87,24 +112,63 @@ describe('FlashcardSession flip', () => {
     expect(faces[1]).toHaveAttribute('aria-hidden', 'false');
   });
 
-  it('advancing with Again/Got it resets the next card to its front face', async () => {
+  it('advancing with a Good rating resets the next card to its front face', async () => {
     renderSession([word('w1', 'contract', 'hợp đồng'), word('w2', 'agreement', 'thỏa thuận')]);
 
     await userEvent.click(screen.getByRole('button', { name: 'Tap the card to flip it' }));
     expect(getInner()).toHaveClass('practice-flip-card-flipped');
 
-    await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
 
-    expect(getInner()).not.toHaveClass('practice-flip-card-flipped');
+    await waitFor(() => expect(getInner()).not.toHaveClass('practice-flip-card-flipped'));
   });
 
   it('completes the session with the rated counts after the last card', async () => {
     const onComplete = renderSession([word('w1', 'contract', 'hợp đồng')]);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Got it' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
 
-    expect(onComplete).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1));
     expect(onComplete).toHaveBeenCalledWith({ totalCards: 1, correctCount: 1 });
+  });
+});
+
+describe('FlashcardSession — Sprint 04C real SRS ratings', () => {
+  it('renders all four ratings with backend-computed preview intervals, never calculated client-side', async () => {
+    renderSession([word('w1', 'contract', 'hợp đồng')]);
+
+    await waitFor(() => expect(getWordProgress).toHaveBeenCalledWith('w1'));
+    expect(await screen.findByRole('button', { name: 'Again — 1 d' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hard — 1 d' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Good — 1 d' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Easy — 4 d' })).toBeInTheDocument();
+  });
+
+  it('rating Again submits the real review and does NOT count as correct in the session summary', async () => {
+    const onComplete = renderSession([word('w1', 'contract', 'hợp đồng')]);
+
+    await userEvent.click(screen.getByRole('button', { name: /^Again/ }));
+
+    await waitFor(() =>
+      expect(submitReview).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({ rating: 'AGAIN', practiceMode: 'FLASHCARD' }),
+      ),
+    );
+    await waitFor(() => expect(onComplete).toHaveBeenCalledWith({ totalCards: 1, correctCount: 0 }));
+  });
+
+  it('a version conflict silently refetches the preview instead of showing an error', async () => {
+    (submitReview as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new ApiError('conflict', 409, 'VERSION_CONFLICT'),
+    );
+    renderSession([word('w1', 'contract', 'hợp đồng')]);
+    await waitFor(() => expect(getWordProgress).toHaveBeenCalledTimes(1));
+
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
+
+    await waitFor(() => expect(getWordProgress).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
 
