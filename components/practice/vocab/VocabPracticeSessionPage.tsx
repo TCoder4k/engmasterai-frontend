@@ -20,10 +20,15 @@ import { BookMarked } from 'lucide-react';
 
 const VALID_PRACTICE_MODES: VocabPracticeMode[] = ['flashcard', 'dictation', 'games', 'contextual'];
 
-// /practice/vocab/:deckId — hosts the client-side-only vocabulary practice
-// modes against real deck/word data. No progress is persisted (Sprint 04
-// adds real SRS); the ?mode= search param keeps back-button/deep links sane
-// without a route per mode.
+// /practice/vocab/:deckId — hosts the vocabulary practice modes against
+// real deck/word data. As of Sprint 04C, Flashcard's Again/Hard/Good/Easy
+// ratings are real, persisted per-user SRS progress (POST
+// /learning/words/:wordId/review) — Dictation submits a suggested rating
+// the user must confirm; Games stays session-score-only, no SRS mutation
+// (see each component's own header comment). The `sessionKey`/`result`
+// state on this page itself (mode switching, session completion/restart)
+// remains purely local, unrelated to that persisted progress. The ?mode=
+// search param keeps back-button/deep links sane without a route per mode.
 const VocabPracticeSessionPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();

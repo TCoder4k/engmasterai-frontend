@@ -5,8 +5,17 @@ import { VocabWordListItem, VocabWordExample } from '../../../types';
 import { isTtsSupported, speakText } from '../../../services/tts';
 import { getWord } from '../../../services/vocabWordService';
 import { playCorrect, playIncorrect } from '../../../services/feedbackSounds';
+import {
+  getWordProgress,
+  submitReview,
+  isVersionConflict,
+  PreviewIntervals,
+  ReviewRating,
+} from '../../../services/learningService';
 import CelebrationBurst from '../CelebrationBurst';
+import RatingButtons from './RatingButtons';
 import { useVocabSession } from './useVocabSession';
+import { useReviewIntentKey } from '../reviewIntentKey';
 import { SessionResult } from '../types';
 
 interface FlashcardSessionProps {
@@ -36,9 +45,13 @@ const renderHighlightedSentence = (sentence: string, word: string): React.ReactN
   );
 };
 
-// Session-only self-rating ("Again"/"Got it") — affects only this session's
-// ordering-independent score and summary. Explicitly labeled as unsaved
-// (practice.sessionOnlyNotice) since no SRS backend exists yet (Sprint 04).
+// Real per-user, per-word SRS ratings (Sprint 04) — Again/Hard/Good/Easy
+// each submit a real POST /learning/words/:wordId/review; the session-local
+// score/completion tracking below (useVocabSession) is unrelated bookkeeping
+// for this practice run's own summary, not a second source of scheduling
+// truth (the backend owns scheduling; this component never computes an
+// interval itself — see RatingButtons, which only ever displays numbers the
+// backend already computed).
 const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }) => {
   const { t } = useTranslation();
   const { currentWord, index, total, correctCount, isComplete, answer } = useVocabSession(words);
@@ -47,6 +60,10 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
   // Real examples live only on the student word-detail endpoint, not the
   // deck word-list shape — fetched lazily per card so nothing is fabricated.
   const [example, setExample] = useState<VocabWordExample | null>(null);
+  const [previewIntervals, setPreviewIntervals] = useState<PreviewIntervals | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const { resolve: resolveClientReviewId, clear: clearReviewIntent } = useReviewIntentKey();
 
   useEffect(() => {
     if (isComplete) onComplete({ totalCards: total, correctCount });
@@ -71,16 +88,69 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
     };
   }, [currentWord?.id]);
 
+  // Preview intervals are outside the due queue on purpose (this is
+  // whole-deck practice, not a due-only review session) — see
+  // LearningService.getWordProgress's own comment on the backend.
+  useEffect(() => {
+    setPreviewIntervals(null);
+    setSubmitError(null);
+    if (!currentWord) return;
+    let ignore = false;
+    getWordProgress(currentWord.id)
+      .then((res) => {
+        if (!ignore) setPreviewIntervals(res.previewIntervals);
+      })
+      .catch(() => {
+        // Preview is a nicety, not a requirement — rating still works
+        // without it (RatingButtons renders the day-count badge only when
+        // it's available).
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [currentWord?.id]);
+
   if (!currentWord) return null;
 
-  const handleAnswer = (correct: boolean) => {
-    if (correct) {
-      playCorrect();
-      setBurstKey((k) => k + 1);
-    } else {
-      playIncorrect();
+  const handleRate = async (rating: ReviewRating) => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      await submitReview(currentWord.id, {
+        rating,
+        practiceMode: 'FLASHCARD',
+        // Stable per (word, rating) intent — a retry after a version
+        // conflict or a timeout MUST reuse the key, or the backend's
+        // idempotency guard cannot dedupe it. See reviewIntentKey.ts.
+        clientReviewId: resolveClientReviewId(currentWord.id, rating),
+      });
+      clearReviewIntent();
+      const correct = rating !== 'AGAIN';
+      if (correct) {
+        playCorrect();
+        setBurstKey((k) => k + 1);
+      } else {
+        playIncorrect();
+      }
+      answer(correct);
+    } catch (error) {
+      if (isVersionConflict(error)) {
+        // Another request changed this word's progress underneath us —
+        // silently refetch the current state and let the user re-rate,
+        // never a scary error for something that isn't the user's fault.
+        try {
+          const res = await getWordProgress(currentWord.id);
+          setPreviewIntervals(res.previewIntervals);
+        } catch {
+          // Best-effort refresh only.
+        }
+      } else {
+        setSubmitError(t.common.loadFailed);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-    answer(correct);
   };
 
   // Only ever fires from this explicit button click — never on mount or
@@ -97,8 +167,8 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
 
   return (
     <div className="space-y-5">
-      <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 px-3 py-2 rounded-xl">
-        {t.practice.sessionOnlyNotice}
+      <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-3 py-2 rounded-xl">
+        {t.practice.ratingsSavedNotice}
       </p>
 
       <p className="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 text-center">
@@ -259,21 +329,13 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => handleAnswer(false)}
-          className="px-6 py-2.5 bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl text-sm font-bold hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-400"
-        >
-          {t.practice.again}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleAnswer(true)}
-          className="px-6 py-2.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-        >
-          {t.practice.gotIt}
-        </button>
+      <div className="max-w-md mx-auto space-y-2">
+        {submitError && (
+          <p role="alert" className="text-xs font-semibold text-rose-500 text-center">
+            {submitError}
+          </p>
+        )}
+        <RatingButtons previewIntervals={previewIntervals} disabled={isSubmitting} onRate={handleRate} />
       </div>
     </div>
   );

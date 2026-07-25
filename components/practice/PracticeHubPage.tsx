@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import EmptyState from '../shared/EmptyState';
 import { useTranslation } from '../../i18n/useTranslation';
-import { BookMarked, Headphones, SpellCheck2 } from 'lucide-react';
+import { BookMarked, Headphones, SpellCheck2, Clock3 } from 'lucide-react';
 
 // /practice — kept as an internal compatibility route only (Sprint 03D).
 // Primary student navigation no longer points here: Vocabulary practice is
@@ -51,6 +51,25 @@ const PracticeHubPage: React.FC = () => {
             <div>
               <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{t.nav.listening}</p>
               <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t.practice.modeListeningDesc}</p>
+            </div>
+          </Link>
+
+          {/* Sprint 04D — the due-review session was previously reachable
+              only from one link on a library page, and only when that
+              library had due words. No due count is shown here: this page
+              fetches no progress, and inventing one would be exactly the
+              kind of fabricated number the rest of this UI avoids. The
+              session's own empty state handles "nothing due" honestly. */}
+          <Link
+            to="/practice/review"
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500/40 hover:shadow-md transition-all flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          >
+            <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+              <Clock3 size={22} aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{t.practice.reviewDueCta}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{t.vocab.dueTodayLabel}</p>
             </div>
           </Link>
         </div>

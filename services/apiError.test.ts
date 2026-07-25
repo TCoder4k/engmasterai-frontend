@@ -1,6 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ApiError, AuthExpiredError, handleAuthError } from './apiError';
+import { ApiError, AuthExpiredError, handleAuthError, throwApiError } from './apiError';
 import { authService } from './authService';
+
+const fakeResponse = (status: number, body: unknown): Response =>
+  ({ status, json: async () => body }) as unknown as Response;
+
+describe('throwApiError — Sprint 04: carries an optional body-level `code`', () => {
+  it('populates ApiError.code when the response body has one (e.g. IDEMPOTENCY_KEY_REUSED)', async () => {
+    await expect(
+      throwApiError(fakeResponse(409, { message: 'reused', code: 'IDEMPOTENCY_KEY_REUSED' }), 'fallback'),
+    ).rejects.toMatchObject({ status: 409, code: 'IDEMPOTENCY_KEY_REUSED', message: 'reused' });
+  });
+
+  it('leaves code undefined for every existing endpoint shape that has none', async () => {
+    await expect(throwApiError(fakeResponse(404, { message: 'not found' }), 'fallback')).rejects.toMatchObject({
+      status: 404,
+      code: undefined,
+    });
+  });
+});
 
 describe('handleAuthError — the global 401 handler', () => {
   let navigate: (path: string) => void;

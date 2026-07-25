@@ -1,9 +1,32 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import DictationSession from './DictationSession';
 import { VocabWordListItem } from '../../../types';
+
+// Sprint 04C: checking an answer only suggests a rating — submitReview is a
+// real network call, mocked the same way FlashcardSession's spec mocks it.
+vi.mock('../../../services/learningService', async () => {
+  const actual = await vi.importActual<typeof import('../../../services/learningService')>(
+    '../../../services/learningService',
+  );
+  return { ...actual, submitReview: vi.fn() };
+});
+
+import { submitReview } from '../../../services/learningService';
+
+beforeEach(() => {
+  (submitReview as ReturnType<typeof vi.fn>).mockResolvedValue({
+    state: 'REVIEW',
+    intervalDays: 1,
+    nextReviewAt: new Date().toISOString(),
+    easeFactor: 2.5,
+    repetitions: 1,
+    lapses: 0,
+    version: 1,
+  });
+});
 
 // Sprint 03E: finite-session orientation — real "Question X of N" counts, a
 // real ARIA progressbar, and a definite completion (no infinite cycling).
@@ -26,7 +49,10 @@ const renderSession = (words: VocabWordListItem[], onComplete = vi.fn()) => {
   return onComplete;
 };
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 describe('DictationSession finite progress', () => {
   it('shows the real question counter and a real-valued progressbar', () => {
@@ -45,14 +71,14 @@ describe('DictationSession finite progress', () => {
     const onComplete = renderSession([word('w1', 'alpha'), word('w2', 'alpha')]);
     const input = screen.getByLabelText('Type what you hear');
 
-    // Item 1: correct answer, check, next.
+    // Item 1: correct answer, check, confirm the suggested Good rating.
     await userEvent.type(input, 'alpha');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
     expect(screen.getByText('Correct!')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Next word' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
 
     // Item 2: counter moved forward; progressbar reflects one answered.
-    expect(screen.getByText('Question 2/2')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Question 2/2')).toBeInTheDocument());
     expect(screen.getByRole('progressbar', { name: 'Session progress' })).toHaveAttribute(
       'aria-valuenow',
       '1',
@@ -60,23 +86,43 @@ describe('DictationSession finite progress', () => {
 
     await userEvent.type(screen.getByLabelText('Type what you hear'), 'alpha');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Next word' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
 
     // Finite: exactly one completion, correct totals, no cycling back.
-    expect(onComplete).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1));
     expect(onComplete).toHaveBeenCalledWith({ totalCards: 2, correctCount: 2 });
   });
 
-  it('an incorrect answer reveals the expected word and does not count as correct', async () => {
+  it('an incorrect answer reveals the expected word, suggests Again, and does not count as correct', async () => {
     const onComplete = renderSession([word('w1', 'alpha')]);
 
     await userEvent.type(screen.getByLabelText('Type what you hear'), 'wrong');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
 
     expect(screen.getByText(/Not quite: alpha/)).toBeInTheDocument();
+    const againButton = screen.getByRole('button', { name: /^Again/ });
+    expect(againButton.className).toMatch(/ring-2/); // suggested rating is highlighted
 
-    await userEvent.click(screen.getByRole('button', { name: 'Next word' }));
+    await userEvent.click(againButton);
+    await waitFor(() =>
+      expect(submitReview).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({ rating: 'AGAIN', practiceMode: 'DICTATION' }),
+      ),
+    );
     expect(onComplete).toHaveBeenCalledWith({ totalCards: 1, correctCount: 0 });
+  });
+
+  it('requires an explicit rating click to advance — pressing Enter again after checking does nothing', async () => {
+    renderSession([word('w1', 'alpha')]);
+
+    await userEvent.type(screen.getByLabelText('Type what you hear'), 'alpha');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    expect(screen.getByText('Correct!')).toBeInTheDocument();
+
+    await userEvent.keyboard('{Enter}');
+    expect(submitReview).not.toHaveBeenCalled();
+    expect(screen.getByText('Correct!')).toBeInTheDocument(); // still on the same card
   });
 });
 
