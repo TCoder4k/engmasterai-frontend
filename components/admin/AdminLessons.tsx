@@ -428,15 +428,56 @@ const AdminLessons: React.FC = () => {
               />
             </div>
             <div>
+              {/* Sprint 06A — this field is no longer teacher-only. For GRAMMAR
+                  courses it IS the student-facing "Thẻ lý thuyết" stage, and
+                  each `## heading` becomes its own card, so the label and the
+                  hint below have to say so. */}
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
-                Ghi chú giáo viên / transcript (tùy chọn, chưa hiển thị cho học viên)
+                Nội dung lý thuyết (học viên nhìn thấy ở bước "Thẻ lý thuyết")
               </label>
               <textarea
-                rows={3}
+                rows={10}
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                placeholder={
+                  '## Concept\nPresent Simple dùng cho thói quen và sự thật hiển nhiên.\n\n' +
+                  '## Grammar Rule\nDùng động từ nguyên thể với I, You, We, They.\n\n' +
+                  '## Form and Structure\nAffirmative: S + V / V-s/es\n\n' +
+                  '## Examples\nShe works at a bank. — Cô ấy làm việc ở ngân hàng.'
+                }
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
               />
+              {/* Tiered on purpose: a bài Ngữ pháp cơ bản (Present Simple,
+                  Articles, Pronouns) phải KHÔNG bị đẩy về phía các mục TOEIC. */}
+              <div className="mt-2 space-y-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                <p className="font-bold text-slate-600 dark:text-slate-300">
+                  Mỗi tiêu đề <code className="font-mono">##</code> sẽ thành một thẻ riêng cho học viên:
+                </p>
+                <p>
+                  <span className="font-bold">Cơ bản</span> — <code className="font-mono">## Concept</code> ·{' '}
+                  <code className="font-mono">## Grammar Rule</code> ·{' '}
+                  <code className="font-mono">## Form and Structure</code> ·{' '}
+                  <code className="font-mono">## Examples</code>
+                </p>
+                <p>
+                  <span className="font-bold">Nên có</span> — <code className="font-mono">## Tips</code> ·{' '}
+                  <code className="font-mono">## Common Mistakes</code>
+                </p>
+                <p>
+                  <span className="font-bold">Chỉ bài TOEIC</span> —{' '}
+                  <code className="font-mono">## Signal Words</code> ·{' '}
+                  <code className="font-mono">## TOEIC Focus</code> ·{' '}
+                  <code className="font-mono">## Exam Trap</code>
+                </p>
+                <p>
+                  <span className="font-bold">Kết bài</span> — <code className="font-mono">## Lesson Summary</code>
+                </p>
+                <p className="text-slate-400 dark:text-slate-500">
+                  Mục nào không viết thì học viên không thấy — không có ô trống. Tiêu đề khác vẫn hiển thị
+                  như ghi chú thường. Trong Examples, dùng “câu tiếng Anh — nghĩa tiếng Việt”; không có dấu
+                  “—” thì chỉ hiện câu tiếng Anh.
+                </p>
+              </div>
             </div>
             <div className="flex justify-end space-x-3 pt-2">
               <button
