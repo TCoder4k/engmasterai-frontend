@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import LessonVideoPlayer from './video/LessonVideoPlayer';
-import GrammarLessonContent from './grammar/GrammarLessonContent';
+import GrammarTheoryCards from './grammar/GrammarTheoryCards';
 import LessonOutline from './grammar/LessonOutline';
 import LessonStepper from './LessonStepper';
 import LessonStageStepper from './LessonStageStepper';
@@ -285,7 +285,7 @@ const LessonPage: React.FC = () => {
             {currentStage === 'theory' && (
               <div className="space-y-5 mb-8">
                 {parsedNotes.sections.length > 0 && <LessonOutline sections={parsedNotes.sections} />}
-                <GrammarLessonContent parsed={parsedNotes} />
+                <GrammarTheoryCards parsed={parsedNotes} />
                 {hasNotesContent && (
                   <TheoryCompletionBar
                     isComplete={stageStatuses.theory === 'completed'}

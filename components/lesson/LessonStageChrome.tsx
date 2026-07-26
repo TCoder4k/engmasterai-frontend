@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, Gauge, ListTree, Target } from 'lucide-react';
+import { ArrowRight, Check, Gauge, ListTree, Lock, Target } from 'lucide-react';
 import { Lesson } from '../../types';
 import { ParsedGrammarNotes } from './grammar/parseGrammarNotes';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -133,26 +133,38 @@ interface TheoryCompletionBarProps {
 
 // Footer of the theory stage. Marking it read is what makes the theory stage
 // complete — and, together with the video, what makes the LESSON complete.
+//
+// The next stage (Quiz Part 5) has no backend at all — LessonTask/Question are
+// schema-only — so it is shown as an explicitly locked destination rather than
+// a button that would lead somewhere fabricated.
 export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({ isComplete, onMarkRead }) => {
   const { t } = useTranslation();
 
-  if (isComplete) {
-    return (
-      <div className="flex items-center gap-2 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-sm font-bold">
-        <Check size={16} aria-hidden="true" />
-        <span>{t.lesson.theoryRead}</span>
-      </div>
-    );
-  }
-
   return (
-    <button
-      type="button"
-      onClick={onMarkRead}
-      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-extrabold shadow-lg shadow-indigo-500/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
-    >
-      <Check size={15} aria-hidden="true" />
-      <span>{t.lesson.theoryReadCta}</span>
-    </button>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      {isComplete ? (
+        <div className="flex items-center gap-2 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-sm font-bold">
+          <Check size={16} aria-hidden="true" />
+          <span>{t.lesson.theoryRead}</span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onMarkRead}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-extrabold shadow-lg shadow-indigo-500/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        >
+          <Check size={15} aria-hidden="true" />
+          <span>{t.lesson.theoryReadCta}</span>
+        </button>
+      )}
+
+      <div
+        aria-disabled="true"
+        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-ink-950 border border-slate-200 dark:border-ink-700 text-slate-400 dark:text-slate-500 text-xs font-bold cursor-not-allowed select-none"
+      >
+        <Lock size={13} aria-hidden="true" />
+        <span>{t.lesson.nextStageLocked}</span>
+      </div>
+    </div>
   );
 };
