@@ -22,6 +22,7 @@ import VocabLibraryPage from './components/vocab/VocabLibraryPage';
 import LibraryDetailPage from './components/vocab/LibraryDetailPage';
 import DeckDetailPage from './components/vocab/DeckDetailPage';
 import WordDetailPage from './components/vocab/WordDetailPage';
+import GrammarRoadmapPage from './components/grammar/GrammarRoadmapPage';
 import CourseCatalogPage from './components/course/CourseCatalogPage';
 import CourseDetailPage from './components/course/CourseDetailPage';
 import LessonPage from './components/lesson/LessonPage';
@@ -72,6 +73,15 @@ const App: React.FC = () => {
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
           <Route path="/vocab/decks/:id" element={<DeckDetailPage />} />
           <Route path="/vocab/words/:id" element={<WordDetailPage />} />
+          {/* Sprint 05/06 — Grammar is a first-class student module, and
+              /grammar is its ROADMAP (Grammar -> Roadmap -> Course -> Lesson
+              -> Learning Engine). Courses and lessons still live on the
+              /courses routes below, so there is exactly one Course domain.
+              /courses itself stays registered as the all-type catalog (the
+              Dashboard links to it, and students have /courses/... deep
+              links already persisted in localStorage) — it is simply no
+              longer primary navigation. */}
+          <Route path="/grammar" element={<GrammarRoadmapPage />} />
           <Route path="/courses" element={<CourseCatalogPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           <Route path="/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />

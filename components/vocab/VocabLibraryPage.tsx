@@ -5,7 +5,7 @@ import { getPublishedLibraries } from '../../services/vocabLibraryService';
 import { getLibrariesProgress, LibrarySummaryProgress } from '../../services/learningService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary } from '../../types';
-import { Library as LibraryIcon } from 'lucide-react';
+import { ArrowRight, Library as LibraryIcon } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // The vocabulary shelf. Every library shown here is one the backend actually
@@ -79,24 +79,32 @@ const VocabLibraryPage: React.FC = () => {
           {libraries.map((library) => {
             const progress = progressById.get(library.id);
             return (
-              <Link
+              // Sprint 05: the card is a container, not one big <Link>. The
+              // due-review action below needs to be its own link, and a
+              // <Link> inside a <Link> is invalid HTML — the same
+              // restructure LibraryDetailPage's deck rows got in 04D.
+              <div
                 key={library.id}
-                to={`/vocab/libraries/${library.id}`}
                 className="bg-white dark:bg-slate-900 rounded-[24px] shadow-lg dark:shadow-none p-8 flex flex-col items-center text-center h-full group transition-all duration-300 hover:border-indigo-100 dark:hover:border-indigo-500/40 border border-transparent dark:border-slate-800"
               >
-                <div className="w-20 h-20 rounded-2xl border-4 border-slate-50 dark:border-slate-800 group-hover:border-indigo-50 dark:group-hover:border-indigo-500/20 overflow-hidden bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-500 dark:text-indigo-400 mb-6 transition-all duration-300">
-                  {library.thumbnail ? (
-                    <img src={library.thumbnail} alt={library.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <LibraryIcon size={32} aria-hidden="true" />
-                  )}
-                </div>
-                <h3 className="text-[18px] font-extrabold text-slate-900 dark:text-slate-100 mb-3 leading-tight group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
-                  {library.name}
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 text-[14px] leading-relaxed font-medium">
-                  {library.description}
-                </p>
+                <Link
+                  to={`/vocab/libraries/${library.id}`}
+                  className="flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-2xl"
+                >
+                  <div className="w-20 h-20 rounded-2xl border-4 border-slate-50 dark:border-slate-800 group-hover:border-indigo-50 dark:group-hover:border-indigo-500/20 overflow-hidden bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-500 dark:text-indigo-400 mb-6 transition-all duration-300">
+                    {library.thumbnail ? (
+                      <img src={library.thumbnail} alt={library.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <LibraryIcon size={32} aria-hidden="true" />
+                    )}
+                  </div>
+                  <h3 className="text-[18px] font-extrabold text-slate-900 dark:text-slate-100 mb-3 leading-tight group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+                    {library.name}
+                  </h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-[14px] leading-relaxed font-medium">
+                    {library.description}
+                  </p>
+                </Link>
 
                 {progress && (
                   <div className="mt-5 w-full space-y-2">
@@ -115,16 +123,26 @@ const VocabLibraryPage: React.FC = () => {
                           {t.vocab.startedLabel}: {progress.startedPercent}% · {t.vocab.masteredLabel}:{' '}
                           {progress.masteredPercent}%
                         </p>
+                        {/* Sprint 05 — this page showed a real due count but
+                            linked nowhere. Rendered only when words are
+                            actually due; at zero there is no action and
+                            nothing is implied. */}
                         {progress.dueWords > 0 && (
-                          <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                            {t.vocab.dueTodayLabel}: {progress.dueWords}
-                          </p>
+                          <Link
+                            to={`/practice/review?libraryId=${library.id}`}
+                            className="mt-1 inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                          >
+                            <span>
+                              {t.vocab.reviewDueAction} ({progress.dueWords})
+                            </span>
+                            <ArrowRight size={14} aria-hidden="true" />
+                          </Link>
                         )}
                       </>
                     )}
                   </div>
                 )}
-              </Link>
+              </div>
             );
           })}
         </div>

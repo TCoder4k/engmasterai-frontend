@@ -22,6 +22,54 @@ const renderAt = (ui: ReactElement, initialPath: string) =>
 
 afterEach(() => cleanup());
 
+// Sprint 05: "My Courses" (desktop) / "Courses" (mobile) — both pointing at
+// the generic /courses catalog — became a single Grammar module entry at
+// /grammar. Speaking and Writing are explicitly deferred to a later roadmap
+// and must not appear in either navigation.
+describe('Grammar module navigation (Sprint 05)', () => {
+  it('the desktop sidebar shows Grammar, not My Courses, linking to /grammar', () => {
+    renderAt(<StudentDesktopSidebar />, '/home');
+
+    expect(screen.queryByText('My Courses')).not.toBeInTheDocument();
+    const grammarLink = screen.getByRole('link', { name: /grammar/i });
+    expect(grammarLink).toHaveAttribute('href', '/grammar');
+  });
+
+  it('the bottom navigation shows Grammar, not Courses, linking to /grammar', () => {
+    renderAt(<StudentBottomNavigation />, '/home');
+
+    expect(screen.queryByText('Courses')).not.toBeInTheDocument();
+    expect(screen.queryByText('My Courses')).not.toBeInTheDocument();
+    const grammarLink = screen.getByRole('link', { name: /grammar/i });
+    expect(grammarLink).toHaveAttribute('href', '/grammar');
+  });
+
+  it.each([
+    ['desktop sidebar', <StudentDesktopSidebar key="d" />],
+    ['bottom navigation', <StudentBottomNavigation key="m" />],
+  ])('marks Grammar active on /grammar in the %s', (_label, ui) => {
+    renderAt(ui, '/grammar');
+
+    expect(screen.getByRole('link', { name: /grammar/i })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('does not mark Grammar active on an unrelated route', () => {
+    renderAt(<StudentDesktopSidebar />, '/vocab');
+
+    expect(screen.getByRole('link', { name: /grammar/i })).not.toHaveAttribute('aria-current');
+  });
+
+  it.each([
+    ['desktop sidebar', <StudentDesktopSidebar key="d" />],
+    ['bottom navigation', <StudentBottomNavigation key="m" />],
+  ])('shows no Speaking or Writing item in the %s', (_label, ui) => {
+    renderAt(ui, '/home');
+
+    expect(screen.queryByText(/speaking/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/writing/i)).not.toBeInTheDocument();
+  });
+});
+
 describe('StudentDesktopSidebar navigation', () => {
   it('shows a "Listening" item, not "Practice", linking to /practice/listening', () => {
     renderAt(<StudentDesktopSidebar />, '/home');

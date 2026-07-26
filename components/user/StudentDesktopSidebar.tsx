@@ -49,9 +49,14 @@ const StudentDesktopSidebar: React.FC = () => {
           <span>{t.nav.dashboard}</span>
         </NavLink>
 
-        <NavLink to="/courses" className={({ isActive }) => navLinkClass(isActive)}>
+        {/* Sprint 05: "My Courses" (-> /courses, the generic all-type catalog)
+            became the Grammar module. /courses is deliberately kept as a
+            working route — the Dashboard's course cards, and deep links
+            already stored in students' localStorage, still use it — it just
+            is no longer primary navigation. */}
+        <NavLink to="/grammar" className={({ isActive }) => navLinkClass(isActive)}>
           <BookOpen size={20} aria-hidden="true" />
-          <span>{t.nav.myCourses}</span>
+          <span>{t.nav.grammar}</span>
         </NavLink>
 
         {/* Sprint 03D: the generic "Practice" nav item is replaced by a

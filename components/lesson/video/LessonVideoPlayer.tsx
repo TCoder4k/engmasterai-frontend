@@ -21,6 +21,13 @@ interface LessonVideoPlayerProps {
   lessonId: string;
   resolvedLessonPath: string;
   videoUrl: string | null;
+  // Sprint 06 — hands the live YT instance to the caller so lesson chrome
+  // (e.g. the playback-speed controls) can drive it without this component
+  // growing UI of its own. Called with null when the video is unavailable.
+  onPlayerReady?: (player: any | null) => void;
+  // Fires when the video reaches its end, so the page can advance the stage
+  // flow. Progress persistence still happens here regardless.
+  onEnded?: () => void;
 }
 
 // YouTube-based lesson video player (design doc §7.4). Composes the
@@ -34,6 +41,8 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   lessonId,
   resolvedLessonPath,
   videoUrl,
+  onPlayerReady,
+  onEnded,
 }) => {
   const videoId = parseYouTubeVideoId(videoUrl);
   const [status, setStatus] = useState<'loading' | 'ready' | 'unavailable'>(
@@ -45,6 +54,15 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const playerInstanceRef = useRef<any>(null);
   const saveTimerRef = useRef<number | null>(null);
   const pendingResumeRef = useRef<number | null>(null);
+
+  // Held in refs so the YT callbacks below can stay identity-stable (they
+  // are registered once with the embed) while still calling the latest
+  // props. Passing the callbacks directly would re-register the handlers on
+  // every parent render.
+  const onPlayerReadyRef = useRef(onPlayerReady);
+  const onEndedRef = useRef(onEnded);
+  onPlayerReadyRef.current = onPlayerReady;
+  onEndedRef.current = onEnded;
 
   const user = authService.getUser();
   const userId = user?.id;
@@ -93,6 +111,7 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const handleReady = useCallback((player: any) => {
     playerInstanceRef.current = player;
     setStatus('ready');
+    onPlayerReadyRef.current?.(player);
 
     const saved = pendingResumeRef.current;
     if (saved && saved > 0) {
@@ -120,6 +139,9 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
       } else if (state === PLAYER_STATE.ENDED) {
         stopSaveTimer();
         persistProgress(true);
+        // Persisted first, so a listener that re-reads progress sees the
+        // completed state rather than racing it.
+        onEndedRef.current?.();
       }
     },
     [persistProgress],
@@ -128,6 +150,7 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const handleError = useCallback(() => {
     stopSaveTimer();
     setStatus('unavailable');
+    onPlayerReadyRef.current?.(null);
   }, []);
 
   // Always-save on tab close / route change, plus final cleanup on unmount
