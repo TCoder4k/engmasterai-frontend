@@ -5,6 +5,8 @@
 // importing authService itself, keeping the storage helper and the auth
 // service decoupled in both directions.
 
+import { CourseType } from '../types';
+
 export type RecentActivityType = 'lesson' | 'course' | 'deck' | 'practice';
 
 export interface RecentActivityEntry {
@@ -15,6 +17,14 @@ export interface RecentActivityEntry {
   // that has every parent id in scope (e.g. a Lesson's route needs both
   // courseId and lessonId) — never re-derived from a bare id later.
   path: string;
+  // Sprint 05 — which learning module this entry belongs to, so Continue
+  // Learning can prioritise Grammar rather than being purely recency-based.
+  // Recorded by the pages that already have the parent course in scope.
+  //
+  // OPTIONAL on purpose: entries written before Sprint 05 are already sitting
+  // in real users' localStorage without it. Those stay valid and simply fall
+  // through to the recency fallback — this is not a migration.
+  courseType?: CourseType;
   openedAt: string;
 }
 
@@ -34,6 +44,16 @@ export function getRecentActivity(userId: string): RecentActivityEntry[] {
 
 export function getMostRecentActivity(userId: string): RecentActivityEntry | null {
   return getRecentActivity(userId)[0] ?? null;
+}
+
+// Most recent entry belonging to one module. Returns null both when nothing
+// matches and when the stored entries predate `courseType` — callers treat
+// "unknown module" as "no match" and fall back to plain recency.
+export function getMostRecentActivityOfType(
+  userId: string,
+  courseType: CourseType,
+): RecentActivityEntry | null {
+  return getRecentActivity(userId).find((entry) => entry.courseType === courseType) ?? null;
 }
 
 // Writes (or moves-to-front) one entry, deduplicated by { type, id } so

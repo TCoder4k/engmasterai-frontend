@@ -1,5 +1,6 @@
 import { clearRecentActivity } from './recentActivity';
 import { clearAllVideoProgress } from './videoProgress';
+import { clearLessonStages } from './lessonProgress';
 import { fetchWithTimeout } from './fetchTimeout';
 // Deliberate circular import (refreshCoordinator.ts imports authService for
 // authService.refresh(); authService.ts imports refreshCoordinator here for
@@ -373,6 +374,9 @@ export const authService = {
     if (user) {
       clearRecentActivity(user.id);
       clearAllVideoProgress(user.id);
+      // Sprint 06 — lesson stage completion is device-local too, so it falls
+      // under the same shared-device rule as the two above.
+      clearLessonStages(user.id);
     }
 
     emitAuthChanged();

@@ -8,7 +8,29 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       // Class-based dark mode — the ThemeProvider toggles .dark on <html>.
-      tailwind.config = { darkMode: 'class' };
+      //
+      // Sprint 06: the `ink` scale is the deep-navy surface palette the
+      // Grammar module's dark mode uses. Named here rather than pasted as
+      // hex literals across components so the two dozen usages stay one
+      // decision. Always used PAIRED with a light class
+      // (`bg-white dark:bg-ink-900`) — light mode keeps the slate/white
+      // surfaces the rest of the app uses, so the theme toggle stays real.
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              ink: {
+                950: '#0B0F19', // page background
+                900: '#131B2E', // panel / card
+                850: '#1A243B', // hover
+                800: '#1E293B', // active / raised
+                700: '#1F293D', // border
+              },
+            },
+          },
+        },
+      };
       // Apply the correct PER-USER theme before first paint so there's no
       // flash and no cross-account leak. Must mirror ThemeProvider's
       // resolveTheme(): admin is always light; otherwise the current user's

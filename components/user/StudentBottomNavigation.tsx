@@ -16,7 +16,9 @@ const StudentBottomNavigation: React.FC = () => {
     end?: boolean;
   }[] = [
     { label: t.nav.home, icon: <Home size={21} />, to: '/home', end: true },
-    { label: t.nav.courses, icon: <BookOpen size={21} />, to: '/courses' },
+    // Sprint 05 — matches the desktop sidebar: the Courses slot is now the
+    // Grammar module. Five slots, unchanged; no Speaking/Writing item.
+    { label: t.nav.grammar, icon: <BookOpen size={21} />, to: '/grammar' },
     { label: t.nav.vocabulary, icon: <BookMarked size={21} />, to: '/vocab' },
     { label: t.nav.listening, icon: <Headphones size={21} />, to: '/practice/listening' },
     { label: t.nav.profile, icon: <UserIcon size={21} />, to: '/profile' },

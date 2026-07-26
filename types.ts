@@ -32,9 +32,15 @@ export interface Course {
   thumbnail: string | null;
   isPublished: boolean;
   createdAt: string;
+  // Sprint 05 — PUBLISHED lessons only (CourseService.PUBLIC_SELECT filters
+  // the relation count). Not the same number as ManagedCourse's below.
+  _count: { lessons: number };
 }
 
 export interface ManagedCourse extends Course {
+  // Same shape, DIFFERENT meaning: the admin select counts every lesson
+  // including drafts, so this can legitimately exceed the published count a
+  // student sees for the same course.
   _count: { lessons: number };
 }
 

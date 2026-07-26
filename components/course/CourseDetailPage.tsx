@@ -10,8 +10,14 @@ import { getCourseLessons } from '../../services/lessonService';
 import { authService } from '../../services/authService';
 import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
+import { getCourseProgress } from '../../services/lessonProgress';
 import { Course, Lesson } from '../../types';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
+import {
+  GrammarCategory,
+  deriveCourseLevel,
+  deriveGrammarCategory,
+} from '../grammar/grammarCategory';
 import { useTranslation } from '../../i18n/useTranslation';
 
 const TRACK_KEY: Record<Course['type'], 'grammar' | 'vocabulary' | 'listening'> = {
@@ -56,18 +62,48 @@ const CourseDetailPage: React.FC = () => {
       id: course.id,
       title: course.title,
       path: `/courses/${course.id}`,
+      // Sprint 05 — lets Continue Learning prioritise Grammar.
+      courseType: course.type,
     });
   }, [course]);
+
+  // Sprint 05 — Grammar is a student-facing module, so a Grammar course
+  // returns to /grammar rather than the generic catalog. Everything else
+  // still goes back to /courses, which remains the all-type catalog reached
+  // from the Dashboard.
+  const isGrammar = course?.type === 'GRAMMAR';
+  const backTo = isGrammar ? '/grammar' : '/courses';
+  const backLabel = isGrammar ? t.grammar.backToRoadmap : t.course.backToCourses;
+
+  // Real, device-local completion (Sprint 06). Counts COMPLETED lessons —
+  // every stage a lesson offers, finished — not videos watched, so the
+  // Mini Check and Practice stages can land later without this UI changing.
+  const progress = getCourseProgress(authService.getUser()?.id, lessons);
+
+  const category = course && isGrammar ? deriveGrammarCategory(course) : null;
+  const level = course && isGrammar ? deriveCourseLevel(course) : null;
+
+  // Real published lessons (GET /courses/:id/lessons returns published only)
+  // and their real summed study time. No XP tile and no average-accuracy tile
+  // like the design reference has: both are mock there and have no backend.
+  const totalMinutes = lessons.reduce((sum, lesson) => sum + (lesson.estimatedStudyMinutes ?? 0), 0);
+
+  const categoryLabels: Record<GrammarCategory, string> = {
+    TOEIC: t.grammar.categoryTOEIC,
+    GRAMMAR_IN_USE: t.grammar.categoryGrammarInUse,
+    DESTINATION: t.grammar.categoryDestination,
+    FOUNDATION: t.grammar.categoryFoundation,
+  };
 
   return (
     <StudentLayout>
       <div className="max-w-5xl mx-auto">
         <Link
-          to="/courses"
+          to={backTo}
           className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors mb-8 min-h-[44px]"
         >
           <ArrowLeft size={14} aria-hidden="true" />
-          <span>{t.course.backToCourses}</span>
+          <span>{backLabel}</span>
         </Link>
 
         {isLoading && (
@@ -82,19 +118,106 @@ const CourseDetailPage: React.FC = () => {
 
         {!isLoading && !error && course && (
           <>
-            <div className="mb-10">
-              <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 uppercase">
-                {t.tracks[TRACK_KEY[course.type]].label}
-              </span>
-              <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 mt-3">{course.title}</h2>
-              <div className="h-1 w-12 bg-indigo-500 mt-2.5 mb-4 rounded-full"></div>
-              <p className="text-slate-500 dark:text-slate-400 text-[15px] font-medium max-w-2xl">
-                {course.description}
-              </p>
-            </div>
+            {/* Course hero — structure follows the design reference's course
+                banner (badge row, large title, description, stat tiles). Its
+                XP tile and average-accuracy tile are omitted: both are mock
+                in the reference with no field behind them here. The progress
+                bar IS real (device-local completed lessons) and renders only
+                once something has actually been completed. */}
+            <section className="relative overflow-hidden bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-3xl p-6 sm:p-8 shadow-sm dark:shadow-2xl mb-8">
+              <div
+                className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"
+                aria-hidden="true"
+              />
+
+              <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="space-y-3 max-w-2xl">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 uppercase">
+                      {t.tracks[TRACK_KEY[course.type]].label}
+                    </span>
+                    {level && (
+                      <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {level}
+                      </span>
+                    )}
+                    {category && (
+                      <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-md bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
+                        {categoryLabels[category]}
+                      </span>
+                    )}
+                  </div>
+
+                  <h2 className="text-2xl sm:text-[28px] font-black text-slate-900 dark:text-slate-100 tracking-tight leading-tight">
+                    {course.title}
+                  </h2>
+
+                  <p className="text-slate-500 dark:text-slate-400 text-[15px] font-medium leading-relaxed">
+                    {course.description}
+                  </p>
+                </div>
+
+                {lessons.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3 shrink-0 lg:min-w-[260px]">
+                    <div className="p-4 bg-slate-50 dark:bg-ink-950/80 dark:border dark:border-ink-700 rounded-2xl text-center space-y-1">
+                      <Layers size={16} className="mx-auto text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                      <p className="text-lg font-black text-slate-900 dark:text-white">
+                        {progress.completed}/{lessons.length}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                        {t.grammar.lessonsCompleted}
+                      </p>
+                    </div>
+
+                    {/* Only rendered when lessons actually carry study times —
+                        a course with none shows one tile, not a zero. */}
+                    {totalMinutes > 0 && (
+                      <div className="p-4 bg-slate-50 dark:bg-ink-950/80 dark:border dark:border-ink-700 rounded-2xl text-center space-y-1">
+                        <Clock size={16} className="mx-auto text-violet-500 dark:text-violet-400" aria-hidden="true" />
+                        <p className="text-lg font-black text-slate-900 dark:text-white">
+                          {totalMinutes}
+                          <span className="text-xs font-bold ml-0.5">{t.lesson.minutesUnit}</span>
+                        </p>
+                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                          {t.course.totalDuration}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Real progress only — absent entirely until at least one
+                  lesson has actually been completed on this device. */}
+              {progress.completed > 0 && (
+                <div className="relative mt-6 pt-5 border-t border-slate-100 dark:border-ink-700 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-slate-500 dark:text-slate-300">{t.grammar.progressLabel}</span>
+                    <span className="text-indigo-600 dark:text-indigo-400">
+                      {progress.percent}% ({progress.completed}/{progress.total})
+                    </span>
+                  </div>
+                  <div className="w-full h-2.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden">
+                    <div
+                      style={{ width: `${progress.percent}%` }}
+                      className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-400 rounded-full transition-all duration-500"
+                    />
+                  </div>
+                  <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                    {t.grammar.onThisDevice}
+                  </p>
+                </div>
+              )}
+            </section>
 
             {lessons.length === 0 && (
               <EmptyState icon={<BookOpen size={32} />} message={t.course.noLessonsYet} />
+            )}
+
+            {lessons.length > 0 && (
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 mb-4">
+                {t.course.lessonsHeading}
+              </h3>
             )}
 
             <div className="space-y-3">
