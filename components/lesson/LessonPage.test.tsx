@@ -41,6 +41,7 @@ const LESSON = {
   orderIndex: 0,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
+  _count: { tasks: 0 },
 };
 
 const courseOf = (type: 'GRAMMAR' | 'LISTENING') => ({
@@ -155,15 +156,97 @@ describe('LessonPage — Grammar staged player', () => {
     expect(stepper().getByText('Completed')).toBeInTheDocument();
   });
 
-  it('never exposes quiz content', async () => {
+  it('falls back to the video stage when the lesson has no published quiz', async () => {
     global.fetch = buildFetch('GRAMMAR') as unknown as typeof fetch;
     renderPage('?stage=quiz');
 
-    // An unknown/locked stage falls back to the video stage rather than
-    // rendering anything quiz-shaped.
+    // This fixture's _count.tasks is 0 — no quiz exists for it — so
+    // requesting ?stage=quiz falls back to Video rather than rendering
+    // nothing (Sprint 06B). Trap Hunter and Advanced practice still have no
+    // backend at all and stay "Coming soon"; Quiz shows its own distinct
+    // "Not in this lesson" label instead of being lumped in with them.
     expect(await screen.findByTestId('video-player')).toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    expect(stepper().getAllByText('Coming soon')).toHaveLength(3);
+    expect(stepper().getAllByText('Coming soon')).toHaveLength(2);
+    expect(stepper().getByText('Not in this lesson')).toBeInTheDocument();
+  });
+});
+
+describe('LessonPage — Sprint 06B quiz stage', () => {
+  const LESSON_WITH_QUIZ = { ...LESSON, _count: { tasks: 1 } };
+
+  const QUIZ_RESPONSE = {
+    quiz: {
+      taskId: 'task-1',
+      passingScorePercent: 70,
+      questions: [
+        {
+          id: 'q-1',
+          type: 'MULTIPLE_CHOICE',
+          difficulty: null,
+          content: 'She ___ to work every day.',
+          options: [
+            { id: 'a', text: 'go' },
+            { id: 'b', text: 'goes' },
+          ],
+          audioUrl: null,
+          imageUrl: null,
+          orderIndex: 0,
+        },
+      ],
+    },
+    progress: { attemptsCount: 0, bestScorePercent: null, passed: false, lastDurationSeconds: null },
+  };
+
+  const buildFetchWithQuiz = () =>
+    vi.fn((url: string) => {
+      if (url.includes('/quiz/submit')) {
+        return Promise.resolve(
+          jsonResponse(201, {
+            correctCount: 1,
+            totalCount: 1,
+            accuracyPercent: 100,
+            passed: true,
+            passingScorePercent: 70,
+            attemptsCount: 1,
+            bestScorePercent: 100,
+            durationSeconds: 12,
+            results: [
+              {
+                questionId: 'q-1',
+                isCorrect: true,
+                submitted: { optionId: 'b' },
+                correctAnswer: { optionId: 'b' },
+                explanation: null,
+              },
+            ],
+          }),
+        );
+      }
+      if (url.includes('/quiz')) return Promise.resolve(jsonResponse(200, QUIZ_RESPONSE));
+      if (url.includes('/courses/c-1/lessons')) {
+        return Promise.resolve(jsonResponse(200, { data: [LESSON_WITH_QUIZ] }));
+      }
+      if (url.includes('/lessons/l-1')) return Promise.resolve(jsonResponse(200, LESSON_WITH_QUIZ));
+      if (url.includes('/courses/c-1')) return Promise.resolve(jsonResponse(200, courseOf('GRAMMAR')));
+      return Promise.resolve(jsonResponse(404, { message: 'Not found' }));
+    });
+
+  it('renders the quiz question and lets the student answer, submit, and reach Lesson Complete', async () => {
+    global.fetch = buildFetchWithQuiz() as unknown as typeof fetch;
+    renderPage('?stage=quiz');
+
+    expect(await screen.findByText('She ___ to work every day.')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /goes/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: /goes/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByText('Quiz summary')).toBeInTheDocument();
+    expect(screen.getByText("You've passed this quiz.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('Lesson complete')).toBeInTheDocument();
   });
 });
 

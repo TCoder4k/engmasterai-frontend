@@ -5,7 +5,7 @@ import StudentLayout from '../../user/StudentLayout';
 import EmptyState from '../../shared/EmptyState';
 import ErrorState from '../../shared/ErrorState';
 import Skeleton from '../../shared/Skeleton';
-import CelebrationBurst from '../CelebrationBurst';
+import CelebrationBurst from '../../shared/CelebrationBurst';
 import RatingButtons from '../vocab/RatingButtons';
 import ReviewSessionSummary from './ReviewSessionSummary';
 import { useReviewSession } from './useReviewSession';

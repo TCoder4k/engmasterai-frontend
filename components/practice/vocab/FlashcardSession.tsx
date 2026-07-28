@@ -12,7 +12,7 @@ import {
   PreviewIntervals,
   ReviewRating,
 } from '../../../services/learningService';
-import CelebrationBurst from '../CelebrationBurst';
+import CelebrationBurst from '../../shared/CelebrationBurst';
 import RatingButtons from './RatingButtons';
 import { useVocabSession } from './useVocabSession';
 import { useReviewIntentKey } from '../reviewIntentKey';

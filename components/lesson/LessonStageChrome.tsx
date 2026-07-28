@@ -129,15 +129,28 @@ export const VideoStageSidePanel: React.FC<VideoStagePanelProps> = ({
 interface TheoryCompletionBarProps {
   isComplete: boolean;
   onMarkRead: () => void;
+  // Sprint 06B.5 — whether this lesson actually has a published quiz, and
+  // how to get there. Absent means it genuinely has none.
+  hasQuiz?: boolean;
+  onGoToQuiz?: () => void;
 }
 
 // Footer of the theory stage. Marking it read is what makes the theory stage
-// complete — and, together with the video, what makes the LESSON complete.
+// complete — and, together with the video and the quiz, what makes the LESSON
+// complete.
 //
-// The next stage (Quiz Part 5) has no backend at all — LessonTask/Question are
-// schema-only — so it is shown as an explicitly locked destination rather than
-// a button that would lead somewhere fabricated.
-export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({ isComplete, onMarkRead }) => {
+// Sprint 06B.5 bug fix: this bar used to ALWAYS render a locked "Next: Quiz
+// Part 5 — coming soon" chip, written when LessonTask/Question were still
+// schema-only. Sprint 06B shipped the quiz for real, so on a quiz-bearing
+// lesson that chip was telling students a live feature was unavailable. It
+// now reflects the lesson's actual state: a real link when a published quiz
+// exists, the honest locked chip only when one doesn't.
+export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({
+  isComplete,
+  onMarkRead,
+  hasQuiz = false,
+  onGoToQuiz,
+}) => {
   const { t } = useTranslation();
 
   return (
@@ -151,20 +164,31 @@ export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({ isComp
         <button
           type="button"
           onClick={onMarkRead}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-extrabold shadow-lg shadow-indigo-500/20 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-extrabold shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
         >
           <Check size={15} aria-hidden="true" />
           <span>{t.lesson.theoryReadCta}</span>
         </button>
       )}
 
-      <div
-        aria-disabled="true"
-        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-ink-950 border border-slate-200 dark:border-ink-700 text-slate-400 dark:text-slate-500 text-xs font-bold cursor-not-allowed select-none"
-      >
-        <Lock size={13} aria-hidden="true" />
-        <span>{t.lesson.nextStageLocked}</span>
-      </div>
+      {hasQuiz && onGoToQuiz ? (
+        <button
+          type="button"
+          onClick={onGoToQuiz}
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white dark:bg-ink-900 border-2 border-indigo-200 dark:border-indigo-500/40 text-indigo-600 dark:text-indigo-300 text-xs font-bold hover:border-indigo-400 dark:hover:border-indigo-400 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        >
+          <span>{t.lesson.nextStageQuiz}</span>
+          <ArrowRight size={13} aria-hidden="true" />
+        </button>
+      ) : (
+        <div
+          aria-disabled="true"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-ink-950 border border-slate-200 dark:border-ink-700 text-slate-400 dark:text-slate-500 text-xs font-bold cursor-not-allowed select-none"
+        >
+          <Lock size={13} aria-hidden="true" />
+          <span>{t.lesson.nextStageLocked}</span>
+        </div>
+      )}
     </div>
   );
 };

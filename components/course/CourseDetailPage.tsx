@@ -10,7 +10,8 @@ import { getCourseLessons } from '../../services/lessonService';
 import { authService } from '../../services/authService';
 import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
-import { getCourseProgress } from '../../services/lessonProgress';
+import { getCourseProgress, QuizStageProgress } from '../../services/lessonProgress';
+import { getCourseQuizProgress } from '../../services/quizService';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
 import {
@@ -35,6 +36,14 @@ const CourseDetailPage: React.FC = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Sprint 06B — server-side quiz progress, keyed by lessonId. Supplementary
+  // (like GrammarRoadmapPage's per-course lesson fetch): the page has
+  // already painted from course+lessons by the time this resolves, and a
+  // failure here just leaves every quiz-bearing lesson looking not-yet-passed
+  // rather than breaking the page.
+  const [quizProgressByLessonId, setQuizProgressByLessonId] = useState<Map<string, QuizStageProgress>>(
+    new Map(),
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -48,6 +57,21 @@ const CourseDetailPage: React.FC = () => {
       .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (!id || !authService.getUser()) return;
+    getCourseQuizProgress(id)
+      .then((res) => {
+        const map = new Map<string, QuizStageProgress>();
+        res.data.forEach((row) => {
+          map.set(row.lessonId, { passed: row.passed, attemptsCount: row.attemptsCount });
+        });
+        setQuizProgressByLessonId(map);
+      })
+      .catch(() => {
+        // Silent — quiz-bearing lessons simply render as not-yet-passed.
+      });
   }, [id]);
 
   // Records the Continue Learning entry once the course is actually
@@ -78,7 +102,7 @@ const CourseDetailPage: React.FC = () => {
   // Real, device-local completion (Sprint 06). Counts COMPLETED lessons —
   // every stage a lesson offers, finished — not videos watched, so the
   // Mini Check and Practice stages can land later without this UI changing.
-  const progress = getCourseProgress(authService.getUser()?.id, lessons);
+  const progress = getCourseProgress(authService.getUser()?.id, lessons, quizProgressByLessonId);
 
   const category = course && isGrammar ? deriveGrammarCategory(course) : null;
   const level = course && isGrammar ? deriveCourseLevel(course) : null;
@@ -222,7 +246,13 @@ const CourseDetailPage: React.FC = () => {
 
             <div className="space-y-3">
               {lessons.map((lesson, index) => (
-                <LessonListItem key={lesson.id} courseId={course.id} lesson={lesson} orderNumber={index + 1} />
+                <LessonListItem
+                  key={lesson.id}
+                  courseId={course.id}
+                  lesson={lesson}
+                  orderNumber={index + 1}
+                  quizProgress={quizProgressByLessonId.get(lesson.id)}
+                />
               ))}
             </div>
           </>

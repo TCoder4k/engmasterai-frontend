@@ -1,7 +1,9 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { BookOpen, Check, CheckSquare, Lock, Target, Video } from 'lucide-react';
 import { LessonStageId, StageStatus } from '../../services/lessonProgress';
 import { useTranslation } from '../../i18n/useTranslation';
+import { SPRING } from '../shared/motion';
 
 interface LessonStageStepperProps {
   currentStage: LessonStageId;
@@ -88,12 +90,29 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
 
         const content = (
           <>
-            <span
+            {/*
+              Sprint 06B.5 — the badge glyph used to hard-cut between a
+              number, a tick and a padlock. Keying the motion span on the
+              status makes each change a spring pop instead.
+
+              This is also the generic "unlock" moment: it is driven purely
+              by a stage's status changing, never special-cased to one
+              tile. Today only Quiz has a live status transition — Trap
+              Hunter and Advanced practice are constant-`locked` in
+              lessonProgress.ts, so nothing here will ever animate a stage
+              unlocking that does not exist. It is simply ready the day one
+              does.
+            */}
+            <motion.span
+              key={status}
+              initial={{ scale: 0.6, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={SPRING}
               className={`w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0 ${badgeClass}`}
               aria-hidden="true"
             >
               {isCompleted ? <Check size={15} strokeWidth={3} /> : isLocked ? <Lock size={13} /> : index + 1}
-            </span>
+            </motion.span>
 
             <span className="min-w-0 text-left">
               <span
@@ -130,7 +149,7 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
                 type="button"
                 onClick={() => onSelectStage(stage.id)}
                 aria-current={isActive ? 'step' : undefined}
-                className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border-2 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${shellClass}`}
+                className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border-2 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${shellClass}`}
               >
                 {content}
               </button>

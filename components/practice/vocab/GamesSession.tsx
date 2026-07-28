@@ -4,7 +4,7 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import { VocabWordListItem } from '../../../types';
 import { shuffleArray } from '../shuffle';
 import { playCorrect, playIncorrect, playTimeout, playComplete } from '../../../services/feedbackSounds';
-import CelebrationBurst from '../CelebrationBurst';
+import CelebrationBurst from '../../shared/CelebrationBurst';
 import { useVocabSession } from './useVocabSession';
 import { SessionResult } from '../types';
 

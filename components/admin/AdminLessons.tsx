@@ -13,7 +13,7 @@ import {
   deleteLesson,
 } from '../../services/lessonService';
 import { ManagedLesson } from '../../types';
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, PlayCircle, Headphones } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, PlayCircle, Headphones, CheckSquare } from 'lucide-react';
 
 interface LessonFormState {
   title: string;
@@ -302,6 +302,17 @@ const AdminLessons: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-1">
+                          <button
+                            onClick={() =>
+                              navigate(`/admin/lessons/${lesson.id}/quiz`, {
+                                state: { lessonTitle: lesson.title, courseId, courseTitle },
+                              })
+                            }
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            title="Quiz"
+                          >
+                            <CheckSquare size={16} />
+                          </button>
                           <button
                             onClick={() => openEdit(lesson)}
                             className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"

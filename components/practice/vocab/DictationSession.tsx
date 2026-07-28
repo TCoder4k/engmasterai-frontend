@@ -5,7 +5,7 @@ import { VocabWordListItem } from '../../../types';
 import { isTtsSupported, speakText } from '../../../services/tts';
 import { playCorrect, playIncorrect } from '../../../services/feedbackSounds';
 import { submitReview, isVersionConflict, ReviewRating } from '../../../services/learningService';
-import CelebrationBurst from '../CelebrationBurst';
+import CelebrationBurst from '../../shared/CelebrationBurst';
 import RatingButtons from './RatingButtons';
 import { useAudioPlayback, formatAudioTime } from '../useAudioPlayback';
 import { useVocabSession } from './useVocabSession';

@@ -14,14 +14,34 @@
 // not per-user). Best-effort — if storage is unavailable the toggle still
 // works for the current page lifetime.
 
-const MUTE_STORAGE_KEY = 'engmasterai:practiceSoundMuted';
+// Sprint 06B.5 — renamed from 'engmasterai:practiceSoundMuted': these
+// sounds are no longer practice-only, they now cover the lesson quiz too.
+// The old key is still READ once and migrated forward, so a student who
+// muted sound before this sprint does not silently get it back.
+const MUTE_STORAGE_KEY = 'engmasterai:soundMuted';
+const LEGACY_MUTE_STORAGE_KEY = 'engmasterai:practiceSoundMuted';
 
 let audioContext: AudioContext | null = null;
 let muted: boolean | null = null;
 
 const readStoredMute = (): boolean => {
   try {
-    return localStorage.getItem(MUTE_STORAGE_KEY) === 'true';
+    const current = localStorage.getItem(MUTE_STORAGE_KEY);
+    if (current !== null) return current === 'true';
+
+    const legacy = localStorage.getItem(LEGACY_MUTE_STORAGE_KEY);
+    if (legacy === null) return false;
+
+    // Migrate forward once, then stop consulting the old key. Best-effort:
+    // if the write fails we still honour the value we just read.
+    const wasMuted = legacy === 'true';
+    try {
+      localStorage.setItem(MUTE_STORAGE_KEY, String(wasMuted));
+      localStorage.removeItem(LEGACY_MUTE_STORAGE_KEY);
+    } catch {
+      // Ignore — the preference is still correct for this page lifetime.
+    }
+    return wasMuted;
   } catch {
     return false;
   }
@@ -92,6 +112,17 @@ const playTones = (steps: ToneStep[], volume = 0.08): void => {
     // Never let a sound failure break the practice flow.
   }
 };
+
+// Sprint 06B.5 — the sound of CHOOSING, not of being right.
+//
+// Fired when a student selects an option, at which point correctness is
+// unknown to the client by design. Deliberately a single short, low,
+// quiet blip: playCorrect below is a rising two-note figure, so these two
+// can never be confused, and a selection can never be mistaken for a
+// verdict. Quieter than every other cue here (0.03 vs 0.08) because it
+// fires far more often.
+export const playSelect = (): void =>
+  playTones([{ frequency: 440, startAt: 0, duration: 0.012 }], 0.03);
 
 export const playCorrect = (): void =>
   playTones([

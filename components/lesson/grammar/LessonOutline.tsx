@@ -23,7 +23,19 @@ const LessonOutline: React.FC<LessonOutlineProps> = ({ sections }) => {
         <a
           key={`${section.heading}-${section.index}`}
           href={`#section-${section.index}`}
-          className="flex-shrink-0 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1.5 rounded-full whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          // Sprint 06B.5 — smooth scroll instead of a hard jump. Handled in
+          // JS rather than via CSS scroll-behavior so it stays scoped to
+          // these chips and does not change scrolling anywhere else in the
+          // app. Falls back to the plain anchor if anything goes wrong, and
+          // still updates the hash so the link remains shareable.
+          onClick={(e) => {
+            const target = document.getElementById(`section-${section.index}`);
+            if (!target) return; // let the browser handle it
+            e.preventDefault();
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            window.history.replaceState(null, '', `#section-${section.index}`);
+          }}
+          className="flex-shrink-0 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-3 py-1.5 rounded-full whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
         >
           {section.heading}
         </a>
