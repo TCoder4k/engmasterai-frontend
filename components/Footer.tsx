@@ -1,81 +1,102 @@
-
 import React from 'react';
-import { Sparkles, Facebook, Instagram, Youtube, Twitter } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Sparkles } from 'lucide-react';
+
+// Footer.
+//
+// Every link here used to be `href="#"` — sixteen of them — advertising
+// products that do not exist (luyện phát âm, từ điển thông minh, thi thử
+// IELTS/TOEIC), a help centre and a community that were never built, and
+// App Store / Play Store buttons for apps that do not exist, with the badge
+// images hotlinked from Wikipedia.
+//
+// What remains links somewhere real. Sections that would need a page nobody
+// has written are simply absent — the same rule the rest of this codebase
+// follows: where there is nothing behind it, render nothing.
+
+const LEARN_LINKS = [
+  { label: 'Ngữ pháp', to: '/grammar' },
+  { label: 'Từ vựng', to: '/vocab' },
+  { label: 'Luyện nghe', to: '/practice/listening' },
+  { label: 'Ôn tập hằng ngày', to: '/practice/review' },
+];
+
+const ACCOUNT_LINKS = [
+  { label: 'Đăng nhập', to: '/login' },
+  { label: 'Tạo tài khoản', to: '/register' },
+  { label: 'Quên mật khẩu', to: '/forgot-password' },
+];
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-white border-t border-slate-100 pt-20 pb-10">
+    <footer className="bg-white dark:bg-ink-950 border-t border-slate-100 dark:border-ink-700 pt-16 pb-10">
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          {/* Brand */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 group">
-              <div className="bg-indigo-600 p-2 rounded-xl">
-                <Sparkles className="text-white w-5 h-5" />
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+          <div className="space-y-5 lg:col-span-2">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            >
+              <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-2 rounded-xl">
+                <Sparkles className="text-white w-5 h-5" aria-hidden="true" />
               </div>
-              <span className="text-2xl font-bold font-display tracking-tight text-slate-900">
-                EngMaster<span className="text-indigo-600">AI</span>
+              <span className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                EngMaster<span className="text-indigo-600 dark:text-indigo-400">AI</span>
               </span>
-            </div>
-            <p className="text-slate-500 leading-relaxed">
-              Giải pháp học tiếng Anh hiện đại giúp người Việt chinh phục ngôn ngữ dễ dàng và hiệu quả hơn với công nghệ AI hàng đầu.
+            </Link>
+
+            <p className="text-slate-500 dark:text-slate-400 leading-relaxed max-w-md">
+              Nền tảng học tiếng Anh cho người mới bắt đầu và người luyện thi TOEIC, xây dựng quanh ba
+              phần: ngữ pháp, từ vựng và nghe — cùng một cơ chế ôn tập ngắt quãng.
             </p>
-            <div className="flex items-center gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all"><Facebook size={20} /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all"><Instagram size={20} /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all"><Youtube size={20} /></a>
-              <a href="#" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-indigo-600 hover:text-white transition-all"><Twitter size={20} /></a>
-            </div>
           </div>
 
-          {/* Product */}
-          <div>
-            <h4 className="font-bold text-slate-900 mb-6 uppercase text-sm tracking-widest">Sản phẩm</h4>
-            <ul className="space-y-4 text-slate-500 font-medium">
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Luyện phát âm</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Kiểm tra ngữ pháp</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Từ điển thông minh</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Thi thử IELTS/TOEIC</a></li>
+          <nav aria-labelledby="footer-learn">
+            <h2
+              id="footer-learn"
+              className="font-black text-slate-900 dark:text-white mb-5 uppercase text-xs tracking-widest"
+            >
+              Học
+            </h2>
+            <ul className="space-y-3 text-slate-500 dark:text-slate-400 font-medium">
+              {LEARN_LINKS.map((link) => (
+                <li key={link.to}>
+                  <Link
+                    to={link.to}
+                    className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
+          </nav>
 
-          {/* Support */}
-          <div>
-            <h4 className="font-bold text-slate-900 mb-6 uppercase text-sm tracking-widest">Hỗ trợ</h4>
-            <ul className="space-y-4 text-slate-500 font-medium">
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Trung tâm trợ giúp</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Câu hỏi thường gặp</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Liên hệ chúng tôi</a></li>
-              <li><a href="#" className="hover:text-indigo-600 transition-colors">Cộng đồng người học</a></li>
+          <nav aria-labelledby="footer-account">
+            <h2
+              id="footer-account"
+              className="font-black text-slate-900 dark:text-white mb-5 uppercase text-xs tracking-widest"
+            >
+              Tài khoản
+            </h2>
+            <ul className="space-y-3 text-slate-500 dark:text-slate-400 font-medium">
+              {ACCOUNT_LINKS.map((link) => (
+                <li key={link.to}>
+                  <Link
+                    to={link.to}
+                    className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
-          </div>
-
-          {/* App Store */}
-          <div className="space-y-6">
-            <h4 className="font-bold text-slate-900 mb-6 uppercase text-sm tracking-widest">Tải ứng dụng</h4>
-            <p className="text-slate-500 text-sm">Học mọi lúc mọi nơi trên điện thoại của bạn.</p>
-            <div className="space-y-3">
-              <button className="w-full bg-slate-900 text-white p-3 rounded-xl flex items-center gap-3 hover:bg-indigo-600 transition-colors">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" className="w-5 h-5 invert" alt="Apple" />
-                <div className="text-left">
-                  <p className="text-[10px] opacity-70 leading-none">Download on the</p>
-                  <p className="font-bold text-sm leading-none">App Store</p>
-                </div>
-              </button>
-              <button className="w-full bg-slate-900 text-white p-3 rounded-xl flex items-center gap-3 hover:bg-indigo-600 transition-colors">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Google_Play_Store_badge_EN.svg/2560px-Google_Play_Store_badge_EN.svg.png" className="h-6" alt="Play Store" />
-              </button>
-            </div>
-          </div>
+          </nav>
         </div>
 
-        <div className="pt-10 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 text-sm font-medium">
-          <p>© 2024 EngMasterAI. Tất cả quyền được bảo lưu.</p>
-          <div className="flex gap-8">
-            <a href="#" className="hover:text-indigo-600">Điều khoản</a>
-            <a href="#" className="hover:text-indigo-600">Bảo mật</a>
-            <a href="#" className="hover:text-indigo-600">Cookies</a>
-          </div>
+        <div className="pt-8 border-t border-slate-100 dark:border-ink-700 text-slate-400 dark:text-slate-500 text-sm font-medium">
+          {/* Computed, so it cannot go stale the way the hardcoded 2024 did. */}
+          <p>© {new Date().getFullYear()} EngMasterAI.</p>
         </div>
       </div>
     </footer>
