@@ -48,12 +48,12 @@ const LessonListItem: React.FC<LessonListItemProps> = ({ courseId, lesson, order
   return (
     <Link
       to={`/courses/${courseId}/lessons/${lesson.id}`}
-      className={`group bg-white dark:bg-ink-900 rounded-2xl border shadow-sm hover:shadow-md dark:hover:shadow-indigo-500/10 p-4 sm:p-5 flex items-center gap-4 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+      className={`group bg-white dark:bg-ink-900 rounded-2xl border shadow-sm hover:shadow-md dark:hover:shadow-blue-500/10 p-4 sm:p-5 flex items-center gap-4 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
         completed
           ? 'border-emerald-200/70 dark:border-emerald-500/30'
           : started
             ? 'border-amber-200/70 dark:border-amber-500/30'
-            : 'border-slate-100 dark:border-ink-700 hover:border-indigo-200 dark:hover:border-indigo-500/50'
+            : 'border-slate-100 dark:border-ink-700 hover:border-blue-200 dark:hover:border-blue-500/50'
       }`}
     >
       <div
@@ -78,7 +78,7 @@ const LessonListItem: React.FC<LessonListItemProps> = ({ courseId, lesson, order
           )}
         </div>
 
-        <h4 className="text-[15px] font-extrabold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+        <h4 className="text-[15px] font-extrabold text-slate-900 dark:text-slate-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
           {lesson.title}
         </h4>
         {lesson.description && (
@@ -89,7 +89,7 @@ const LessonListItem: React.FC<LessonListItemProps> = ({ courseId, lesson, order
       </div>
 
       <span
-        className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-extrabold flex-shrink-0 shadow-lg shadow-indigo-500/20 transition-all group-hover:from-indigo-500 group-hover:to-violet-500"
+        className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-extrabold flex-shrink-0 shadow-lg shadow-blue-500/20 transition-all group-hover:from-blue-500 group-hover:to-indigo-500"
         aria-hidden="true"
       >
         <Play size={13} className="fill-current" />
@@ -98,7 +98,7 @@ const LessonListItem: React.FC<LessonListItemProps> = ({ courseId, lesson, order
 
       <Play
         size={20}
-        className="sm:hidden text-indigo-500 dark:text-indigo-400 fill-current flex-shrink-0"
+        className="sm:hidden text-blue-500 dark:text-blue-400 fill-current flex-shrink-0"
         aria-hidden="true"
       />
     </Link>

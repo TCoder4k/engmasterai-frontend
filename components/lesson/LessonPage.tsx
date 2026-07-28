@@ -169,7 +169,7 @@ const LessonPage: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <Link
           to={courseId ? `/courses/${courseId}` : '/courses'}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors mb-8 min-h-[44px]"
+          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
         >
           <ArrowLeft size={14} aria-hidden="true" />
           <span>{t.lesson.backToCourse}</span>
@@ -201,7 +201,7 @@ const LessonPage: React.FC = () => {
                     key={index}
                     className="text-[14px] text-slate-600 dark:text-slate-300 font-medium flex items-start gap-2"
                   >
-                    <span className="text-indigo-400 mt-1" aria-hidden="true">
+                    <span className="text-blue-400 mt-1" aria-hidden="true">
                       •
                     </span>
                     <span>{objective}</span>
@@ -237,7 +237,7 @@ const LessonPage: React.FC = () => {
                 design reference's top bar. */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 mb-6 bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-2xl shadow-sm dark:shadow-xl">
               <div className="min-w-0">
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border dark:border-indigo-500/30">
+                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 dark:border dark:border-blue-500/30">
                   {course.title}
                 </span>
                 <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate mt-1">
@@ -298,7 +298,7 @@ const LessonPage: React.FC = () => {
                               key={index}
                               className="text-[14px] text-slate-600 dark:text-slate-300 font-medium flex items-start gap-2"
                             >
-                              <span className="text-indigo-400 mt-1" aria-hidden="true">
+                              <span className="text-blue-400 mt-1" aria-hidden="true">
                                 •
                               </span>
                               <span>{objective}</span>

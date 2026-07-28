@@ -124,7 +124,7 @@ const CourseDetailPage: React.FC = () => {
       <div className="max-w-5xl mx-auto">
         <Link
           to={backTo}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors mb-8 min-h-[44px]"
+          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
         >
           <ArrowLeft size={14} aria-hidden="true" />
           <span>{backLabel}</span>
@@ -150,14 +150,14 @@ const CourseDetailPage: React.FC = () => {
                 once something has actually been completed. */}
             <section className="relative overflow-hidden bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-3xl p-6 sm:p-8 shadow-sm dark:shadow-2xl mb-8">
               <div
-                className="absolute -top-24 -right-24 w-80 h-80 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"
+                className="absolute -top-24 -right-24 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
                 aria-hidden="true"
               />
 
               <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="space-y-3 max-w-2xl">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 uppercase">
+                    <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 uppercase">
                       {t.tracks[TRACK_KEY[course.type]].label}
                     </span>
                     {level && (
@@ -184,7 +184,7 @@ const CourseDetailPage: React.FC = () => {
                 {lessons.length > 0 && (
                   <div className="grid grid-cols-2 gap-3 shrink-0 lg:min-w-[260px]">
                     <div className="p-4 bg-slate-50 dark:bg-ink-950/80 dark:border dark:border-ink-700 rounded-2xl text-center space-y-1">
-                      <Layers size={16} className="mx-auto text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                      <Layers size={16} className="mx-auto text-blue-500 dark:text-blue-400" aria-hidden="true" />
                       <p className="text-lg font-black text-slate-900 dark:text-white">
                         {progress.completed}/{lessons.length}
                       </p>
@@ -217,14 +217,14 @@ const CourseDetailPage: React.FC = () => {
                 <div className="relative mt-6 pt-5 border-t border-slate-100 dark:border-ink-700 space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold">
                     <span className="text-slate-500 dark:text-slate-300">{t.grammar.progressLabel}</span>
-                    <span className="text-indigo-600 dark:text-indigo-400">
+                    <span className="text-blue-600 dark:text-blue-400">
                       {progress.percent}% ({progress.completed}/{progress.total})
                     </span>
                   </div>
                   <div className="w-full h-2.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden">
                     <div
                       style={{ width: `${progress.percent}%` }}
-                      className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-400 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
                     />
                   </div>
                   <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">

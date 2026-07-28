@@ -164,7 +164,7 @@ const AdminVocabLibraries: React.FC = () => {
             </div>
             <button
               onClick={openCreate}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
+              className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all"
             >
               <Plus size={16} />
               <span>Tạo thư viện</span>
@@ -209,7 +209,7 @@ const AdminVocabLibraries: React.FC = () => {
                     <tr key={library.id} className="hover:bg-slate-50/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 overflow-hidden">
+                          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 overflow-hidden">
                             {library.thumbnail ? (
                               <img src={library.thumbnail} className="w-full h-full object-cover" alt="" />
                             ) : (
@@ -226,7 +226,7 @@ const AdminVocabLibraries: React.FC = () => {
                         <button
                           onClick={() => goToDecks(library)}
                           title="Quản lý bộ từ"
-                          className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+                          className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
                         >
                           {library._count.decks} bộ từ
                         </button>
@@ -249,7 +249,7 @@ const AdminVocabLibraries: React.FC = () => {
                         <div className="flex items-center justify-end space-x-1">
                           <button
                             onClick={() => goToDecks(library)}
-                            className="inline-flex items-center space-x-1.5 px-3 py-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all text-xs font-bold"
+                            className="inline-flex items-center space-x-1.5 px-3 py-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all text-xs font-bold"
                             title="Quản lý bộ từ"
                           >
                             <Layers size={16} />
@@ -257,7 +257,7 @@ const AdminVocabLibraries: React.FC = () => {
                           </button>
                           <button
                             onClick={() => openEdit(library)}
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Chỉnh sửa"
                           >
                             <Pencil size={16} />
@@ -300,7 +300,7 @@ const AdminVocabLibraries: React.FC = () => {
                 placeholder="TOEIC, IELTS, Business English..."
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div>
@@ -310,7 +310,7 @@ const AdminVocabLibraries: React.FC = () => {
                 rows={3}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div>
@@ -319,7 +319,7 @@ const AdminVocabLibraries: React.FC = () => {
                 type="text"
                 value={form.thumbnail}
                 onChange={(e) => setForm((f) => ({ ...f, thumbnail: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div className="flex justify-end space-x-3 pt-2">
@@ -333,7 +333,7 @@ const AdminVocabLibraries: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60"
               >
                 {isSaving ? 'Đang lưu...' : editingLibrary ? 'Lưu thay đổi' : 'Tạo thư viện'}
               </button>

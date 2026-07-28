@@ -94,7 +94,7 @@ const QuizFeedbackPanel: React.FC<QuizFeedbackPanelProps> = ({ feedback, burstKe
           transition={{ duration: DURATION.base, ease: EASE, delay: 0.18 }}
           className="relative mt-3 pt-3 border-t border-slate-200/70 dark:border-ink-700 flex items-start gap-2"
         >
-          <BookOpen size={15} className="mt-0.5 flex-shrink-0 text-indigo-400" aria-hidden="true" />
+          <BookOpen size={15} className="mt-0.5 flex-shrink-0 text-blue-400" aria-hidden="true" />
           <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
             <span className="font-bold">{t.quiz.explanationLabel}: </span>
             {explanation}

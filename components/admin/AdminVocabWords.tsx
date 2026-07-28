@@ -150,7 +150,7 @@ const AdminVocabWords: React.FC = () => {
               </button>
               <Link
                 to="/admin/vocab/words/new"
-                className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
+                className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all"
               >
                 <Plus size={16} />
                 <span>Thêm từ mới</span>
@@ -166,7 +166,7 @@ const AdminVocabWords: React.FC = () => {
                 placeholder="Tìm theo từ..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
               />
             </div>
             <select
@@ -175,7 +175,7 @@ const AdminVocabWords: React.FC = () => {
                 setCefrFilter(e.target.value as CefrLevel | '');
                 setPage(1);
               }}
-              className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300"
+              className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
             >
               <option value="">Mọi cấp độ CEFR</option>
               {CEFR_LEVELS.map((level) => (
@@ -229,7 +229,7 @@ const AdminVocabWords: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         {word.cefrLevel ? (
-                          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase">
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase">
                             {word.cefrLevel}
                           </span>
                         ) : (
@@ -241,8 +241,8 @@ const AdminVocabWords: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center space-x-2">
-                          <Volume2 size={14} className={word.audioUrl ? 'text-indigo-500' : 'text-slate-200'} />
-                          <ImageIcon size={14} className={word.imageUrl ? 'text-indigo-500' : 'text-slate-200'} />
+                          <Volume2 size={14} className={word.audioUrl ? 'text-blue-500' : 'text-slate-200'} />
+                          <ImageIcon size={14} className={word.imageUrl ? 'text-blue-500' : 'text-slate-200'} />
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center text-sm text-slate-500">
@@ -255,7 +255,7 @@ const AdminVocabWords: React.FC = () => {
                         <div className="flex items-center justify-end space-x-1">
                           <Link
                             to={`/admin/vocab/words/${word.id}/edit`}
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Chỉnh sửa"
                           >
                             <Pencil size={16} />
@@ -283,14 +283,14 @@ const AdminVocabWords: React.FC = () => {
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent"
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all disabled:opacity-30 disabled:hover:bg-transparent"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -317,7 +317,7 @@ const AdminVocabWords: React.FC = () => {
             <button
               type="button"
               onClick={downloadSampleCsv}
-              className="text-xs font-bold text-indigo-600 hover:text-indigo-700"
+              className="text-xs font-bold text-blue-600 hover:text-blue-700"
             >
               Tải file mẫu (CSV)
             </button>
@@ -344,7 +344,7 @@ const AdminVocabWords: React.FC = () => {
               <button
                 type="submit"
                 disabled={isImporting || !importFile}
-                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60"
               >
                 {isImporting ? 'Đang nhập...' : 'Nhập file'}
               </button>

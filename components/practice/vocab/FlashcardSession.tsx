@@ -37,7 +37,7 @@ const renderHighlightedSentence = (sentence: string, word: string): React.ReactN
   return (
     <>
       {before}
-      <span className="text-indigo-600 dark:text-indigo-400 underline decoration-2 underline-offset-2">
+      <span className="text-blue-600 dark:text-blue-400 underline decoration-2 underline-offset-2">
         {match}
       </span>
       {after}
@@ -188,7 +188,7 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
             aria-label={t.practice.flipCardHint}
             aria-hidden={isFlipped}
             tabIndex={isFlipped ? -1 : 0}
-            className="practice-flip-card-face w-full h-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col items-center justify-center gap-3 p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="practice-flip-card-face w-full h-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col items-center justify-center gap-3 p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             {currentWord.imageUrl && (
               <img
@@ -221,7 +221,7 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
                   }
                 }}
                 aria-label={t.practice.playAudio}
-                className="p-2.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                className="p-2.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors cursor-pointer"
               >
                 <Volume2 size={18} aria-hidden="true" />
               </span>
@@ -247,7 +247,7 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
             aria-label={t.practice.flipCardHint}
             aria-hidden={!isFlipped}
             tabIndex={isFlipped ? 0 : -1}
-            className="practice-flip-card-face practice-flip-card-face-back w-full h-full bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-indigo-500/30 rounded-3xl shadow-sm flex flex-col gap-3 p-5 sm:p-6 overflow-y-auto text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="practice-flip-card-face practice-flip-card-face-back w-full h-full bg-white dark:bg-slate-900 border-2 border-blue-100 dark:border-blue-500/30 rounded-3xl shadow-sm flex flex-col gap-3 p-5 sm:p-6 overflow-y-auto text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <div className="flex items-start justify-between gap-2">
               <span className="text-[11px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-full">
@@ -284,7 +284,7 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
                 <span className="text-sm font-mono text-slate-400 dark:text-slate-500">/{currentWord.ipa}/</span>
               )}
               {primaryPartOfSpeech && (
-                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/30">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-300 border border-blue-100 dark:border-blue-500/30">
                   {primaryPartOfSpeech.toLowerCase()}
                 </span>
               )}
@@ -312,7 +312,7 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
 
             {example && (
               <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-1.5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400 mb-1.5">
                   {t.practice.exampleLabel}
                 </p>
                 <p className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">

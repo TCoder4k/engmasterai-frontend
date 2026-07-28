@@ -19,14 +19,14 @@ const VideoResumePrompt: React.FC<VideoResumePromptProps> = ({ onWatchAgain, onD
         <button
           type="button"
           onClick={onDismiss}
-          className="text-xs font-bold text-slate-400 hover:text-slate-200 px-2 py-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="text-xs font-bold text-slate-400 hover:text-slate-200 px-2 py-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {t.lesson.videoResumeDismiss}
         </button>
         <button
           type="button"
           onClick={onWatchAgain}
-          className="text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+          className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
         >
           {t.lesson.videoWatchAgain}
         </button>

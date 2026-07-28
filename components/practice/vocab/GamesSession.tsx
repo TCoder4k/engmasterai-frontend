@@ -134,7 +134,7 @@ const SpeedRound: React.FC<{ words: VocabWordListItem[]; onComplete: (r: Session
       <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
         <div
           style={{ width: `${(Math.max(secondsLeft, 0) / SPEED_ROUND_SECONDS) * 100}%` }}
-          className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-1000 ease-linear"
+          className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000 ease-linear"
         />
       </div>
       <div className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm p-6 text-center">
@@ -179,7 +179,7 @@ const SpeedRound: React.FC<{ words: VocabWordListItem[]; onComplete: (r: Session
                     ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500 text-rose-700 dark:text-rose-300'
                     : locked
                       ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500'
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500'
+                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-300 dark:hover:border-blue-500'
               }`}
             >
               {option}
@@ -324,8 +324,8 @@ const MatchingGame: React.FC<{ words: VocabWordListItem[]; onComplete: (r: Sessi
     if (isSelected && wrongFlash)
       return 'w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-left border-2 bg-rose-50 dark:bg-rose-500/10 border-rose-400 text-rose-600 dark:text-rose-400';
     if (isSelected)
-      return 'w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-left border-2 bg-indigo-50 dark:bg-indigo-500/10 border-indigo-400 text-indigo-600 dark:text-indigo-400';
-    return 'w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-left border-2 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500';
+      return 'w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-left border-2 bg-blue-50 dark:bg-blue-500/10 border-blue-400 text-blue-600 dark:text-blue-400';
+    return 'w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-left border-2 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-blue-300 dark:hover:border-blue-500';
   };
 
   // Matched tiles are removed entirely (not disabled), so the remaining
@@ -379,9 +379,9 @@ const GamesSession: React.FC<GamesSessionProps> = ({ words, onComplete }) => {
   const [mode, setMode] = useState<GameMode>('speed');
 
   const tabClass = (active: boolean) =>
-    `flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+    `flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
       active
-        ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow'
+        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow'
         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
     }`;
 

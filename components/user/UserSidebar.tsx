@@ -1,12 +1,23 @@
 import React from 'react';
-import { Target, Flame, BarChart3, Trophy } from 'lucide-react';
+import { Flame, Target, TrendingUp, Trophy } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
+import {
+  MOCK_ACHIEVEMENTS,
+  MOCK_DAILY_GOAL,
+  MOCK_STREAK_DAYS,
+  MOCK_TODAY_PROGRESS,
+} from './dashboardContent';
 
-// Dashboard stat widgets — all in honest empty/preview states: there is no
-// daily-goal, streak, per-day progress, or achievements backend yet, so no
-// numbers are fabricated. Widgets whose data will exist per-user later show
-// "No data yet"; features that don't exist at all show "Coming soon". When
-// those systems land (Vocabulary Phases 3–5), each widget gets wired here.
+// Dashboard stat widgets, restyled to `ai-studio-dashboard-reference`'s
+// DashboardView.
+//
+// ⚠️ Every number in this file is PLACEHOLDER data — there is still no
+// time-tracking, streak record, per-day activity log or achievements system
+// behind any of these four widgets. They previously rendered honest empty
+// states; the product owner asked for the reference's filled-in look, so the
+// values now come from components/user/dashboardContent.ts, which is the one
+// file to rewire when those systems land. Each card carries a small
+// "sample data" marker so a student is not told these are their own figures.
 //
 // Renders as a single column in the desktop right rail, and as a 2-up grid on
 // tablets when it flows below the main content.
@@ -14,12 +25,18 @@ import { useTranslation } from '../../i18n/useTranslation';
 const WidgetCard: React.FC<{
   icon: React.ReactNode;
   title: string;
+  trailing?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ icon, title, children }) => (
-  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-5">
-    <div className="flex items-center space-x-2">
-      {icon}
-      <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{title}</p>
+}> = ({ icon, title, trailing, children }) => (
+  <div className="p-6 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-3xl shadow-sm dark:shadow-xl space-y-4">
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2 min-w-0">
+        {icon}
+        <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider truncate">
+          {title}
+        </span>
+      </div>
+      {trailing}
     </div>
     {children}
   </div>
@@ -28,84 +45,173 @@ const WidgetCard: React.FC<{
 const UserSidebar: React.FC = () => {
   const { t } = useTranslation();
 
-  const progressRows = [t.widgets.lessons, t.widgets.practice, t.widgets.newWords];
+  const { targetMinutes, learnedMinutes } = MOCK_DAILY_GOAL;
+  const dailyPercent = Math.round((learnedMinutes / targetMinutes) * 100);
+  const streakCount = MOCK_STREAK_DAYS.filter(Boolean).length;
+
+  // Circumference of the r=26 ring the reference uses.
+  const ringLength = 2 * Math.PI * 26;
 
   return (
-    <aside className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-      {/* Daily Goal — empty ring, no fabricated minutes/percent */}
+    <aside className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 lg:gap-6">
       <WidgetCard
-        icon={<Target size={17} className="text-slate-700 dark:text-slate-300" aria-hidden="true" />}
+        icon={<Target className="w-4 h-4 text-blue-500 dark:text-blue-400" aria-hidden="true" />}
         title={t.widgets.dailyGoal}
+        trailing={
+          <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{dailyPercent}%</span>
+        }
       >
-        <div className="flex items-center justify-between mt-3">
-          <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">{t.common.noDataYet}</p>
-          <div className="relative w-14 h-14 flex-shrink-0" aria-hidden="true">
-            <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-3xl font-black text-slate-900 dark:text-white">
+              {targetMinutes} {t.widgets.minutesShort}
+            </p>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {learnedMinutes} / {targetMinutes} {t.widgets.minutesLearned}
+            </p>
+          </div>
+
+          <div className="relative w-16 h-16 shrink-0 flex items-center justify-center" aria-hidden="true">
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
               <circle
-                cx="18"
-                cy="18"
-                r="15.5"
-                fill="none"
-                strokeWidth="3.5"
-                className="stroke-slate-100 dark:stroke-slate-800"
+                cx="32"
+                cy="32"
+                r="26"
+                strokeWidth="6"
+                fill="transparent"
+                className="stroke-slate-100 dark:stroke-ink-950"
               />
+              <circle
+                cx="32"
+                cy="32"
+                r="26"
+                stroke="url(#dailyGoalGradient)"
+                strokeWidth="6"
+                strokeDasharray={ringLength}
+                strokeDashoffset={ringLength - (ringLength * dailyPercent) / 100}
+                strokeLinecap="round"
+                fill="transparent"
+              />
+              <defs>
+                <linearGradient id="dailyGoalGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3B82F6" />
+                  <stop offset="100%" stopColor="#6366F1" />
+                </linearGradient>
+              </defs>
             </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-[12px] font-black text-slate-300 dark:text-slate-600">
-              —
+            <span className="absolute text-xs font-black text-slate-900 dark:text-white">
+              {dailyPercent}%
             </span>
           </div>
         </div>
-        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full mt-2" />
+
+        <div className="w-full h-2 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-ink-700">
+          <div
+            style={{ width: `${dailyPercent}%` }}
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
+          />
+        </div>
+        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          {t.widgets.sampleData}
+        </p>
       </WidgetCard>
 
-      {/* Weekly Streak — day circles all unfilled, no fabricated streak count */}
       <WidgetCard
-        icon={<Flame size={17} className="text-orange-500 fill-orange-400" aria-hidden="true" />}
+        icon={<Flame className="w-4 h-4 text-amber-500 fill-amber-400" aria-hidden="true" />}
         title={t.widgets.weeklyStreak}
+        trailing={
+          <span className="text-xs font-black text-amber-500 dark:text-amber-400">
+            {streakCount} {t.widgets.days}
+          </span>
+        }
       >
-        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 mt-3 mb-4">
-          {t.common.noDataYet}
+        <p className="text-2xl font-black text-slate-900 dark:text-white">
+          {streakCount} {t.widgets.days}{' '}
+          <span className="text-xs font-bold text-amber-500 dark:text-amber-400">
+            🔥 {t.widgets.onFire}
+          </span>
         </p>
-        <div className="flex items-center justify-between" aria-hidden="true">
+
+        <div className="flex items-center justify-between gap-1 pt-1" aria-hidden="true">
           {t.widgets.weekDays.map((day, index) => (
-            <div key={index} className="flex flex-col items-center space-y-1.5">
-              <span className="w-7 h-7 rounded-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700" />
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">{day}</span>
+            <div key={index} className="flex flex-col items-center gap-1.5">
+              <span
+                className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
+                  MOCK_STREAK_DAYS[index]
+                    ? 'bg-gradient-to-tr from-amber-500 to-orange-500 text-white font-black shadow-lg shadow-amber-500/20'
+                    : 'bg-slate-100 dark:bg-ink-950 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-ink-700'
+                }`}
+              >
+                {MOCK_STREAK_DAYS[index] ? '✓' : day}
+              </span>
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">{day}</span>
             </div>
           ))}
         </div>
+        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          {t.widgets.sampleData}
+        </p>
       </WidgetCard>
 
-      {/* Today's Progress — labeled rows with empty tracks, no invented counts */}
       <WidgetCard
-        icon={<BarChart3 size={17} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />}
+        icon={<TrendingUp className="w-4 h-4 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />}
         title={t.widgets.todaysProgress}
       >
-        <div className="space-y-4 mt-4">
-          {progressRows.map((label) => (
-            <div key={label}>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[13px] font-semibold text-slate-600 dark:text-slate-300">{label}</span>
-                <span className="text-[13px] font-bold text-slate-300 dark:text-slate-600">—</span>
+        <div className="space-y-3 pt-1">
+          {MOCK_TODAY_PROGRESS.map((row) => (
+            <div key={row.labelKey} className="space-y-1">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-slate-500 dark:text-slate-400">{t.widgets[row.labelKey]}</span>
+                <span className={row.textClass}>
+                  {row.done} / {row.target}
+                </span>
               </div>
-              <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full" />
+              <div className="w-full h-2 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden border border-slate-200 dark:border-ink-700">
+                <div
+                  className={`h-full rounded-full ${row.barClass}`}
+                  style={{ width: `${Math.round((row.done / row.target) * 100)}%` }}
+                />
+              </div>
             </div>
           ))}
         </div>
-        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mt-3">
-          {t.common.noDataYet}
+        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+          {t.widgets.sampleData}
         </p>
       </WidgetCard>
 
-      {/* Achievements — feature doesn't exist yet; no fabricated badge list */}
       <WidgetCard
-        icon={<Trophy size={17} className="text-amber-500" aria-hidden="true" />}
+        icon={<Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" aria-hidden="true" />}
         title={t.widgets.achievements}
+        trailing={
+          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+            {t.widgets.sampleData}
+          </span>
+        }
       >
-        <div className="flex flex-col items-center text-center py-5">
-          <Trophy size={26} className="text-slate-200 dark:text-slate-700 mb-2" aria-hidden="true" />
-          <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">{t.common.comingSoon}</p>
-        </div>
+        <ul className="space-y-3">
+          {MOCK_ACHIEVEMENTS.map((achievement) => (
+            <li
+              key={achievement.titleKey}
+              className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-ink-950 border border-slate-200 dark:border-ink-700 rounded-2xl"
+            >
+              <span
+                className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 font-black text-xs ${achievement.tileClass}`}
+                aria-hidden="true"
+              >
+                {achievement.glyph}
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-bold text-slate-900 dark:text-white">
+                  {t.widgets[achievement.titleKey]}
+                </span>
+                <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                  {t.widgets[`${achievement.titleKey}Hint` as const]}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
       </WidgetCard>
     </aside>
   );

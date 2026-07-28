@@ -58,7 +58,7 @@ const VocabLibraryPage: React.FC = () => {
           <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
             {t.vocab.title}
           </h2>
-          <div className="h-1 w-12 bg-indigo-500 mt-2.5 rounded-full"></div>
+          <div className="h-1 w-12 bg-blue-500 mt-2.5 rounded-full"></div>
         </div>
 
         {isLoading && (
@@ -85,20 +85,20 @@ const VocabLibraryPage: React.FC = () => {
               // restructure LibraryDetailPage's deck rows got in 04D.
               <div
                 key={library.id}
-                className="bg-white dark:bg-slate-900 rounded-[24px] shadow-lg dark:shadow-none p-8 flex flex-col items-center text-center h-full group transition-all duration-300 hover:border-indigo-100 dark:hover:border-indigo-500/40 border border-transparent dark:border-slate-800"
+                className="bg-white dark:bg-slate-900 rounded-[24px] shadow-lg dark:shadow-none p-8 flex flex-col items-center text-center h-full group transition-all duration-300 hover:border-blue-100 dark:hover:border-blue-500/40 border border-transparent dark:border-slate-800"
               >
                 <Link
                   to={`/vocab/libraries/${library.id}`}
-                  className="flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-2xl"
+                  className="flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-2xl"
                 >
-                  <div className="w-20 h-20 rounded-2xl border-4 border-slate-50 dark:border-slate-800 group-hover:border-indigo-50 dark:group-hover:border-indigo-500/20 overflow-hidden bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-500 dark:text-indigo-400 mb-6 transition-all duration-300">
+                  <div className="w-20 h-20 rounded-2xl border-4 border-slate-50 dark:border-slate-800 group-hover:border-blue-50 dark:group-hover:border-blue-500/20 overflow-hidden bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500 dark:text-blue-400 mb-6 transition-all duration-300">
                     {library.thumbnail ? (
                       <img src={library.thumbnail} alt={library.name} className="w-full h-full object-cover" />
                     ) : (
                       <LibraryIcon size={32} aria-hidden="true" />
                     )}
                   </div>
-                  <h3 className="text-[18px] font-extrabold text-slate-900 dark:text-slate-100 mb-3 leading-tight group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition-colors">
+                  <h3 className="text-[18px] font-extrabold text-slate-900 dark:text-slate-100 mb-3 leading-tight group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
                     {library.name}
                   </h3>
                   <p className="text-slate-500 dark:text-slate-400 text-[14px] leading-relaxed font-medium">
@@ -116,7 +116,7 @@ const VocabLibraryPage: React.FC = () => {
                         <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div
                             style={{ width: `${progress.startedPercent}%` }}
-                            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-300"
+                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300"
                           />
                         </div>
                         <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">

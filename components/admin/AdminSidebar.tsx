@@ -20,7 +20,7 @@ import { authService } from '../../services/authService';
 const navLinkClass = (isActive: boolean) =>
   `flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${
     isActive
-      ? 'bg-indigo-50 text-indigo-600 shadow-sm'
+      ? 'bg-blue-50 text-blue-600 shadow-sm'
       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
   }`;
 
@@ -57,12 +57,12 @@ const AdminSidebar: React.FC = () => {
   return (
     <aside className="w-68 bg-white border-r border-slate-100 flex flex-col h-screen sticky top-0 overflow-hidden">
       <Link to="/admin" className="p-6 flex items-center space-x-3 border-b border-slate-50">
-        <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+        <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
           <Zap className="text-white w-5 h-5 fill-white" />
         </div>
         <div>
           <span className="text-lg font-black text-slate-900 leading-none block">EngMasterAI</span>
-          <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter">Admin Portal</span>
+          <span className="text-[10px] font-bold text-blue-500 uppercase tracking-tighter">Admin Portal</span>
         </div>
       </Link>
 

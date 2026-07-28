@@ -61,17 +61,17 @@ const BLOCK_STYLES: Record<GrammarBlockKind, BlockStyle> = {
   concept: {
     icon: Lightbulb,
     span: 'full',
-    card: 'bg-white dark:bg-ink-900 border-indigo-100 dark:border-indigo-500/25',
-    badge: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300',
-    accent: 'text-indigo-500 dark:text-indigo-400',
+    card: 'bg-white dark:bg-ink-900 border-blue-100 dark:border-blue-500/25',
+    badge: 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300',
+    accent: 'text-blue-500 dark:text-blue-400',
     collapsible: false,
   },
   rule: {
     icon: Scale,
     span: 'full',
     card: 'bg-white dark:bg-ink-900 border-slate-200 dark:border-ink-700',
-    badge: 'bg-indigo-600 text-white dark:bg-indigo-500',
-    accent: 'text-indigo-500 dark:text-indigo-400',
+    badge: 'bg-blue-600 text-white dark:bg-blue-500',
+    accent: 'text-blue-500 dark:text-blue-400',
     collapsible: false,
   },
   formula: {
@@ -228,7 +228,7 @@ const GrammarBlockCard: React.FC<GrammarBlockCardProps> = ({ block }) => {
             onClick={() => setIsOpen((open) => !open)}
             aria-expanded={isOpen}
             aria-controls={bodyId}
-            className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg px-1.5 py-1"
+            className="flex-shrink-0 inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-lg px-1.5 py-1"
           >
             {isOpen ? t.lesson.blockCollapse : t.lesson.blockExpand}
             <ChevronDown size={13} className={isOpen ? 'rotate-180 transition-transform' : 'transition-transform'} aria-hidden={true} />

@@ -42,7 +42,7 @@ const SegmentPlayer: React.FC<SegmentPlayerProps> = ({
           type="button"
           onClick={onReplay}
           aria-label={t.practice.listeningReplay}
-          className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <RotateCcw size={18} aria-hidden="true" />
         </button>
@@ -51,7 +51,7 @@ const SegmentPlayer: React.FC<SegmentPlayerProps> = ({
           type="button"
           onClick={onPlayPause}
           aria-label={isPlaying ? t.practice.listeningPause : t.practice.listeningPlay}
-          className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {isPlaying ? <Pause size={26} aria-hidden="true" /> : <Play size={26} className="ml-1" aria-hidden="true" />}
         </button>
@@ -72,7 +72,7 @@ const SegmentPlayer: React.FC<SegmentPlayerProps> = ({
           <span
             key={i}
             className={`w-1 rounded-full ${
-              isPlaying ? 'practice-speaking-bar h-4 bg-gradient-to-t from-indigo-500 to-violet-400' : 'h-1.5 bg-slate-200 dark:bg-slate-700'
+              isPlaying ? 'practice-speaking-bar h-4 bg-gradient-to-t from-blue-500 to-indigo-400' : 'h-1.5 bg-slate-200 dark:bg-slate-700'
             }`}
             style={isPlaying ? { animationDelay: `${i * 0.1}s` } : undefined}
             aria-hidden="true"
@@ -91,7 +91,7 @@ const SegmentPlayer: React.FC<SegmentPlayerProps> = ({
             onClick={() => onSpeedChange(speed)}
             className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-colors ${
               playbackRate === speed
-                ? 'bg-indigo-500 text-white'
+                ? 'bg-blue-500 text-white'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >

@@ -30,7 +30,7 @@ const renderHighlightedSentence = (sentence: string, word: string): React.ReactN
   return (
     <>
       {before}
-      <span className="text-indigo-600 dark:text-indigo-400 underline decoration-2 underline-offset-2">{match}</span>
+      <span className="text-blue-600 dark:text-blue-400 underline decoration-2 underline-offset-2">{match}</span>
       {after}
     </>
   );
@@ -145,7 +145,7 @@ const ReviewSessionPage: React.FC = () => {
       <div className="max-w-4xl mx-auto space-y-5">
         <Link
           to={backHref}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors"
         >
           {t.vocab.backToLibrary}
         </Link>
@@ -210,7 +210,7 @@ const ReviewSessionPage: React.FC = () => {
                   aria-label={t.practice.flipCardHint}
                   aria-hidden={isFlipped}
                   tabIndex={isFlipped ? -1 : 0}
-                  className="practice-flip-card-face w-full h-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col items-center justify-center gap-3 p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                  className="practice-flip-card-face w-full h-full bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm flex flex-col items-center justify-center gap-3 p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 >
                   {currentItem.word.imageUrl && (
                     <img
@@ -242,7 +242,7 @@ const ReviewSessionPage: React.FC = () => {
                         }
                       }}
                       aria-label={t.practice.playAudio}
-                      className="p-2.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors cursor-pointer"
+                      className="p-2.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors cursor-pointer"
                     >
                       <Volume2 size={18} aria-hidden="true" />
                     </span>
@@ -261,7 +261,7 @@ const ReviewSessionPage: React.FC = () => {
                   aria-label={t.practice.flipCardHint}
                   aria-hidden={!isFlipped}
                   tabIndex={isFlipped ? 0 : -1}
-                  className="practice-flip-card-face practice-flip-card-face-back w-full h-full bg-white dark:bg-slate-900 border-2 border-indigo-100 dark:border-indigo-500/30 rounded-3xl shadow-sm flex flex-col gap-3 p-5 sm:p-6 overflow-y-auto text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                  className="practice-flip-card-face practice-flip-card-face-back w-full h-full bg-white dark:bg-slate-900 border-2 border-blue-100 dark:border-blue-500/30 rounded-3xl shadow-sm flex flex-col gap-3 p-5 sm:p-6 overflow-y-auto text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 >
                   <div className="flex items-center flex-wrap gap-2">
                     <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
@@ -291,7 +291,7 @@ const ReviewSessionPage: React.FC = () => {
 
                   {example && (
                     <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400 mb-1.5">
                         {t.practice.exampleLabel}
                       </p>
                       <p className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
@@ -317,7 +317,7 @@ const ReviewSessionPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={continueRetrain}
-                  className="w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                  className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 >
                   {t.practice.continueAction}
                 </button>

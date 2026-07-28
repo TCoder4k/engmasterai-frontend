@@ -183,7 +183,7 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
@@ -192,7 +192,7 @@ const ProfilePage: React.FC = () => {
               <Link
                 to={getBackLink()}
                 aria-label={t.common.back}
-                className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-500 dark:hover:text-indigo-400 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
               >
                 <ArrowLeft size={20} />
               </Link>
@@ -202,11 +202,11 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
             <Link to={getBackLink()} className="flex items-center space-x-2 flex-shrink-0">
-              <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">E</span>
               </div>
               <span className="text-lg font-bold text-slate-900 dark:text-white hidden sm:block">
-                Engmaster<span className="text-indigo-500">AI</span>
+                Engmaster<span className="text-blue-500">AI</span>
               </span>
             </Link>
           </div>
@@ -217,7 +217,7 @@ const ProfilePage: React.FC = () => {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
           {/* Profile Header */}
-          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 sm:px-8 py-10">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 sm:px-8 py-10">
             <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
               {/* Avatar */}
               <div className="relative group">
@@ -244,7 +244,7 @@ const ProfilePage: React.FC = () => {
                   disabled={isUploading}
                   aria-label={t.avatarMenu.changePhoto}
                   title={t.avatarMenu.changePhoto}
-                  className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition-colors border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Camera size={18} />
                 </button>
@@ -260,7 +260,7 @@ const ProfilePage: React.FC = () => {
               {/* User Info */}
               <div className="text-center sm:text-left min-w-0">
                 <h2 className="text-2xl font-bold text-white break-words">{profile.name}</h2>
-                <p className="text-indigo-100 text-sm mt-1 break-words">{profile.email}</p>
+                <p className="text-blue-100 text-sm mt-1 break-words">{profile.email}</p>
                 <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${
                   profile.role === 'ADMIN'
                     ? 'bg-amber-400/20 text-amber-100'
@@ -310,7 +310,7 @@ const ProfilePage: React.FC = () => {
                     name="name"
                     value={profile.name}
                     onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:focus:border-indigo-500 transition-all"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 transition-all"
                     placeholder={t.profile.displayNamePlaceholder}
                   />
                 </div>
@@ -349,7 +349,7 @@ const ProfilePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-lg shadow-indigo-500/25 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/25 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>

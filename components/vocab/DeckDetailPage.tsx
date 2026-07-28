@@ -88,7 +88,7 @@ const DeckDetailPage: React.FC = () => {
       <div className="max-w-5xl mx-auto">
         <Link
           to={backHref}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors mb-8 min-h-[44px]"
+          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
         >
           <ArrowLeft size={14} aria-hidden="true" />
           <span>{t.vocab.backToLibrary}</span>
@@ -108,12 +108,12 @@ const DeckDetailPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3 mb-3">
                 <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">{deck.name}</h2>
                 {deck.cefrLevel && (
-                  <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-md uppercase">
+                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md uppercase">
                     {deck.cefrLevel}
                   </span>
                 )}
               </div>
-              <div className="h-1 w-12 bg-indigo-500 mb-6 rounded-full"></div>
+              <div className="h-1 w-12 bg-blue-500 mb-6 rounded-full"></div>
               {deck.description && (
                 <p className="text-slate-500 dark:text-slate-400 text-[15px] font-medium max-w-2xl mb-2">{deck.description}</p>
               )}
@@ -128,7 +128,7 @@ const DeckDetailPage: React.FC = () => {
               {progress && progress.totalWords > 0 && (
                 <div className="mt-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 space-y-4">
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-bold">
-                    <span className="text-indigo-600 dark:text-indigo-400">
+                    <span className="text-blue-600 dark:text-blue-400">
                       {t.vocab.startedLabel}: {progress.startedPercent}%
                     </span>
                     <span className="text-emerald-600 dark:text-emerald-400">
@@ -156,7 +156,7 @@ const DeckDetailPage: React.FC = () => {
                   {practiceAction && (
                     <Link
                       to={practiceAction.to}
-                      className="inline-flex px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                      className="inline-flex px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     >
                       {practiceAction.label}
                     </Link>
@@ -187,7 +187,7 @@ const DeckDetailPage: React.FC = () => {
                       <h3 className="text-[16px] font-extrabold text-slate-900 dark:text-slate-100">{word.text}</h3>
                       {word.ipa && <span className="text-[13px] text-slate-400 dark:text-slate-500">{word.ipa}</span>}
                       {word.cefrLevel && (
-                        <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-md uppercase">
+                        <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2 py-0.5 rounded-md uppercase">
                           {word.cefrLevel}
                         </span>
                       )}
@@ -206,7 +206,7 @@ const DeckDetailPage: React.FC = () => {
                       }}
                       aria-label={t.vocab.listen}
                       title={t.vocab.listen}
-                      className="ml-3 w-11 h-11 flex items-center justify-center text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-xl transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                      className="ml-3 w-11 h-11 flex items-center justify-center text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-xl transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     >
                       <Volume2 size={18} aria-hidden="true" />
                     </button>

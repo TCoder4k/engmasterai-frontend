@@ -164,9 +164,9 @@ const GrammarRoadmapPage: React.FC = () => {
   };
 
   const chipClass = (isActive: boolean) =>
-    `px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+    `px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
       isActive
-        ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25'
+        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
         : 'bg-white text-slate-500 border border-slate-200 hover:text-slate-900 dark:bg-ink-950 dark:text-slate-400 dark:border-ink-700 dark:hover:text-white'
     }`;
 
@@ -176,7 +176,7 @@ const GrammarRoadmapPage: React.FC = () => {
         {/* ---- Roadmap hero ---- */}
         <section className="relative overflow-hidden bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-3xl p-6 sm:p-8 shadow-sm dark:shadow-2xl space-y-6">
           <div
-            className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-500/5 dark:bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"
+            className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
             aria-hidden="true"
           />
           <div
@@ -186,7 +186,7 @@ const GrammarRoadmapPage: React.FC = () => {
 
           <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2.5 max-w-2xl">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300 dark:border dark:border-indigo-500/30">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300 dark:border dark:border-blue-500/30">
                 <Compass size={14} aria-hidden="true" />
                 {t.grammar.roadmapBadge}
               </span>
@@ -207,7 +207,7 @@ const GrammarRoadmapPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50 dark:bg-ink-950/80 dark:border dark:border-ink-700 rounded-2xl shrink-0 lg:min-w-[260px]">
                 <div className="space-y-0.5">
                   <p className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 dark:text-slate-400">
-                    <BookOpen size={13} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                    <BookOpen size={13} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
                     {courses.length === 1 ? t.grammar.oneCourseUnit : t.grammar.coursesUnit}
                   </p>
                   <p className="text-xl font-black text-slate-900 dark:text-white">{courses.length}</p>
@@ -227,12 +227,12 @@ const GrammarRoadmapPage: React.FC = () => {
                   <div className="col-span-2 pt-2 border-t border-slate-200 dark:border-ink-700 space-y-1">
                     <div className="flex items-center justify-between text-[11px] font-bold">
                       <span className="text-slate-400 dark:text-slate-400">{t.grammar.overallProgress}</span>
-                      <span className="text-indigo-600 dark:text-indigo-400">{roadmapProgress.percent}%</span>
+                      <span className="text-blue-600 dark:text-blue-400">{roadmapProgress.percent}%</span>
                     </div>
                     <div className="w-full h-2 bg-slate-200 dark:bg-ink-800 rounded-full overflow-hidden">
                       <div
                         style={{ width: `${roadmapProgress.percent}%` }}
-                        className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-400 rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
                       />
                     </div>
                     <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
@@ -277,7 +277,7 @@ const GrammarRoadmapPage: React.FC = () => {
         {/* ---- Course grid ---- */}
         <section aria-label={t.grammar.collectionsHeading} className="space-y-4">
           <h2 className="flex items-center gap-2 text-lg font-black text-slate-900 dark:text-white">
-            <Sparkles size={18} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+            <Sparkles size={18} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
             {t.grammar.collectionsHeading}
           </h2>
 

@@ -13,4 +13,5 @@ export {
   StaggerItem,
 } from './StaggerContainer';
 export { default as AnimatedCounter } from './AnimatedCounter';
+export { default as RevealOnScroll } from './RevealOnScroll';
 export * from './tokens';

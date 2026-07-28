@@ -94,7 +94,7 @@ const QuizReviewList: React.FC<QuizReviewListProps> = ({ questions, results }) =
               </p>
               {result.explanation && (
                 <p className="flex items-start gap-2 text-slate-600 dark:text-slate-300 font-medium pt-1">
-                  <BookOpen size={15} className="mt-0.5 flex-shrink-0 text-indigo-400" aria-hidden="true" />
+                  <BookOpen size={15} className="mt-0.5 flex-shrink-0 text-blue-400" aria-hidden="true" />
                   <span>
                     {t.quiz.explanationLabel}: {result.explanation}
                   </span>
@@ -106,7 +106,7 @@ const QuizReviewList: React.FC<QuizReviewListProps> = ({ questions, results }) =
               <button
                 type="button"
                 onClick={() => openRetry(result.questionId)}
-                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded"
+                className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
               >
                 <RotateCcw size={13} aria-hidden="true" />
                 {t.quiz.retryQuestionAction}
@@ -152,7 +152,7 @@ const QuizReviewList: React.FC<QuizReviewListProps> = ({ questions, results }) =
                       type="button"
                       onClick={() => checkRetry(result)}
                       disabled={retryValue === null}
-                      className="mt-3 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                      className="mt-3 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                     >
                       {t.quiz.submitAction}
                     </button>

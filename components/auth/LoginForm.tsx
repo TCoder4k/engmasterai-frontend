@@ -181,7 +181,7 @@ export const LoginForm: React.FC = () => {
       <div className="w-full max-w-md p-2">
         <Logo />
         <form onSubmit={handleConfirmLink} className="space-y-6">
-          <div className="p-5 bg-indigo-50/50 border-2 border-indigo-100 rounded-2xl space-y-4">
+          <div className="p-5 bg-blue-50/50 border-2 border-blue-100 rounded-2xl space-y-4">
             <p className="text-sm font-semibold text-slate-700">
               Tài khoản <span className="font-black">{linkEmail}</span> đã tồn tại. Nhập mật khẩu để liên kết với Google.
             </p>
@@ -197,13 +197,13 @@ export const LoginForm: React.FC = () => {
               value={linkPassword}
               onChange={(e) => setLinkPassword(e.target.value)}
               placeholder="Mật khẩu hiện tại"
-              className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all font-medium"
+              className="w-full px-4 py-3 bg-white border-2 border-slate-100 rounded-xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all font-medium"
             />
             <div className="flex gap-3">
               <button
                 type="submit"
                 disabled={isGoogleLoading}
-                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl disabled:opacity-70 transition-all"
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl disabled:opacity-70 transition-all"
               >
                 {isGoogleLoading ? 'Đang liên kết...' : 'Liên kết tài khoản'}
               </button>
@@ -243,14 +243,14 @@ export const LoginForm: React.FC = () => {
               onClick={() => setRole(UserRole.LEARNER)}
               className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 ${
                 role === UserRole.LEARNER
-                  ? 'border-indigo-600 bg-indigo-50/80 text-indigo-700 ring-4 ring-indigo-600/10'
+                  ? 'border-blue-600 bg-blue-50/80 text-blue-700 ring-4 ring-blue-600/10'
                   : 'border-slate-100 bg-white hover:border-slate-200 text-slate-500'
               }`}
             >
-              <User className={`w-6 h-6 mb-2 ${role === UserRole.LEARNER ? 'text-indigo-600' : 'text-slate-400'}`} />
+              <User className={`w-6 h-6 mb-2 ${role === UserRole.LEARNER ? 'text-blue-600' : 'text-slate-400'}`} />
               <span className="text-sm font-bold">Học viên</span>
               {role === UserRole.LEARNER && (
-                <div className="absolute top-2 right-2 p-0.5 bg-indigo-600 rounded-full">
+                <div className="absolute top-2 right-2 p-0.5 bg-blue-600 rounded-full">
                   <Check className="w-3 h-3 text-white" />
                 </div>
               )}
@@ -261,14 +261,14 @@ export const LoginForm: React.FC = () => {
               onClick={() => setRole(UserRole.ADMIN)}
               className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 ${
                 role === UserRole.ADMIN
-                  ? 'border-indigo-600 bg-indigo-50/80 text-indigo-700 ring-4 ring-indigo-600/10'
+                  ? 'border-blue-600 bg-blue-50/80 text-blue-700 ring-4 ring-blue-600/10'
                   : 'border-slate-100 bg-white hover:border-slate-200 text-slate-500'
               }`}
             >
-              <ShieldCheck className={`w-6 h-6 mb-2 ${role === UserRole.ADMIN ? 'text-indigo-600' : 'text-slate-400'}`} />
+              <ShieldCheck className={`w-6 h-6 mb-2 ${role === UserRole.ADMIN ? 'text-blue-600' : 'text-slate-400'}`} />
               <span className="text-sm font-bold">Quản trị</span>
               {role === UserRole.ADMIN && (
-                <div className="absolute top-2 right-2 p-0.5 bg-indigo-600 rounded-full">
+                <div className="absolute top-2 right-2 p-0.5 bg-blue-600 rounded-full">
                   <Check className="w-3 h-3 text-white" />
                 </div>
               )}
@@ -281,14 +281,14 @@ export const LoginForm: React.FC = () => {
           <div className="group">
             <label className="text-sm font-bold text-slate-700 mb-2 block ml-1">Email hoặc Tên đăng nhập</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ten-dang-nhap@gmail.com"
-                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
             </div>
           </div>
@@ -296,14 +296,14 @@ export const LoginForm: React.FC = () => {
           <div className="group">
             <label className="text-sm font-bold text-slate-700 mb-2 block ml-1">Mật khẩu</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-12 pr-12 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-12 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
               <button
                 type="button"
@@ -316,7 +316,7 @@ export const LoginForm: React.FC = () => {
             <div className="flex justify-end pr-2 pt-2">
               <Link
                 to="/forgot-password"
-                className="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors"
+                className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
               >
                 Quên mật khẩu?
               </Link>
@@ -328,7 +328,7 @@ export const LoginForm: React.FC = () => {
           <input
             type="checkbox"
             id="remember"
-            className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-600 transition-all cursor-pointer"
+            className="w-5 h-5 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-600 transition-all cursor-pointer"
           />
           <label htmlFor="remember" className="ml-3 text-sm font-semibold text-slate-600 cursor-pointer select-none">Ghi nhớ đăng nhập</label>
         </div>
@@ -336,7 +336,7 @@ export const LoginForm: React.FC = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="group w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="group w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl shadow-blue-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -357,18 +357,18 @@ export const LoginForm: React.FC = () => {
           Chưa có tài khoản?{' '}
           <Link
             to="/register"
-            className="text-indigo-600 font-black hover:underline underline-offset-4"
+            className="text-blue-600 font-black hover:underline underline-offset-4"
           >
             Đăng ký ngay
           </Link>
         </p>
 
         <div className="flex justify-center gap-6 text-xs text-slate-400 font-bold mt-12 pb-4">
-          <a href="#" className="hover:text-indigo-600 transition-colors">ĐIỀU KHOẢN</a>
+          <a href="#" className="hover:text-blue-600 transition-colors">ĐIỀU KHOẢN</a>
           <span className="opacity-30">•</span>
-          <a href="#" className="hover:text-indigo-600 transition-colors">BẢO MẬT</a>
+          <a href="#" className="hover:text-blue-600 transition-colors">BẢO MẬT</a>
           <span className="opacity-30">•</span>
-          <a href="#" className="hover:text-indigo-600 transition-colors">TRỢ GIÚP</a>
+          <a href="#" className="hover:text-blue-600 transition-colors">TRỢ GIÚP</a>
         </div>
       </form>
     </div>

@@ -21,7 +21,7 @@ const VideoUnavailableState: React.FC<VideoUnavailableStateProps> = ({ onRetry }
         <button
           type="button"
           onClick={onRetry}
-          className="text-sm font-bold text-indigo-400 hover:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg px-3 py-1.5"
+          className="text-sm font-bold text-blue-400 hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-lg px-3 py-1.5"
         >
           {t.common.tryAgain}
         </button>

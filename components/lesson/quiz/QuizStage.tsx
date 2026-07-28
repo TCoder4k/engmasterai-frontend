@@ -14,7 +14,7 @@ import {
   SubmittedAnswer,
 } from '../../../services/quizService';
 import { readQuizDraft, writeQuizDraft, clearQuizDraft, QuizDraft } from '../../../services/quizDraft';
-import { handleAuthError } from '../../../services/apiError';
+import { ApiError, handleAuthError } from '../../../services/apiError';
 import { playSelect, playCorrect, playIncorrect } from '../../../services/feedbackSounds';
 import { useTranslation } from '../../../i18n/useTranslation';
 import ErrorState from '../../shared/ErrorState';
@@ -123,7 +123,15 @@ const QuizStage: React.FC<QuizStageProps> = ({
 
         setAnswers({ ...draftAnswers, ...restoredAnswers });
         setGraded(restoredGraded);
-        setClientAttemptId(draft?.clientAttemptId ?? crypto.randomUUID());
+        // The server's in-flight attempt id WINS over the draft's. Losing the
+        // sessionStorage draft (new tab, restored session, cleared storage)
+        // used to mint a fresh id here, and the answer endpoint treats an
+        // unrecognised id as a retake — so the answers already recorded were
+        // silently dropped and submit then rejected the attempt as
+        // incomplete for questions the student had visibly answered.
+        setClientAttemptId(
+          res.quiz.currentAttemptId ?? draft?.clientAttemptId ?? crypto.randomUUID(),
+        );
 
         // Resume at the first unanswered question, falling back to the
         // draft's position for an ON_SUBMIT quiz (which grades nothing yet).
@@ -238,7 +246,21 @@ const QuizStage: React.FC<QuizStageProps> = ({
         setPhase('summary');
       })
       .catch((err) => {
-        setSubmitError(handleAuthError(err, navigate) || t.quiz.submitFailed);
+        const message = handleAuthError(err, navigate) || t.quiz.submitFailed;
+
+        // The server's record is the only authority on what has been
+        // answered, so a 400 here means the two views disagree. Re-syncing
+        // from the server (which also lands the student on the first
+        // genuinely unanswered question) turns a dead end into a next step —
+        // previously this left a raw backend string on screen with no way
+        // forward but a full retake.
+        if (isImmediate && err instanceof ApiError && err.status === 400) {
+          setSubmitError(t.quiz.finishBlocked);
+          loadQuiz();
+          return;
+        }
+
+        setSubmitError(message);
         setPhase('answering'); // draft is untouched — nothing was lost
       });
   };
@@ -370,7 +392,7 @@ const QuizStage: React.FC<QuizStageProps> = ({
           type="button"
           onClick={handlePrevious}
           disabled={currentIndex === 0}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-ink-800 disabled:opacity-30 disabled:pointer-events-none transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-ink-800 disabled:opacity-30 disabled:pointer-events-none transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <ChevronLeft size={16} aria-hidden="true" />
           {t.common.previous}
@@ -380,7 +402,7 @@ const QuizStage: React.FC<QuizStageProps> = ({
           type="button"
           onClick={handleNext}
           disabled={primaryDisabled}
-          className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold shadow-lg shadow-indigo-500/20 disabled:opacity-40 disabled:pointer-events-none transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-bold shadow-lg shadow-blue-500/20 disabled:opacity-40 disabled:pointer-events-none transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {primaryLabel()}
           {phase !== 'submitting' && !checking && !isLastQuestion && (

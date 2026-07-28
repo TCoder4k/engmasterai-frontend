@@ -67,7 +67,7 @@ export const VerifyEmailPage: React.FC = () => {
       case 'loading':
         return (
           <div className="flex flex-col items-center gap-4 py-8">
-            <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
             <p className="text-slate-500 font-semibold">Đang xác nhận email của bạn...</p>
           </div>
         );
@@ -80,8 +80,8 @@ export const VerifyEmailPage: React.FC = () => {
         );
       case 'already-verified':
         return (
-          <div className="p-5 bg-indigo-50 border-2 border-indigo-100 rounded-2xl text-center space-y-2">
-            <p className="text-indigo-700 font-bold">Email của bạn đã được xác nhận trước đó.</p>
+          <div className="p-5 bg-blue-50 border-2 border-blue-100 rounded-2xl text-center space-y-2">
+            <p className="text-blue-700 font-bold">Email của bạn đã được xác nhận trước đó.</p>
           </div>
         );
       case 'invalid':
@@ -123,7 +123,7 @@ export const VerifyEmailPage: React.FC = () => {
         <p className="text-center text-slate-600 font-medium">
           <Link
             to="/login"
-            className="text-indigo-600 font-black hover:underline underline-offset-4"
+            className="text-blue-600 font-black hover:underline underline-offset-4"
           >
             Về trang đăng nhập
           </Link>

@@ -34,7 +34,7 @@ const CourseCatalogPage: React.FC = () => {
           <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
             {t.course.catalogTitle}
           </h2>
-          <div className="h-1 w-12 bg-indigo-500 mt-2.5 rounded-full"></div>
+          <div className="h-1 w-12 bg-blue-500 mt-2.5 rounded-full"></div>
         </div>
 
         {isLoading && (

@@ -145,7 +145,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
         >
           <div
             style={{ width: `${progressPercent}%` }}
-            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-300"
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300"
           />
         </div>
       </div>
@@ -159,7 +159,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
               type="button"
               onClick={handlePlay}
               aria-label={t.practice.playAudio}
-              className="w-16 h-16 rounded-full mx-auto flex items-center justify-center bg-gradient-to-tr from-indigo-500 to-violet-500 text-white shadow-lg hover:scale-105 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              className="w-16 h-16 rounded-full mx-auto flex items-center justify-center bg-gradient-to-tr from-blue-500 to-indigo-500 text-white shadow-lg hover:scale-105 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               {audio.isPlaying ? <Pause size={26} aria-hidden="true" /> : <Volume2 size={26} aria-hidden="true" />}
             </button>
@@ -178,7 +178,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
                 >
                   <div
                     style={{ width: `${audioProgressPercent}%` }}
-                    className="h-full bg-indigo-500 rounded-full"
+                    className="h-full bg-blue-500 rounded-full"
                   />
                 </div>
                 <p className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500">
@@ -192,7 +192,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
                 {[0, 1, 2, 3, 4].map((i) => (
                   <span
                     key={i}
-                    className="practice-speaking-bar w-1 h-4 bg-indigo-400 rounded-full"
+                    className="practice-speaking-bar w-1 h-4 bg-blue-400 rounded-full"
                     style={{ animationDelay: `${i * 0.12}s` }}
                     aria-hidden="true"
                   />
@@ -217,7 +217,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
-            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-center text-lg font-bold text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 disabled:opacity-70"
+            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-center text-lg font-bold text-slate-900 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-600 focus:outline-none focus:border-blue-400 dark:focus:border-blue-500 disabled:opacity-70"
           />
 
           {feedback && (
@@ -246,7 +246,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
                 <span className="font-bold">{t.practice.correctWordLabel}:</span> {currentWord.text}
               </p>
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-1">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400 mb-1">
                   {t.practice.meaningLabel}
                 </p>
                 {currentWord.meanings.length === 0 ? (
@@ -275,7 +275,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
           {!feedback && (
             <button
               type="submit"
-              className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               {t.practice.checkAnswer}
             </button>

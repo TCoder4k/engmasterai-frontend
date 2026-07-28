@@ -9,7 +9,7 @@ interface CelebrationBurstProps {
   size?: 'small' | 'large';
 }
 
-const PARTICLE_COLORS = ['#6366F1', '#8B5CF6', '#F59E0B', '#10B981', '#EC4899'];
+const PARTICLE_COLORS = ['#3B82F6', '#6366F1', '#F59E0B', '#10B981', '#EC4899'];
 
 // Lightweight CSS particle burst (Sprint 03E): under 800ms, absolutely
 // positioned inside a relative parent, aria-hidden (purely decorative —

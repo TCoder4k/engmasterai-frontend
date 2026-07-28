@@ -4,7 +4,7 @@ import { Globe, GraduationCap, Cpu, Sparkles, Languages, BookOpen, Laptop, Messa
 
 export const IllustrationSection: React.FC = () => {
   return (
-    <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-indigo-700 via-indigo-600 to-blue-500 p-12 overflow-hidden items-center justify-center">
+    <div className="hidden lg:flex flex-1 relative bg-gradient-to-br from-blue-700 via-blue-600 to-blue-500 p-12 overflow-hidden items-center justify-center">
       {/* Decorative Grid Overlay */}
       <div className="absolute inset-0 opacity-10 pointer-events-none">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -32,7 +32,7 @@ export const IllustrationSection: React.FC = () => {
         {/* Main Content */}
         <div className="space-y-6 text-left">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-white text-indigo-600 rounded-2xl shadow-xl shadow-indigo-900/20">
+            <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-xl shadow-blue-900/20">
               <GraduationCap className="w-10 h-10" />
             </div>
             <span className="text-3xl font-extrabold tracking-tight">EngMasterAI</span>
@@ -44,7 +44,7 @@ export const IllustrationSection: React.FC = () => {
             cùng trí tuệ AI
           </h1>
           
-          <p className="text-xl text-indigo-50/80 max-w-lg font-light leading-relaxed">
+          <p className="text-xl text-blue-50/80 max-w-lg font-light leading-relaxed">
             Hệ thống học tập cá nhân hóa vượt trội, giúp bạn đạt điểm IELTS cao và giao tiếp tự nhiên như người bản xứ.
           </p>
         </div>
@@ -52,11 +52,11 @@ export const IllustrationSection: React.FC = () => {
         {/* Visual Elements Grid */}
         <div className="mt-12 grid grid-cols-2 gap-6 w-full max-w-md">
           <div className="p-5 bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl transform hover:scale-105 transition-transform cursor-default group">
-            <div className="w-10 h-10 bg-indigo-400/30 rounded-xl flex items-center justify-center mb-3 group-hover:bg-indigo-400/50 transition-colors">
+            <div className="w-10 h-10 bg-blue-400/30 rounded-xl flex items-center justify-center mb-3 group-hover:bg-blue-400/50 transition-colors">
               <Cpu className="w-6 h-6 text-white" />
             </div>
             <h3 className="font-bold text-lg mb-1">Gia sư AI 24/7</h3>
-            <p className="text-sm text-indigo-50/70">Sửa lỗi phát âm và ngữ pháp ngay lập tức.</p>
+            <p className="text-sm text-blue-50/70">Sửa lỗi phát âm và ngữ pháp ngay lập tức.</p>
           </div>
           
           <div className="p-5 bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl transform hover:scale-105 transition-transform cursor-default group">
@@ -64,7 +64,7 @@ export const IllustrationSection: React.FC = () => {
               <Languages className="w-6 h-6 text-white" />
             </div>
             <h3 className="font-bold text-lg mb-1">Đa dạng khóa học</h3>
-            <p className="text-sm text-indigo-50/70">Từ mất gốc đến nâng cao, bám sát thực tế.</p>
+            <p className="text-sm text-blue-50/70">Từ mất gốc đến nâng cao, bám sát thực tế.</p>
           </div>
         </div>
 

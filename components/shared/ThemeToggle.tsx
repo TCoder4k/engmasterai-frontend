@@ -17,7 +17,7 @@ const ThemeToggle: React.FC = () => {
       onClick={toggleTheme}
       aria-label={label}
       title={label}
-      className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-indigo-600 hover:border-indigo-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:border-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:border-blue-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:text-blue-400 dark:hover:border-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
     >
       {theme === 'dark' ? <Sun size={19} aria-hidden="true" /> : <Moon size={19} aria-hidden="true" />}
     </button>

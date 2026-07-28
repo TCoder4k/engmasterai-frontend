@@ -5,7 +5,7 @@ import { IllustrationSection } from './IllustrationSection';
 
 export const AuthLayout: React.FC = () => {
   return (
-    <div className="min-h-screen w-full flex bg-slate-50 selection:bg-indigo-100 selection:text-indigo-700">
+    <div className="min-h-screen w-full flex bg-slate-50 selection:bg-blue-100 selection:text-blue-700">
       {/* Two-Column Layout */}
       <div className="flex w-full">
         {/* Left Side: Illustration */}

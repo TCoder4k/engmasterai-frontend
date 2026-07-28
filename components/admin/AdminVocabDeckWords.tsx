@@ -133,7 +133,7 @@ const AdminVocabDeckWords: React.FC = () => {
             <div>
               <Link
                 to={backHref}
-                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-2"
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors mb-2"
               >
                 <ArrowLeft size={14} />
                 <span>Quay lại Bộ từ</span>
@@ -147,7 +147,7 @@ const AdminVocabDeckWords: React.FC = () => {
             </div>
             <button
               onClick={openAttach}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
+              className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all"
             >
               <Plus size={16} />
               <span>Gắn từ</span>
@@ -198,7 +198,7 @@ const AdminVocabDeckWords: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         {row.word.cefrLevel ? (
-                          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase">
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase">
                             {row.word.cefrLevel}
                           </span>
                         ) : (
@@ -245,7 +245,7 @@ const AdminVocabDeckWords: React.FC = () => {
                 placeholder="Tìm từ trong ngân hàng..."
                 value={bankSearch}
                 onChange={(e) => setBankSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
 
@@ -265,11 +265,11 @@ const AdminVocabDeckWords: React.FC = () => {
                     type="checkbox"
                     checked={selectedIds.has(word.id)}
                     onChange={() => toggleSelected(word.id)}
-                    className="accent-indigo-600"
+                    className="accent-blue-600"
                   />
                   <span className="text-sm font-semibold text-slate-800">{word.text}</span>
                   {word.cefrLevel && (
-                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase">
+                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded uppercase">
                       {word.cefrLevel}
                     </span>
                   )}
@@ -291,7 +291,7 @@ const AdminVocabDeckWords: React.FC = () => {
                 type="button"
                 onClick={submitAttach}
                 disabled={isAttaching || selectedIds.size === 0}
-                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60"
               >
                 {isAttaching ? 'Đang gắn...' : `Gắn ${selectedIds.size || ''} từ`}
               </button>

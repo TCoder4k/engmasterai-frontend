@@ -56,6 +56,16 @@ export interface StudentQuiz {
   taskId: string;
   passingScorePercent: number;
   feedbackMode: QuizFeedbackMode;
+  /**
+   * The attempt id the server is already recording answers against, or null
+   * when no attempt is in flight. Adopt it — the answer endpoint restarts
+   * the record for an id it does not recognise, so inventing one after a
+   * lost draft throws away everything answered so far.
+   *
+   * Optional in the type only so a client built against an older backend
+   * still compiles; the current API always sends it.
+   */
+  currentAttemptId?: string | null;
   questions: StudentQuizQuestion[];
 }
 
