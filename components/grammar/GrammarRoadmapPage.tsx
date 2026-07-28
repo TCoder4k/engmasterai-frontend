@@ -10,7 +10,8 @@ import Skeleton from '../shared/Skeleton';
 import { getPublishedCourses } from '../../services/courseService';
 import { getCourseLessons } from '../../services/lessonService';
 import { authService } from '../../services/authService';
-import { getCourseProgress, CourseProgress } from '../../services/lessonProgress';
+import { getCourseProgress, CourseProgress, QuizStageProgress } from '../../services/lessonProgress';
+import { getCourseQuizProgress } from '../../services/quizService';
 import { handleAuthError } from '../../services/apiError';
 import { Course, Lesson } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -38,6 +39,13 @@ const GrammarRoadmapPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<GrammarCategory | null>(null);
   const [lessonsByCourse, setLessonsByCourse] = useState<Map<string, Lesson[]>>(new Map());
+  // Sprint 06B — flat map keyed by lessonId (ids are unique across courses),
+  // merged from one getCourseQuizProgress call per course alongside the
+  // existing per-course lessons fetch below. Same silent-degrade rule: a
+  // failure here just leaves quiz-bearing lessons looking not-yet-passed.
+  const [quizProgressByLessonId, setQuizProgressByLessonId] = useState<Map<string, QuizStageProgress>>(
+    new Map(),
+  );
 
   useEffect(() => {
     getPublishedCourses(undefined, 100, 'GRAMMAR')
@@ -83,6 +91,30 @@ const GrammarRoadmapPage: React.FC = () => {
     };
   }, [courses]);
 
+  useEffect(() => {
+    if (courses.length === 0 || !userId) return;
+    let cancelled = false;
+
+    Promise.all(
+      courses.map((course) =>
+        getCourseQuizProgress(course.id)
+          .then((res) => res.data)
+          .catch(() => []),
+      ),
+    ).then((results) => {
+      if (cancelled) return;
+      const map = new Map<string, QuizStageProgress>();
+      results.flat().forEach((row) => {
+        map.set(row.lessonId, { passed: row.passed, attemptsCount: row.attemptsCount });
+      });
+      setQuizProgressByLessonId(map);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courses, userId]);
+
   // Only collections actually present get a chip, so a filter can never
   // resolve to an empty list.
   const categories = useMemo(() => presentGrammarCategories(courses), [courses]);
@@ -98,10 +130,10 @@ const GrammarRoadmapPage: React.FC = () => {
   const progressByCourse = useMemo(() => {
     const map = new Map<string, CourseProgress>();
     lessonsByCourse.forEach((lessons, courseId) => {
-      map.set(courseId, getCourseProgress(userId, lessons));
+      map.set(courseId, getCourseProgress(userId, lessons, quizProgressByLessonId));
     });
     return map;
-  }, [lessonsByCourse, userId]);
+  }, [lessonsByCourse, userId, quizProgressByLessonId]);
 
   // Roadmap-wide totals. Rendered only once every course's lessons are in,
   // so a partial figure never briefly claims a lower total than the truth.

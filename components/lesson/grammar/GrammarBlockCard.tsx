@@ -1,4 +1,5 @@
 import React, { useId, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   Check,
@@ -25,6 +26,7 @@ import {
   splitSignalWords,
 } from './grammarBlocks';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { DURATION, EASE } from '../../shared/motion';
 
 // Sprint 06A — one theory block, one card.
 //
@@ -200,12 +202,22 @@ const GrammarBlockCard: React.FC<GrammarBlockCardProps> = ({ block }) => {
   return (
     <li
       id={`section-${block.index}`}
-      className={`${style.span === 'full' ? 'lg:col-span-2' : ''} scroll-mt-24 list-none rounded-2xl border p-5 shadow-sm dark:shadow-xl ${style.card}`}
+      // Sprint 06B.5 — hover lift + shadow bloom, matching the landing
+      // page's card language (Features.tsx). Theory was completely static
+      // on hover before; the formula card, already the only style with both
+      // a gradient and a ring, gets a slightly stronger lift so its
+      // existing visual primacy is reinforced by motion rather than by
+      // piling on more colour.
+      className={`${style.span === 'full' ? 'lg:col-span-2' : ''} scroll-mt-24 list-none rounded-2xl border p-5 shadow-sm dark:shadow-xl transition-all duration-300 hover:shadow-lg ${
+        block.kind === 'formula' ? 'hover:-translate-y-1' : 'hover:-translate-y-0.5'
+      } ${style.card}`}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Icon size={16} className={`flex-shrink-0 ${style.accent}`} aria-hidden={true} />
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide ${style.badge}`}>
+          <Icon size={16} className={`flex-shrink-0 ${style.accent} transition-transform duration-300 group-hover:scale-110`} aria-hidden={true} />
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide transition-colors duration-300 ${style.badge}`}
+          >
             {badgeText}
           </span>
         </div>
@@ -228,9 +240,33 @@ const GrammarBlockCard: React.FC<GrammarBlockCardProps> = ({ block }) => {
         <h3 className="text-sm font-black text-slate-900 dark:text-white mb-2 break-words">{title}</h3>
       )}
 
-      <div id={bodyId} hidden={!isOpen}>
-        <BlockBody block={block} />
-      </div>
+      {/*
+        Sprint 06B.5 — the body used the `hidden` attribute, so expanding
+        was an instant jump. Animating the height makes the card grow into
+        its content. `hidden` is still applied while collapsed so the
+        content stays out of the accessibility tree and out of Find-in-page
+        exactly as before.
+      */}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            id={bodyId}
+            key="body"
+            // Height only, deliberately no opacity: fading a disclosure
+            // adds nothing, and an opacity-0 start would leave the content
+            // genuinely invisible for anyone whose animations are disabled
+            // or interrupted. Height snapping open is always safe.
+            initial={{ height: 0 }}
+            animate={{ height: 'auto' }}
+            exit={{ height: 0 }}
+            transition={{ duration: DURATION.base, ease: EASE }}
+            className="overflow-hidden"
+          >
+            <BlockBody block={block} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {!isOpen && <div id={bodyId} hidden />}
     </li>
   );
 };

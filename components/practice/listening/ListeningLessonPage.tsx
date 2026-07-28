@@ -7,7 +7,7 @@ import SegmentPlayer from './SegmentPlayer';
 import DictationWorkspace, { SegmentSolvedResult, WorkspaceFontSize } from './DictationWorkspace';
 import SubtitlesSidebar from './SubtitlesSidebar';
 import ListeningSessionSummary from './ListeningSessionSummary';
-import SoundToggle from '../SoundToggle';
+import SoundToggle from '../../shared/SoundToggle';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { isTtsSupported, speakText, cancelSpeech } from '../../../services/tts';
 import { getLessonById, LISTENING_CONTENT_VERSION } from './listeningContent';

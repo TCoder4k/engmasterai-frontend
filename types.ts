@@ -59,6 +59,11 @@ export interface Lesson {
   orderIndex: number;
   createdAt: string;
   updatedAt: string;
+  // Sprint 06B — PUBLISHED quiz tasks only (LessonService's USER_SELECT
+  // filters the relation count to `{ isPublished: true, type: 'QUIZ' }`).
+  // This is what services/lessonProgress.ts's availableStages() reads to
+  // decide whether the 'quiz' stage exists for this lesson at all.
+  _count: { tasks: number };
 }
 
 export interface ManagedLesson extends Lesson {

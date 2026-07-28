@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
-import { isMuted, setMuted } from '../../services/feedbackSounds';
+import { useSound } from './SoundProvider';
 
-// Mute toggle for the practice feedback sounds (Sprint 03E). Sound is an
-// enhancement — visual feedback always remains — so this only gates the
-// feedbackSounds service, not TTS/word audio playback.
+// Mute toggle for the app's feedback sounds (Sprint 03E; promoted out of
+// components/practice/ in Sprint 06B.5, when the lesson quiz started using
+// them too). Sound is an enhancement — visual feedback always remains — so
+// this only gates the feedbackSounds service, not TTS or word/lesson audio
+// playback.
+//
+// State comes from SoundProvider rather than local useState: with a toggle
+// now in the global chrome AND one beside a listening session, two local
+// copies would drift the moment either was clicked.
 const SoundToggle: React.FC = () => {
   const { t } = useTranslation();
-  const [muted, setMutedState] = useState(isMuted);
-
-  const toggle = () => {
-    const next = !muted;
-    setMuted(next);
-    setMutedState(next);
-  };
+  const { muted, toggleMuted } = useSound();
 
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={toggleMuted}
       aria-pressed={muted}
       aria-label={muted ? t.practice.unmuteSounds : t.practice.muteSounds}
       title={muted ? t.practice.unmuteSounds : t.practice.muteSounds}

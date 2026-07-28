@@ -1,6 +1,7 @@
 import { clearRecentActivity } from './recentActivity';
 import { clearAllVideoProgress } from './videoProgress';
 import { clearLessonStages } from './lessonProgress';
+import { clearAllQuizDrafts } from './quizDraft';
 import { fetchWithTimeout } from './fetchTimeout';
 // Deliberate circular import (refreshCoordinator.ts imports authService for
 // authService.refresh(); authService.ts imports refreshCoordinator here for
@@ -377,6 +378,9 @@ export const authService = {
       // Sprint 06 — lesson stage completion is device-local too, so it falls
       // under the same shared-device rule as the two above.
       clearLessonStages(user.id);
+      // Sprint 06B — an in-progress quiz draft is also per-user session
+      // state; a shared device must never resume it under the next account.
+      clearAllQuizDrafts(user.id);
     }
 
     emitAuthChanged();

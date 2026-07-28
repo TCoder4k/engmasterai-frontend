@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { MotionConfig } from 'framer-motion';
 import HomePage from './components/HomePage';
 import { AuthLayout } from './components/auth/AuthLayout';
 import { LoginForm } from './components/auth/LoginForm';
@@ -13,6 +14,7 @@ import AdminDashboard from './components/admin/AdminDashboard';
 import AdminUsers from './components/admin/AdminUsers';
 import AdminCourses from './components/admin/AdminCourses';
 import AdminLessons from './components/admin/AdminLessons';
+import AdminLessonQuiz from './components/admin/AdminLessonQuiz';
 import AdminVocabLibraries from './components/admin/AdminVocabLibraries';
 import AdminVocabDecks from './components/admin/AdminVocabDecks';
 import AdminVocabWords from './components/admin/AdminVocabWords';
@@ -36,6 +38,7 @@ import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { LanguageProvider } from './i18n/LanguageProvider';
+import { SoundProvider } from './components/shared/SoundProvider';
 
 const App: React.FC = () => {
   return (
@@ -43,6 +46,17 @@ const App: React.FC = () => {
     // future course/lesson page) can consume them — not just the dashboard.
     <ThemeProvider>
     <LanguageProvider>
+    <SoundProvider>
+    {/*
+      Sprint 06B.5 — reducedMotion="user" makes EVERY framer-motion
+      animation in the app honour the OS "reduce motion" setting by
+      default. This is a net improvement on what came before: the
+      hand-written practice-* keyframes in index.html already respected
+      the preference, but the Tailwind transition and animate utilities
+      used across the app ignored it, and no useReducedMotion hook
+      existed anywhere.
+    */}
+    <MotionConfig reducedMotion="user">
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -114,6 +128,7 @@ const App: React.FC = () => {
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/courses/:courseId/lessons" element={<AdminLessons />} />
+          <Route path="/admin/lessons/:lessonId/quiz" element={<AdminLessonQuiz />} />
           <Route path="/admin/vocab" element={<AdminVocabLibraries />} />
           <Route path="/admin/vocab/libraries/:libraryId/decks" element={<AdminVocabDecks />} />
           <Route path="/admin/vocab/words" element={<AdminVocabWords />} />
@@ -123,6 +138,8 @@ const App: React.FC = () => {
         </Route>
       </Routes>
     </BrowserRouter>
+    </MotionConfig>
+    </SoundProvider>
     </LanguageProvider>
     </ThemeProvider>
   );

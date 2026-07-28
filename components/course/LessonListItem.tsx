@@ -3,13 +3,19 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, Clock, Play } from 'lucide-react';
 import { Lesson } from '../../types';
 import { authService } from '../../services/authService';
-import { isLessonComplete, isLessonStarted } from '../../services/lessonProgress';
+import { isLessonComplete, isLessonStarted, QuizStageProgress } from '../../services/lessonProgress';
 import { useTranslation } from '../../i18n/useTranslation';
 
 interface LessonListItemProps {
   courseId: string;
   lesson: Lesson;
   orderNumber: number;
+  // Sprint 06B — server-side quiz progress for THIS lesson, fetched once by
+  // CourseDetailPage via quizService.getCourseQuizProgress and passed down.
+  // Undefined for a lesson with no quiz, or while quiz progress hasn't
+  // loaded yet — isLessonComplete already treats that as "not complete"
+  // rather than fabricating a status.
+  quizProgress?: QuizStageProgress;
 }
 
 // Row anatomy follows the design reference's lesson stack (status badge ->
@@ -20,12 +26,12 @@ interface LessonListItemProps {
 // API. The completion badge here is real but device-local, and it means
 // every stage the lesson offers is finished — not merely that the video
 // played to the end.
-const LessonListItem: React.FC<LessonListItemProps> = ({ courseId, lesson, orderNumber }) => {
+const LessonListItem: React.FC<LessonListItemProps> = ({ courseId, lesson, orderNumber, quizProgress }) => {
   const { t } = useTranslation();
   const userId = authService.getUser()?.id;
 
-  const completed = isLessonComplete(userId, lesson);
-  const started = !completed && isLessonStarted(userId, lesson);
+  const completed = isLessonComplete(userId, lesson, quizProgress);
+  const started = !completed && isLessonStarted(userId, lesson, quizProgress);
 
   const badgeClass = completed
     ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/40'

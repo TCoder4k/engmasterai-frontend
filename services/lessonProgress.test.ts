@@ -7,6 +7,7 @@ import {
   isLessonComplete,
   isLessonStarted,
   markTheoryComplete,
+  QuizStageProgress,
 } from './lessonProgress';
 import { VideoProgressEntry } from './videoProgress';
 
@@ -16,13 +17,22 @@ import { VideoProgressEntry } from './videoProgress';
 // "video watched", every stage added later would break the progress UI.
 // `isLessonComplete` is the seam a real backend will replace, and the
 // assertions below are what keep it honest in the meantime.
+//
+// Sprint 06B: 'quiz' left the always-locked set and gained a real,
+// server-backed status — see the dedicated describe block below. Every
+// fixture here defaults to `_count.tasks: 0` (no quiz), so every
+// pre-existing assertion in this file keeps meaning exactly what it did
+// before quiz existed.
 
 const USER = 'user-1';
 
-const lesson = (over: Partial<{ id: string; videoUrl: string | null; notes: string | null }> = {}) => ({
+const lesson = (
+  over: Partial<{ id: string; videoUrl: string | null; notes: string | null; _count: { tasks: number } }> = {},
+) => ({
   id: 'l-1',
   videoUrl: 'https://youtu.be/abc',
   notes: '## Rule one\nBody text',
+  _count: { tasks: 0 },
   ...over,
 });
 
@@ -52,13 +62,18 @@ describe('availableStages', () => {
     expect(availableStages(lesson({ videoUrl: null, notes: null }))).toEqual([]);
   });
 
-  it('never includes a stage that has no backend', () => {
-    // Quiz / Trap Hunter / Advanced practice need LessonTask/Question, which
-    // has no module. Requiring them would make every lesson permanently
-    // incomplete.
-    expect(availableStages(lesson())).not.toContain('quiz');
+  it('never includes a stage that has no backend at all', () => {
+    // Trap Hunter / Advanced practice need LessonTask/Question support that
+    // does not exist yet. Requiring them would make every lesson
+    // permanently incomplete. Quiz (Sprint 06B) is different: it DOES have
+    // a backend now, so it's covered by its own test below instead.
     expect(availableStages(lesson())).not.toContain('traphunter');
     expect(availableStages(lesson())).not.toContain('practice');
+  });
+
+  it('includes quiz only when the lesson actually has a published one', () => {
+    expect(availableStages(lesson())).not.toContain('quiz');
+    expect(availableStages(lesson({ _count: { tasks: 1 } }))).toContain('quiz');
   });
 
   it('treats whitespace-only notes as no theory content', () => {
@@ -99,7 +114,7 @@ describe('getStageStatus — theory', () => {
 });
 
 describe('getStageStatus — stages with no backend are always locked', () => {
-  it.each(['quiz', 'traphunter', 'practice'] as const)('%s is locked', (stage) => {
+  it.each(['traphunter', 'practice'] as const)('%s is locked', (stage) => {
     expect(getStageStatus(USER, lesson(), stage)).toBe('locked');
   });
 
@@ -110,9 +125,40 @@ describe('getStageStatus — stages with no backend are always locked', () => {
       `lessonStages:${USER}:l-1`,
       JSON.stringify({ theoryCompletedAt: 'x', quizCompletedAt: 'x', practiceCompletedAt: 'x' }),
     );
-    expect(getStageStatus(USER, lesson(), 'quiz')).toBe('locked');
     expect(getStageStatus(USER, lesson(), 'traphunter')).toBe('locked');
     expect(getStageStatus(USER, lesson(), 'practice')).toBe('locked');
+  });
+});
+
+// Sprint 06B — quiz is real now. lessonHasQuiz reads `_count.tasks`
+// (the backend's published-QUIZ-task count), and quizProgress comes from
+// the server (quizService.getCourseQuizProgress), never localStorage.
+describe('getStageStatus — quiz', () => {
+  const withQuiz = lesson({ _count: { tasks: 1 } });
+  const passed: QuizStageProgress = { passed: true, attemptsCount: 1 };
+  const attemptedNotPassed: QuizStageProgress = { passed: false, attemptsCount: 1 };
+  const untouched: QuizStageProgress = { passed: false, attemptsCount: 0 };
+
+  it('is unavailable when the lesson has no published quiz', () => {
+    expect(getStageStatus(USER, lesson(), 'quiz')).toBe('unavailable');
+  });
+
+  it('is not_started when the lesson has a quiz but progress has not loaded yet', () => {
+    // Undefined (not fetched yet) must never be read as "complete" — see
+    // LessonPage, which mounts QuizStage lazily on first visiting the tab.
+    expect(getStageStatus(USER, withQuiz, 'quiz')).toBe('not_started');
+  });
+
+  it('is not_started with real progress showing zero attempts', () => {
+    expect(getStageStatus(USER, withQuiz, 'quiz', untouched)).toBe('not_started');
+  });
+
+  it('is in_progress after a failed attempt', () => {
+    expect(getStageStatus(USER, withQuiz, 'quiz', attemptedNotPassed)).toBe('in_progress');
+  });
+
+  it('is completed once passed, and never un-completes on a later failed retry', () => {
+    expect(getStageStatus(USER, withQuiz, 'quiz', passed)).toBe('completed');
   });
 });
 
@@ -146,6 +192,14 @@ describe('isLessonComplete — every available stage, not just the video', () =>
   it('is false for a signed-out visitor', () => {
     seedVideo('l-1', { ended: true });
     expect(isLessonComplete(undefined, lesson({ notes: null }))).toBe(false);
+  });
+
+  it('a lesson with a quiz is not complete until the quiz is passed too', () => {
+    const withQuiz = lesson({ notes: null, _count: { tasks: 1 } });
+    seedVideo('l-1', { ended: true });
+    expect(isLessonComplete(USER, withQuiz)).toBe(false); // no quizProgress passed
+    expect(isLessonComplete(USER, withQuiz, { passed: false, attemptsCount: 1 })).toBe(false);
+    expect(isLessonComplete(USER, withQuiz, { passed: true, attemptsCount: 1 })).toBe(true);
   });
 });
 
@@ -185,6 +239,20 @@ describe('getCourseProgress', () => {
 
   it('returns a zeroed shape for a course with no lessons', () => {
     expect(getCourseProgress(USER, [])).toEqual({ completed: 0, total: 0, percent: 0 });
+  });
+
+  it('folds server-side quiz progress into the course-wide total', () => {
+    const withQuiz = [lesson({ id: 'q-1', notes: null, _count: { tasks: 1 } })];
+    seedVideo('q-1', { ended: true });
+
+    expect(getCourseProgress(USER, withQuiz)).toEqual({ completed: 0, total: 1, percent: 0 });
+
+    const quizProgressByLessonId = new Map([['q-1', { passed: true, attemptsCount: 1 }]]);
+    expect(getCourseProgress(USER, withQuiz, quizProgressByLessonId)).toEqual({
+      completed: 1,
+      total: 1,
+      percent: 100,
+    });
   });
 });
 

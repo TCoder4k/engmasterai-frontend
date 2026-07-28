@@ -168,6 +168,34 @@
         .practice-summary-glow {
           animation: practice-summary-glow-pulse 2.2s ease-in-out infinite;
         }
+
+        /* Sprint 06B.5 — optional shimmer variant for Skeleton. Gated in
+           this same no-preference block as everything above, so under
+           reduced motion the block simply renders as a static placeholder
+           (its base background is set by the component itself). */
+        @keyframes engmaster-shimmer {
+          0% { background-position: -180% 0; }
+          100% { background-position: 180% 0; }
+        }
+        .engmaster-shimmer {
+          background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.55) 50%,
+            transparent 100%
+          );
+          background-size: 180% 100%;
+          background-repeat: no-repeat;
+          animation: engmaster-shimmer 1.6s ease-in-out infinite;
+        }
+        .dark .engmaster-shimmer {
+          background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.07) 50%,
+            transparent 100%
+          );
+        }
       }
       @media (prefers-reduced-motion: reduce) {
         .practice-burst-particle {
@@ -185,7 +213,6 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body class="bg-[#F9FAFB] text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-200">
     <div id="root"></div>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Eye, Type, Star, Flag } from 'lucide-react';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { playCorrect } from '../../../services/feedbackSounds';
-import CelebrationBurst from '../CelebrationBurst';
+import CelebrationBurst from '../../shared/CelebrationBurst';
 import { DictationSegment } from './listeningContent';
 
 export type WorkspaceFontSize = 'normal' | 'large' | 'xlarge';

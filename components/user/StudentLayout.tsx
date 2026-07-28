@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvatarMenu from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
+import SoundToggle from '../shared/SoundToggle';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
 import NotificationBell from '../shared/NotificationBell';
 import StudentDesktopSidebar from './StudentDesktopSidebar';
@@ -54,6 +55,7 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
           <div className="flex-1" />
 
           <div className="flex items-center space-x-2.5 ml-6">
+            <SoundToggle />
             <ThemeToggle />
             <LanguageSwitcher />
             <NotificationBell />

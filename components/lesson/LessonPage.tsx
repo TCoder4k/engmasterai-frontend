@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { SlideUp } from '../shared/motion';
 import StudentLayout from '../user/StudentLayout';
 import LessonVideoPlayer from './video/LessonVideoPlayer';
 import GrammarTheoryCards from './grammar/GrammarTheoryCards';
@@ -18,18 +20,22 @@ import { recordRecentActivity } from '../../services/recentActivity';
 import {
   LessonStageId,
   StageStatus,
+  QuizStageProgress,
   getStageStatus,
   markTheoryComplete,
+  lessonHasQuiz,
 } from '../../services/lessonProgress';
 import { parseGrammarNotes, ParsedGrammarNotes } from './grammar/parseGrammarNotes';
+import QuizStage from './quiz/QuizStage';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 const EMPTY_PARSED: ParsedGrammarNotes = { sections: [], fallbackText: null };
 
+// Sprint 06B — 'quiz' joins the set of stages this page can actually mount.
 const isStageParam = (value: string | null): value is LessonStageId =>
-  value === 'video' || value === 'theory';
+  value === 'video' || value === 'theory' || value === 'quiz';
 
 // Shared Lesson/Grammar shell (design doc §7.5) — one route, one video
 // player, one completion flow, content swapped by course.type. GET
@@ -56,6 +62,11 @@ const LessonPage: React.FC = () => {
   const [player, setPlayer] = useState<any | null>(null);
   // Bumped whenever local stage state changes, so the stepper re-reads it.
   const [progressToken, setProgressToken] = useState(0);
+  // Sprint 06B — server-side quiz progress for the stage stepper's 'quiz'
+  // tile. Undefined until QuizStage has actually loaded/submitted once
+  // (getStageStatus treats that as "not started", never a fabricated
+  // "completed").
+  const [quizProgress, setQuizProgress] = useState<QuizStageProgress | undefined>(undefined);
 
   const userId = authService.getUser()?.id;
 
@@ -102,30 +113,45 @@ const LessonPage: React.FC = () => {
   // Stage lives in the URL so a refresh, a bookmark and browser-back all
   // land where the student was.
   const stageParam = searchParams.get('stage');
-  const currentStage: LessonStageId = isStageParam(stageParam) ? stageParam : 'video';
+  const requestedStage: LessonStageId = isStageParam(stageParam) ? stageParam : 'video';
 
   const selectStage = useCallback(
     (stage: LessonStageId) => {
       const next = new URLSearchParams(searchParams);
       next.set('stage', stage);
       setSearchParams(next, { replace: false });
+      // Sprint 06B.5 — a stage swap replaces the whole content area, so
+      // without this the student can land mid-way down the new stage at
+      // whatever scroll offset the previous one left behind. Smooth rather
+      // than instant so the movement is legible; the browser downgrades
+      // this to a jump on its own under prefers-reduced-motion.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     [searchParams, setSearchParams],
   );
 
   const stageStatuses = useMemo((): Record<LessonStageId, StageStatus> => {
-    const target = lesson ?? { id: '', videoUrl: null, notes: null };
+    const target = lesson ?? { id: '', videoUrl: null, notes: null, _count: { tasks: 0 } };
     // progressToken is a deliberate dependency: local stage state lives in
     // localStorage, which React cannot observe on its own.
     void progressToken;
     return {
       video: getStageStatus(userId, target, 'video'),
       theory: getStageStatus(userId, target, 'theory'),
-      quiz: getStageStatus(userId, target, 'quiz'),
+      quiz: getStageStatus(userId, target, 'quiz', quizProgress),
       traphunter: getStageStatus(userId, target, 'traphunter'),
       practice: getStageStatus(userId, target, 'practice'),
     };
-  }, [lesson, userId, progressToken]);
+  }, [lesson, userId, progressToken, quizProgress]);
+
+  // A bookmarked/typed ?stage=quiz on a lesson with no quiz falls back to
+  // Video rather than rendering nothing — the same thing an unrecognised
+  // ?stage= value already did before Sprint 06B added 'quiz' to
+  // isStageParam. Scoped to quiz only: 'theory' keeps its pre-existing
+  // behavior untouched (it renders its own empty-state, never redirects)
+  // per this sprint's "Theory must remain untouched" constraint.
+  const currentStage: LessonStageId =
+    requestedStage === 'quiz' && stageStatuses.quiz === 'unavailable' ? 'video' : requestedStage;
 
   const handleMarkTheoryRead = () => {
     if (!userId || !lesson) return;
@@ -232,6 +258,17 @@ const LessonPage: React.FC = () => {
               onSelectStage={selectStage}
             />
 
+            {/*
+              Sprint 06B.5 — the three stages were sibling short-circuits
+              with no wrapper and no key, so switching stages unmounted one
+              subtree and mounted an unrelated one in the same frame.
+              AnimatePresence keyed on the stage gives a crossfade instead.
+              mode="wait" keeps the outgoing stage from overlapping the
+              incoming one, which would otherwise double the page height
+              mid-transition.
+            */}
+            <AnimatePresence mode="wait" initial={false}>
+              <SlideUp key={currentStage}>
             {currentStage === 'video' && (
               <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-5 mb-8">
                 <div className="space-y-5">
@@ -290,12 +327,38 @@ const LessonPage: React.FC = () => {
                   <TheoryCompletionBar
                     isComplete={stageStatuses.theory === 'completed'}
                     onMarkRead={handleMarkTheoryRead}
+                    hasQuiz={lessonHasQuiz(lesson)}
+                    onGoToQuiz={() => selectStage('quiz')}
                   />
                 )}
               </div>
             )}
 
-            <NextLessonCard courseId={course.id} currentLesson={lesson} allLessons={siblingLessons} />
+            {/* Sprint 06B — subject-agnostic engine, Grammar-only mount
+                point: matches Sprint 06's existing rule that the staged
+                player (and everything in it) only replaces the flow for
+                GRAMMAR courses. QuizStage renders its own NextLessonCard
+                once the attempt reaches Lesson Complete, so the page's own
+                trailing one below is suppressed for this stage only —
+                otherwise the two would stack. */}
+            {currentStage === 'quiz' && lessonHasQuiz(lesson) && userId && (
+              <div className="mb-8">
+                <QuizStage
+                  lessonId={lesson.id}
+                  courseId={course.id}
+                  currentLesson={lesson}
+                  allLessons={siblingLessons}
+                  userId={userId}
+                  onProgressChange={setQuizProgress}
+                />
+              </div>
+            )}
+              </SlideUp>
+            </AnimatePresence>
+
+            {currentStage !== 'quiz' && (
+              <NextLessonCard courseId={course.id} currentLesson={lesson} allLessons={siblingLessons} />
+            )}
           </>
         )}
       </div>
