@@ -152,7 +152,7 @@ const toUpsertInput = (q: EditableQuestion): UpsertQuestionInput => {
 };
 
 const inputClass =
-  'w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500';
+  'w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500';
 
 const AdminLessonQuiz: React.FC = () => {
   const navigate = useNavigate();
@@ -334,7 +334,7 @@ const AdminLessonQuiz: React.FC = () => {
               <Link
                 to={backTo}
                 state={backState}
-                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-2"
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors mb-2"
               >
                 <ArrowLeft size={14} />
                 <span>Quay lại Bài học</span>
@@ -426,7 +426,7 @@ const AdminLessonQuiz: React.FC = () => {
                         <button
                           onClick={() => moveQuestion(q.localId, -1)}
                           disabled={index === 0}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg disabled:opacity-30"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg disabled:opacity-30"
                           title="Lên"
                         >
                           <ChevronUp size={15} />
@@ -434,14 +434,14 @@ const AdminLessonQuiz: React.FC = () => {
                         <button
                           onClick={() => moveQuestion(q.localId, 1)}
                           disabled={index === questions.length - 1}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg disabled:opacity-30"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg disabled:opacity-30"
                           title="Xuống"
                         >
                           <ChevronDown size={15} />
                         </button>
                         <button
                           onClick={() => duplicateQuestion(q.localId)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 rounded-lg"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg"
                           title="Nhân bản câu hỏi"
                         >
                           <Copy size={15} />
@@ -521,7 +521,7 @@ const AdminLessonQuiz: React.FC = () => {
                                   name={`correct-${q.localId}`}
                                   checked={q.correctOptionId === opt.id}
                                   onChange={() => updateQuestion(q.localId, { correctOptionId: opt.id })}
-                                  className="w-4 h-4 accent-indigo-600 flex-shrink-0"
+                                  className="w-4 h-4 accent-blue-600 flex-shrink-0"
                                   aria-label={`Đáp án đúng là phần ${optIndex + 1}`}
                                 />
                               )}
@@ -537,7 +537,7 @@ const AdminLessonQuiz: React.FC = () => {
                                   <button
                                     onClick={() => moveOption(q.localId, opt.id, -1)}
                                     disabled={optIndex === 0}
-                                    className="p-0.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30"
+                                    className="p-0.5 text-slate-400 hover:text-blue-600 disabled:opacity-30"
                                     title="Lên"
                                   >
                                     <ChevronUp size={13} />
@@ -545,7 +545,7 @@ const AdminLessonQuiz: React.FC = () => {
                                   <button
                                     onClick={() => moveOption(q.localId, opt.id, 1)}
                                     disabled={optIndex === q.options.length - 1}
-                                    className="p-0.5 text-slate-400 hover:text-indigo-600 disabled:opacity-30"
+                                    className="p-0.5 text-slate-400 hover:text-blue-600 disabled:opacity-30"
                                     title="Xuống"
                                   >
                                     <ChevronDown size={13} />
@@ -565,7 +565,7 @@ const AdminLessonQuiz: React.FC = () => {
                         </div>
                         <button
                           onClick={() => addOption(q.localId)}
-                          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           <Plus size={13} /> Thêm lựa chọn
                         </button>
@@ -584,7 +584,7 @@ const AdminLessonQuiz: React.FC = () => {
                               name={`tf-${q.localId}`}
                               checked={q.correctBoolean === true}
                               onChange={() => updateQuestion(q.localId, { correctBoolean: true })}
-                              className="accent-indigo-600"
+                              className="accent-blue-600"
                             />
                             Đúng
                           </label>
@@ -594,7 +594,7 @@ const AdminLessonQuiz: React.FC = () => {
                               name={`tf-${q.localId}`}
                               checked={q.correctBoolean === false}
                               onChange={() => updateQuestion(q.localId, { correctBoolean: false })}
-                              className="accent-indigo-600"
+                              className="accent-blue-600"
                             />
                             Sai
                           </label>
@@ -660,7 +660,7 @@ const AdminLessonQuiz: React.FC = () => {
 
                 <button
                   onClick={addQuestion}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold text-sm hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500/50 dark:hover:text-indigo-400 transition-all"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold text-sm hover:border-blue-300 hover:text-blue-600 dark:hover:border-blue-500/50 dark:hover:text-blue-400 transition-all"
                 >
                   <Plus size={16} /> Thêm câu hỏi
                 </button>
@@ -676,7 +676,7 @@ const AdminLessonQuiz: React.FC = () => {
                 <button
                   onClick={handleSave}
                   disabled={isSaving || questions.length === 0}
-                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                  className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60"
                 >
                   <Save size={16} />
                   {isSaving ? 'Đang lưu...' : 'Lưu bài quiz'}

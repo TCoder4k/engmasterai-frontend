@@ -58,7 +58,7 @@ const FillBlankInput: React.FC<FillBlankInputProps> = ({
       autoComplete="off"
       autoCapitalize="off"
       spellCheck={false}
-      className={`w-full px-4 py-3.5 rounded-2xl border-2 text-[15px] font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:cursor-default ${stateClass}`}
+      className={`w-full px-4 py-3.5 rounded-2xl border-2 text-[15px] font-semibold text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:cursor-default ${stateClass}`}
     />
   );
 };

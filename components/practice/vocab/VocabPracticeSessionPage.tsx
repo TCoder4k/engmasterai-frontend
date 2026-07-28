@@ -122,7 +122,7 @@ const VocabPracticeSessionPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/vocab')}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors"
           >
             {t.vocab.backToVocab}
           </button>

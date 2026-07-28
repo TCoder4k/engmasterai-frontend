@@ -29,7 +29,7 @@ export const Logo: React.FC = () => {
       </div>
       
       {/* Một dải trang trí nhỏ bên dưới */}
-      <div className="mt-4 w-12 h-1 bg-indigo-100 rounded-full"></div>
+      <div className="mt-4 w-12 h-1 bg-blue-100 rounded-full"></div>
     </div>
   );
 };

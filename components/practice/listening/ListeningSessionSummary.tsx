@@ -82,7 +82,7 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
         <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">{lesson.title}</p>
         <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-500 mt-1">
           <span>{lesson.topic}</span>
-          <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md uppercase text-[10px] font-black">
+          <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md uppercase text-[10px] font-black">
             {lesson.level}
           </span>
         </div>
@@ -90,7 +90,7 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-3 flex flex-col items-center gap-1">
-          <Layers size={16} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+          <Layers size={16} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
           <span className="text-lg font-black text-slate-900 dark:text-slate-100">
             {totalSegments}/{totalSegments}
           </span>
@@ -99,7 +99,7 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
           </span>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-3 flex flex-col items-center gap-1">
-          <Type size={16} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+          <Type size={16} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
           <span className="text-lg font-black text-slate-900 dark:text-slate-100">
             {wordsCorrect}/{wordsTotal}
           </span>
@@ -115,7 +115,7 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
           </span>
         </div>
         <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-3 flex flex-col items-center gap-1">
-          <Clock size={16} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+          <Clock size={16} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
           <span className="text-lg font-black text-slate-900 dark:text-slate-100">{formatAudioTime(elapsedSeconds)}</span>
           <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">
             {t.practice.listeningTimeStat}
@@ -139,7 +139,7 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
         {nextLesson && (
           <Link
             to={`/practice/listening/${nextLesson.id}`}
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             {t.practice.listeningNextLessonAction}
           </Link>
@@ -150,14 +150,14 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
         <button
           type="button"
           onClick={onReplayLesson}
-          className="px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 rounded-xl text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 rounded-xl text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {t.practice.listeningReplayLesson}
         </button>
         <button
           type="button"
           onClick={onBackToLessons}
-          className="px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 rounded-xl text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="px-4 py-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 rounded-xl text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {t.practice.listeningBackToLessons}
         </button>
@@ -173,16 +173,16 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
               <Link
                 key={l.id}
                 to={`/practice/listening/${l.id}`}
-                className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-500/40 transition-all overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/40 transition-all overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
-                <div className="relative h-16 bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center">
+                <div className="relative h-16 bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center">
                   <Headphones size={20} className="text-white/90" aria-hidden="true" />
-                  <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-white/90 dark:bg-slate-950/80 text-indigo-600 dark:text-indigo-300 text-[9px] font-black rounded uppercase">
+                  <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 bg-white/90 dark:bg-slate-950/80 text-blue-600 dark:text-blue-300 text-[9px] font-black rounded uppercase">
                     {l.level}
                   </span>
                 </div>
                 <div className="p-2.5 space-y-0.5">
-                  <p className="text-xs font-extrabold text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                  <p className="text-xs font-extrabold text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {l.title}
                   </p>
                   <div className="flex items-center gap-x-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">

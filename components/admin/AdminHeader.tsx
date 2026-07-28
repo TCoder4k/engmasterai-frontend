@@ -42,7 +42,7 @@ const AdminHeader: React.FC = () => {
           <input 
             type="text" 
             placeholder="Tìm học viên, bài học hoặc mã giao dịch..." 
-            className="pl-10 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 w-96 transition-all"
+            className="pl-10 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 w-96 transition-all"
           />
         </div>
       </div>
@@ -58,7 +58,7 @@ const AdminHeader: React.FC = () => {
         
         <div className="h-6 w-px bg-slate-200 mx-2"></div>
 
-        <button className="relative p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+        <button className="relative p-2 text-slate-400 hover:text-blue-600 transition-colors">
           <Bell size={18} />
           <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-rose-500 rounded-full border-2 border-white"></span>
         </button>

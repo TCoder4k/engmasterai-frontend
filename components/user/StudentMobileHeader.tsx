@@ -33,9 +33,9 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
         <Link
           to="/home"
           aria-label={t.nav.goToDashboard}
-          className="flex items-center space-x-2 min-w-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="flex items-center space-x-2 min-w-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          <GraduationCap size={26} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" aria-hidden="true" />
+          <GraduationCap size={26} className="text-blue-600 dark:text-blue-400 flex-shrink-0" aria-hidden="true" />
           <span className="text-base font-extrabold text-slate-900 dark:text-white hidden sm:block">
             EngMasterAI
           </span>

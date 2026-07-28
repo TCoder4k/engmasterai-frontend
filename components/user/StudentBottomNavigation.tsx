@@ -37,9 +37,9 @@ const StudentBottomNavigation: React.FC = () => {
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center justify-center space-y-1 py-2.5 min-h-[56px] text-[10px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400 ${
+                `flex-1 flex flex-col items-center justify-center space-y-1 py-2.5 min-h-[56px] text-[10px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
                   isActive
-                    ? 'text-indigo-600 dark:text-indigo-400'
+                    ? 'text-blue-600 dark:text-blue-400'
                     : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'
                 }`
               }
@@ -49,7 +49,7 @@ const StudentBottomNavigation: React.FC = () => {
                   <span className="relative" aria-hidden="true">
                     {item.icon}
                     {isActive && (
-                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-600 dark:bg-indigo-400" />
+                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-600 dark:bg-blue-400" />
                     )}
                   </span>
                   <span>{item.label}</span>

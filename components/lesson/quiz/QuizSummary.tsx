@@ -120,7 +120,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ result, questions, onContinue
           type="button"
           onClick={() => setShowReview((v) => !v)}
           aria-expanded={showReview}
-          className="mt-5 w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-slate-50 dark:bg-ink-950 border border-slate-100 dark:border-ink-700 text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="mt-5 w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-slate-50 dark:bg-ink-950 border border-slate-100 dark:border-ink-700 text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {showReview ? t.quiz.reviewToggleHide : t.quiz.reviewToggleShow}
           {showReview ? <ChevronUp size={16} aria-hidden="true" /> : <ChevronDown size={16} aria-hidden="true" />}
@@ -151,7 +151,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ result, questions, onContinue
           <button
             type="button"
             onClick={onRetake}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border-2 border-slate-200 dark:border-ink-700 text-slate-700 dark:text-slate-200 font-bold text-sm hover:border-indigo-300 dark:hover:border-indigo-500/60 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border-2 border-slate-200 dark:border-ink-700 text-slate-700 dark:text-slate-200 font-bold text-sm hover:border-blue-300 dark:hover:border-blue-500/60 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <RotateCcw size={15} aria-hidden="true" />
             {t.common.tryAgain}
@@ -160,7 +160,7 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ result, questions, onContinue
         <button
           type="button"
           onClick={onContinue}
-          className="flex-1 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="flex-1 inline-flex items-center justify-center px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {t.quiz.continueAction}
         </button>

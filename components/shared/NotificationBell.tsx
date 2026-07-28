@@ -13,7 +13,7 @@ const NotificationBell: React.FC = () => {
       aria-label={t.header.notifications}
       title={t.header.notifications}
       aria-disabled="true"
-      className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-500 cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      className="w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-500 cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
     >
       <Bell size={19} aria-hidden="true" />
     </button>

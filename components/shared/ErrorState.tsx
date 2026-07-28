@@ -20,7 +20,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({ message, onRetry }) => {
         <button
           type="button"
           onClick={onRetry}
-          className="text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg px-3 py-1.5"
+          className="text-sm font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-lg px-3 py-1.5"
         >
           {t.common.tryAgain}
         </button>

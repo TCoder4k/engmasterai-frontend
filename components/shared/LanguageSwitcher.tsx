@@ -51,7 +51,7 @@ const LanguageSwitcher: React.FC = () => {
         aria-expanded={isOpen}
         aria-label={t.header.changeLanguage}
         title={t.header.changeLanguage}
-        className="h-10 md:h-11 px-2.5 md:px-3 flex items-center space-x-1 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-indigo-600 hover:border-indigo-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:text-indigo-400 dark:hover:border-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        className="h-10 md:h-11 px-2.5 md:px-3 flex items-center space-x-1 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400 dark:hover:border-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
         <span className="text-xs font-bold uppercase">{language}</span>
         <ChevronDown
@@ -72,9 +72,9 @@ const LanguageSwitcher: React.FC = () => {
               <button
                 type="button"
                 onClick={() => selectLanguage(lang)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-400 ${
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${
                   language === lang
-                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-500/10'
+                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-500/10'
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >

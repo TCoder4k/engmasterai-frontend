@@ -36,11 +36,11 @@ const ModeSelectorBar: React.FC<ModeSelectorBarProps> = ({ activeMode, onSelect 
           disabled={mode.comingSoon}
           title={mode.comingSoon ? t.practice.comingSoonMode : undefined}
           onClick={() => !mode.comingSoon && onSelect(mode.id)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
             mode.comingSoon
               ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
               : activeMode === mode.id
-                ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >

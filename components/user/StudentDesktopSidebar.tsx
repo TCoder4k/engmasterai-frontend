@@ -18,7 +18,7 @@ const HEXAGON_CLIP = 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%
 const navLinkClass = (isActive: boolean) =>
   `flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
     isActive
-      ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400'
+      ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
   }`;
 
@@ -36,9 +36,9 @@ const StudentDesktopSidebar: React.FC = () => {
         <NavLink
           to="/home"
           aria-label={t.nav.goToDashboard}
-          className="flex items-center space-x-2.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="flex items-center space-x-2.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          <GraduationCap size={30} className="text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+          <GraduationCap size={30} className="text-blue-600 dark:text-blue-400" aria-hidden="true" />
           <span className="text-xl font-extrabold text-slate-900 dark:text-white">EngMasterAI</span>
         </NavLink>
       </div>
@@ -91,7 +91,7 @@ const StudentDesktopSidebar: React.FC = () => {
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center space-x-3 mb-4">
             <div
-              className="w-12 h-12 bg-indigo-600 flex items-center justify-center text-white flex-shrink-0"
+              className="w-12 h-12 bg-blue-600 flex items-center justify-center text-white flex-shrink-0"
               style={{ clipPath: HEXAGON_CLIP }}
               aria-hidden="true"
             >
@@ -118,7 +118,7 @@ const StudentDesktopSidebar: React.FC = () => {
           <button
             type="button"
             title={t.common.comingSoon}
-            className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             {t.premium.upgradeNow}
           </button>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookMarked, BookOpen, Headphones } from 'lucide-react';
+import { ArrowRight, BookMarked, BookOpen, ChevronRight, Headphones, Play } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { authService } from '../../services/authService';
 import { getMostRecentActivity, getMostRecentActivityOfType } from '../../services/recentActivity';
@@ -9,6 +9,12 @@ interface ContinueLearningCardProps {
   // Summed due words from GET /learning/libraries/progress, or null when it
   // is not known yet (loading / failed). Never treated as 0 when null.
   dueTotal?: number | null;
+  /**
+   * Real completion percentage for the resolved Grammar course, computed by
+   * UserHome from services/lessonProgress. `null` means "no honest number
+   * available" — the bar is then not rendered at all rather than shown at 0.
+   */
+  progressPercent?: number | null;
 }
 
 type Resolved = {
@@ -19,7 +25,7 @@ type Resolved = {
   icon: React.ReactNode;
 };
 
-// Sprint 05 — Continue Learning is now module-aware instead of purely
+// Sprint 05 — Continue Learning is module-aware instead of purely
 // recency-based. Priority order, which is a product decision, not a
 // technical one:
 //
@@ -36,10 +42,14 @@ type Resolved = {
 // DEVICE-LOCAL: a student signing in on a new browser sees step 2 or the
 // empty state, never a wrong lesson. Step 2 is the only server-backed one.
 //
-// The design reference shows a 65% progress bar in this card. It is not
-// reproduced: there is no lesson-progress API, so no honest percentage
-// exists. In the review variant that slot carries the real due count instead.
-const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({ dueTotal = null }) => {
+// The design reference shows a 65% progress bar here. It is now reproduced
+// with a REAL figure — Sprint 06 shipped per-lesson stage progress, so
+// UserHome can compute the resolved course's true completion — and it is
+// simply absent whenever that cannot be computed.
+const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
+  dueTotal = null,
+  progressPercent = null,
+}) => {
   const { t } = useTranslation();
   const user = authService.getUser();
 
@@ -53,7 +63,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({ dueTotal = 
         title: grammar.title,
         detail: null,
         path: grammar.path,
-        icon: <BookOpen size={40} className="text-white/90" />,
+        icon: <BookOpen className="w-8 h-8" aria-hidden="true" />,
       };
     }
 
@@ -63,7 +73,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({ dueTotal = 
         title: t.dashboard.continueReviewTitle,
         detail: `${dueTotal} ${t.dashboard.continueWordsDue}`,
         path: '/practice/review',
-        icon: <BookMarked size={40} className="text-white/90" />,
+        icon: <BookMarked className="w-8 h-8" aria-hidden="true" />,
       };
     }
 
@@ -74,7 +84,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({ dueTotal = 
         title: listening.title,
         detail: null,
         path: listening.path,
-        icon: <Headphones size={40} className="text-white/90" />,
+        icon: <Headphones className="w-8 h-8" aria-hidden="true" />,
       };
     }
 
@@ -85,7 +95,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({ dueTotal = 
         title: recent.title,
         detail: null,
         path: recent.path,
-        icon: <BookOpen size={40} className="text-white/90" />,
+        icon: <BookOpen className="w-8 h-8" aria-hidden="true" />,
       };
     }
 
@@ -93,65 +103,108 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({ dueTotal = 
   };
 
   const resolved = resolve();
+  const showProgress = resolved !== null && progressPercent !== null;
 
   return (
-    <section aria-label={t.dashboard.continueLearning}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">
+    <section aria-label={t.dashboard.continueLearning} className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <Play className="w-4 h-4 text-blue-500 fill-blue-500 dark:text-blue-400 dark:fill-blue-400" aria-hidden="true" />
           {t.dashboard.continueLearning}
         </h2>
         <Link
           to="/grammar"
-          className="flex items-center space-x-1 text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg px-1"
+          className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors rounded-lg px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          <span>{t.dashboard.viewRoadmap}</span>
-          <ArrowRight size={15} aria-hidden="true" />
+          {t.dashboard.viewRoadmap}
+          <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
         </Link>
       </div>
 
-      <div className="bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-100/60 dark:border-indigo-500/20 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-5">
+      <div className="group relative overflow-hidden rounded-3xl p-6 shadow-lg dark:shadow-2xl space-y-4 border transition-all bg-gradient-to-r from-blue-50 via-white to-blue-50/60 border-blue-200 hover:border-blue-300 dark:from-blue-950 dark:via-ink-900 dark:to-ink-850 dark:border-blue-500/30 dark:hover:border-blue-500/50">
         <div
-          className="w-full h-28 sm:w-36 sm:h-24 rounded-xl bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center flex-shrink-0 shadow-md shadow-indigo-100 dark:shadow-none"
+          className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
           aria-hidden="true"
-        >
-          {resolved ? resolved.icon : <BookOpen size={40} className="text-white/90" />}
-        </div>
+        />
 
-        {resolved ? (
-          <>
-            <div className="flex-1 min-w-0">
-              <span className="inline-block text-[11px] font-bold text-indigo-600 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-500/20 px-2.5 py-1 rounded-md uppercase">
-                {resolved.moduleLabel}
-              </span>
-              <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 mt-2 truncate">
-                {resolved.title}
-              </h3>
-              {resolved.detail && (
-                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">
-                  {resolved.detail}
-                </p>
-              )}
-            </div>
-            <Link
-              to={resolved.path}
-              className="inline-flex items-center justify-center flex-shrink-0 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 px-5 py-2.5 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <span
+              className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 p-0.5 shadow-xl shrink-0 group-hover:scale-105 transition-transform duration-300"
+              aria-hidden="true"
             >
-              {t.dashboard.continue}
-            </Link>
-          </>
-        ) : (
-          <div className="flex-1 min-w-0">
-            <span className="inline-block text-[11px] font-bold text-indigo-600 bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-500/20 px-2.5 py-1 rounded-md">
-              {t.common.comingSoon}
+              <span className="w-full h-full bg-white dark:bg-ink-950 rounded-[14px] flex flex-col items-center justify-center gap-1 p-2 text-blue-600 dark:text-blue-400">
+                {resolved ? resolved.icon : <BookOpen className="w-8 h-8" />}
+                <span className="text-[9px] font-black text-blue-500 dark:text-blue-300 tracking-wider uppercase truncate max-w-full">
+                  {resolved ? resolved.moduleLabel : t.tracks.grammar.label}
+                </span>
+              </span>
             </span>
-            <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-100 mt-2">
-              {t.dashboard.noLearningActivity}
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1 leading-relaxed">
-              {t.dashboard.continueLearningHint}
-            </p>
+
+            {resolved ? (
+              <div className="space-y-1.5 min-w-0">
+                <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30 text-[10px] font-bold rounded-full">
+                  {resolved.moduleLabel}
+                </span>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
+                  {resolved.title}
+                </h3>
+                {resolved.detail && (
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                    {resolved.detail}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5 min-w-0">
+                <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30 text-[10px] font-bold rounded-full">
+                  {t.common.comingSoon}
+                </span>
+                <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                  {t.dashboard.noLearningActivity}
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+                  {t.dashboard.continueLearningHint}
+                </p>
+              </div>
+            )}
           </div>
-        )}
+
+          {resolved && (
+            <div className="w-full sm:w-auto flex flex-col items-stretch sm:items-end gap-3 shrink-0">
+              {/* Rendered only when a true percentage exists. */}
+              {showProgress && (
+                <div className="w-full sm:w-44 space-y-1">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="text-slate-500 dark:text-slate-400">{t.dashboard.progress}</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-black">{progressPercent}%</span>
+                  </div>
+                  <div
+                    className="w-full h-2.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-ink-700"
+                    role="progressbar"
+                    aria-valuenow={progressPercent ?? 0}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={t.dashboard.progress}
+                  >
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Link
+                to={resolved.path}
+                className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                {t.dashboard.continue}
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

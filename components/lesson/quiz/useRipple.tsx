@@ -17,8 +17,10 @@ let nextRippleId = 0;
 // later). Acknowledging the CHOICE without implying a verdict is what lets
 // the answering phase feel alive without lying to the student.
 //
-// Violet, matching the app's indigo→violet accent, rather than a new colour
-// — and never emerald/rose, which are the app's correctness colours.
+// Violet, and never emerald/rose — those are the app's correctness colours.
+// It stayed violet when the accent moved to blue→indigo, which sharpens the
+// point rather than blurring it: the ripple is now visibly neither the
+// primary accent nor a verdict colour, so it can only read as "chosen".
 export const useRipple = () => {
   const [ripples, setRipples] = useState<Ripple[]>([]);
 

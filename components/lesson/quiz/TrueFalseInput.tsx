@@ -65,7 +65,7 @@ const TrueFalseInput: React.FC<TrueFalseInputProps> = ({
     }
     return isSelected
       ? 'border-violet-500 bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:border-violet-400 dark:text-violet-300 shadow-md shadow-violet-500/15'
-      : 'border-slate-200 text-slate-600 hover:border-indigo-300 dark:border-ink-700 dark:text-slate-300 dark:hover:border-indigo-500/60';
+      : 'border-slate-200 text-slate-600 hover:border-blue-300 dark:border-ink-700 dark:text-slate-300 dark:hover:border-blue-500/60';
   };
 
   return (
@@ -84,7 +84,7 @@ const TrueFalseInput: React.FC<TrueFalseInputProps> = ({
             onFocus={() => setFocusedIndex(index)}
             whileTap={disabled ? undefined : { scale: 0.97 }}
             transition={{ duration: DURATION.micro }}
-            className={`relative overflow-hidden flex items-center justify-center gap-2 px-4 py-4 rounded-2xl border-2 font-black text-[15px] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+            className={`relative overflow-hidden flex items-center justify-center gap-2 px-4 py-4 rounded-2xl border-2 font-black text-[15px] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
               disabled ? 'cursor-default' : ''
             } ${shellClass(option.key)}`}
           >

@@ -102,7 +102,7 @@ const OrderingInput: React.FC<OrderingInputProps> = ({
                     move(index, 1);
                   }
                 }}
-                className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-30 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 disabled:opacity-30 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 <ChevronUp size={16} aria-hidden="true" />
               </button>
@@ -120,7 +120,7 @@ const OrderingInput: React.FC<OrderingInputProps> = ({
                     move(index, 1);
                   }
                 }}
-                className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 disabled:opacity-30 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                className="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/10 disabled:opacity-30 disabled:pointer-events-none focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 <ChevronDown size={16} aria-hidden="true" />
               </button>

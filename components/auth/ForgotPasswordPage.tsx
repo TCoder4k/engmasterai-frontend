@@ -50,7 +50,7 @@ export const ForgotPasswordPage: React.FC = () => {
             <p className="text-sm text-green-600">Vui lòng kiểm tra hộp thư đến (và cả mục spam).</p>
           </div>
           <p className="text-center text-slate-600 font-medium">
-            <Link to="/login" className="text-indigo-600 font-black hover:underline underline-offset-4">
+            <Link to="/login" className="text-blue-600 font-black hover:underline underline-offset-4">
               Về trang đăng nhập
             </Link>
           </p>
@@ -100,14 +100,14 @@ export const ForgotPasswordPage: React.FC = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="ten-dang-nhap@gmail.com"
-            className="w-full px-4 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 transition-all placeholder:text-slate-400 font-medium"
+            className="w-full px-4 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
           />
         </div>
 
         <button
           type="submit"
           disabled={state === 'submitting'}
-          className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl shadow-xl shadow-indigo-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl shadow-blue-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {state === 'submitting' ? (
             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -117,7 +117,7 @@ export const ForgotPasswordPage: React.FC = () => {
         </button>
 
         <p className="text-center text-slate-600 font-medium">
-          <Link to="/login" className="text-indigo-600 font-black hover:underline underline-offset-4">
+          <Link to="/login" className="text-blue-600 font-black hover:underline underline-offset-4">
             Về trang đăng nhập
           </Link>
         </p>

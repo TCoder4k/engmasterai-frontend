@@ -219,7 +219,7 @@ const AdminVocabDecks: React.FC = () => {
             <div>
               <Link
                 to="/admin/vocab"
-                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-2"
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors mb-2"
               >
                 <ArrowLeft size={14} />
                 <span>Quay lại Từ vựng</span>
@@ -252,7 +252,7 @@ const AdminVocabDecks: React.FC = () => {
               </button>
               <button
                 onClick={openCreate}
-                className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
+                className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all"
               >
                 <Plus size={16} />
                 <span>Thêm bộ từ</span>
@@ -320,7 +320,7 @@ const AdminVocabDecks: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-center">
                         {deck.cefrLevel ? (
-                          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase">
+                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md uppercase">
                             {deck.cefrLevel}
                           </span>
                         ) : (
@@ -331,7 +331,7 @@ const AdminVocabDecks: React.FC = () => {
                         <button
                           onClick={() => goToWords(deck)}
                           title="Quản lý từ"
-                          className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+                          className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
                         >
                           {deck._count.deckWords} từ
                         </button>
@@ -354,7 +354,7 @@ const AdminVocabDecks: React.FC = () => {
                         <div className="flex items-center justify-end space-x-1">
                           <button
                             onClick={() => goToWords(deck)}
-                            className="inline-flex items-center space-x-1.5 px-3 py-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all text-xs font-bold"
+                            className="inline-flex items-center space-x-1.5 px-3 py-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all text-xs font-bold"
                             title="Quản lý từ"
                           >
                             <ListChecks size={16} />
@@ -362,7 +362,7 @@ const AdminVocabDecks: React.FC = () => {
                           </button>
                           <button
                             onClick={() => openEdit(deck)}
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Chỉnh sửa"
                           >
                             <Pencil size={16} />
@@ -404,7 +404,7 @@ const AdminVocabDecks: React.FC = () => {
                 required
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div>
@@ -413,7 +413,7 @@ const AdminVocabDecks: React.FC = () => {
                 rows={2}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div>
@@ -421,7 +421,7 @@ const AdminVocabDecks: React.FC = () => {
               <select
                 value={form.cefrLevel}
                 onChange={(e) => setForm((f) => ({ ...f, cefrLevel: e.target.value as CefrLevel | '' }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               >
                 <option value="">— Không chọn —</option>
                 {CEFR_LEVELS.map((level) => (
@@ -435,7 +435,7 @@ const AdminVocabDecks: React.FC = () => {
                 type="text"
                 value={form.thumbnail}
                 onChange={(e) => setForm((f) => ({ ...f, thumbnail: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div className="flex justify-end space-x-3 pt-2">
@@ -449,7 +449,7 @@ const AdminVocabDecks: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60"
               >
                 {isSaving ? 'Đang lưu...' : editingDeck ? 'Lưu thay đổi' : 'Thêm bộ từ'}
               </button>

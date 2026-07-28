@@ -73,7 +73,7 @@ const AdminDashboard: React.FC = () => {
           {/* Main Hero Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-1">
-              <div className="flex items-center space-x-2 text-indigo-600 font-bold text-xs uppercase tracking-widest">
+              <div className="flex items-center space-x-2 text-blue-600 font-bold text-xs uppercase tracking-widest">
                 <BrainCircuit size={14} />
                 <span>Analytics Core</span>
               </div>
@@ -86,7 +86,7 @@ const AdminDashboard: React.FC = () => {
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</span>
                 <span className="text-sm font-black text-slate-800">{today}</span>
               </div>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all">
+              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all">
                 <Download size={16} />
                 <span>Báo cáo tuần</span>
               </button>
@@ -161,7 +161,7 @@ const AdminDashboard: React.FC = () => {
                   <div className="h-48 w-full flex items-end justify-between space-x-2 px-2">
                     {[45, 60, 30, 80, 55, 90, 75].map((val, i) => (
                       <div key={i} className="flex-1 flex flex-col items-center">
-                        <div className="w-full bg-indigo-50 rounded-t-xl" style={{ height: `${val}%` }}></div>
+                        <div className="w-full bg-blue-50 rounded-t-xl" style={{ height: `${val}%` }}></div>
                         <span className="text-[10px] font-bold text-slate-400 mt-3 uppercase">T{i + 2}</span>
                       </div>
                     ))}
@@ -175,7 +175,7 @@ const AdminDashboard: React.FC = () => {
                   <h3 className="font-bold text-slate-900">Học viên gần đây</h3>
                   <button
                     onClick={() => navigate('/admin/users')}
-                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
                   >
                     Xem danh sách
                   </button>
@@ -207,7 +207,7 @@ const AdminDashboard: React.FC = () => {
                                   className="w-10 h-10 rounded-2xl object-cover bg-slate-100 border border-slate-100"
                                   alt=""
                                 />
-                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-indigo-600 text-white text-[9px] font-black rounded-lg flex items-center justify-center border-2 border-white shadow-sm">
+                                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-600 text-white text-[9px] font-black rounded-lg flex items-center justify-center border-2 border-white shadow-sm">
                                   {user.level}
                                 </div>
                               </div>
@@ -222,7 +222,7 @@ const AdminDashboard: React.FC = () => {
                             <ComingSoon>
                               <div className="flex items-center justify-center">
                                 <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: '50%' }}></div>
+                                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '50%' }}></div>
                                 </div>
                               </div>
                             </ComingSoon>
@@ -246,14 +246,14 @@ const AdminDashboard: React.FC = () => {
               {/* Level distribution — no level-tier breakdown exists yet */}
               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
                 <h3 className="font-bold text-slate-900 mb-6 flex items-center">
-                  <Gamepad2 size={18} className="mr-2 text-indigo-600" />
+                  <Gamepad2 size={18} className="mr-2 text-blue-600" />
                   Phân bố Cấp độ
                 </h3>
                 <ComingSoon>
                   <div className="space-y-5">
                     {[
                       { label: 'Sơ cấp (Lv 1-10)', percent: 35, color: 'bg-blue-400' },
-                      { label: 'Trung cấp (Lv 11-30)', percent: 48, color: 'bg-indigo-500' },
+                      { label: 'Trung cấp (Lv 11-30)', percent: 48, color: 'bg-blue-500' },
                       { label: 'Cao cấp (Lv 31+)', percent: 17, color: 'bg-purple-600' }
                     ].map((tier, i) => (
                       <div key={i} className="space-y-2">
@@ -282,7 +282,7 @@ const AdminDashboard: React.FC = () => {
                   <h3 className="font-bold text-slate-900">Khóa học gần đây</h3>
                   <button
                     onClick={() => navigate('/admin/courses')}
-                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 uppercase"
+                    className="text-[10px] font-bold text-blue-600 hover:text-blue-700 uppercase"
                   >
                     Xem tất cả
                   </button>
@@ -295,9 +295,9 @@ const AdminDashboard: React.FC = () => {
                     <div
                       key={course.id}
                       onClick={() => navigate('/admin/courses')}
-                      className="flex items-center space-x-3 p-3 hover:bg-indigo-50 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-indigo-100"
+                      className="flex items-center space-x-3 p-3 hover:bg-blue-50 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-blue-100"
                     >
-                      <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600">
+                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
                         <BookOpen size={20} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -322,13 +322,13 @@ const AdminDashboard: React.FC = () => {
 
               {/* Schedule summary — no seminar/scheduling feature exists yet */}
               <ComingSoon label="Tính năng đang phát triển">
-                <div className="bg-indigo-600 rounded-3xl p-6 text-white shadow-xl shadow-indigo-200">
+                <div className="bg-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-blue-200">
                   <div className="flex items-center justify-between mb-4">
                     <Calendar size={20} />
                     <span className="text-[10px] font-black bg-white/20 px-2 py-1 rounded-lg">UPCOMING</span>
                   </div>
                   <h4 className="font-bold text-sm mb-2">Buổi Seminar Coaching</h4>
-                  <p className="text-xs text-indigo-100 mb-6 opacity-80">Ngày mai, 10:00 AM</p>
+                  <p className="text-xs text-blue-100 mb-6 opacity-80">Ngày mai, 10:00 AM</p>
                 </div>
               </ComingSoon>
             </div>

@@ -64,7 +64,7 @@ const WordDetailPage: React.FC = () => {
       <div className="max-w-3xl mx-auto">
         <Link
           to={backHref}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors mb-8 min-h-[44px]"
+          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
         >
           <ArrowLeft size={14} aria-hidden="true" />
           <span>{backLabel}</span>
@@ -85,7 +85,7 @@ const WordDetailPage: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
                   <h1 className="text-[28px] sm:text-[32px] font-black text-slate-900 dark:text-slate-100 break-words">{word.text}</h1>
                   {word.cefrLevel && (
-                    <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 px-2.5 py-1 rounded-md uppercase">
+                    <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md uppercase">
                       {word.cefrLevel}
                     </span>
                   )}
@@ -106,7 +106,7 @@ const WordDetailPage: React.FC = () => {
             {word.audioUrl && (
               <button
                 onClick={playAudio}
-                className="flex items-center space-x-2 px-4 py-2.5 min-h-[44px] bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl text-sm font-bold hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors mb-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                className="flex items-center space-x-2 px-4 py-2.5 min-h-[44px] bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl text-sm font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors mb-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 <Volume2 size={16} aria-hidden="true" />
                 <span>{t.vocab.listen}</span>

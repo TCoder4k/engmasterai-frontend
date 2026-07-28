@@ -45,7 +45,7 @@ const SubtitlesSidebar: React.FC<SubtitlesSidebarProps> = ({
             onClick={() => setTab('subtitles')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${
               tab === 'subtitles'
-                ? 'bg-indigo-500 text-white shadow'
+                ? 'bg-blue-500 text-white shadow'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -57,7 +57,7 @@ const SubtitlesSidebar: React.FC<SubtitlesSidebarProps> = ({
             onClick={() => setTab('tips')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ${
               tab === 'tips'
-                ? 'bg-indigo-500 text-white shadow'
+                ? 'bg-blue-500 text-white shadow'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
@@ -65,7 +65,7 @@ const SubtitlesSidebar: React.FC<SubtitlesSidebarProps> = ({
             <span>{t.practice.listeningTipsTab}</span>
           </button>
         </div>
-        <span className="text-xs font-mono font-bold text-indigo-500 dark:text-indigo-400">
+        <span className="text-xs font-mono font-bold text-blue-500 dark:text-blue-400">
           {currentSegmentIndex + 1}/{lesson.segments.length}
         </span>
       </div>
@@ -87,7 +87,7 @@ const SubtitlesSidebar: React.FC<SubtitlesSidebarProps> = ({
         >
           <div
             style={{ width: `${overallPercent}%` }}
-            className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-300"
+            className="h-full bg-gradient-to-r from-blue-500 to-emerald-400 rounded-full transition-all duration-300"
           />
         </div>
       </div>
@@ -112,7 +112,7 @@ const SubtitlesSidebar: React.FC<SubtitlesSidebarProps> = ({
                 aria-label={isSolved ? `${t.practice.listeningReplay} ${t.practice.questionLabel} ${idx + 1}` : undefined}
                 className={`w-full text-left p-3.5 rounded-2xl border transition-colors ${
                   isActive
-                    ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-300 dark:border-indigo-500'
+                    ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-300 dark:border-blue-500'
                     : isSolved
                       ? isAssisted
                         ? 'bg-amber-50/60 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/30'
@@ -138,12 +138,12 @@ const SubtitlesSidebar: React.FC<SubtitlesSidebarProps> = ({
                     </span>
                   )}
                   {isRowPlaying && (
-                    <span className="text-[9px] font-bold uppercase text-indigo-600 dark:text-indigo-400">
+                    <span className="text-[9px] font-bold uppercase text-blue-600 dark:text-blue-400">
                       {t.practice.listeningNowPlayingBadge}
                     </span>
                   )}
                   {isLearning && (
-                    <span className="text-[9px] font-bold uppercase text-indigo-600 dark:text-indigo-400">
+                    <span className="text-[9px] font-bold uppercase text-blue-600 dark:text-blue-400">
                       {t.practice.listeningLearningBadge}
                     </span>
                   )}
@@ -178,7 +178,7 @@ const SubtitlesSidebar: React.FC<SubtitlesSidebarProps> = ({
       ) : (
         <div className="space-y-3 text-xs text-slate-600 dark:text-slate-300">
           <div className="p-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl space-y-1.5">
-            <h4 className="font-extrabold text-indigo-600 dark:text-indigo-400 uppercase flex items-center gap-1.5">
+            <h4 className="font-extrabold text-blue-600 dark:text-blue-400 uppercase flex items-center gap-1.5">
               <Sparkles size={14} aria-hidden="true" />
               {t.practice.listeningTipsTitle}
             </h4>

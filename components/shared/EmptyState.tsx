@@ -20,7 +20,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ icon, message, action }) => (
       <button
         type="button"
         onClick={action.onClick}
-        className="mt-4 text-sm font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg px-2 py-1"
+        className="mt-4 text-sm font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded-lg px-2 py-1"
       >
         {action.label}
       </button>

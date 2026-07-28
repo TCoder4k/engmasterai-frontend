@@ -140,7 +140,7 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
         onClick={toggleMenu}
         onKeyDown={handleKeyDown}
         className={cx(
-          'flex items-center space-x-2.5 bg-slate-50 hover:bg-white px-2 py-1.5 rounded-full border border-slate-200 hover:border-indigo-200 hover:shadow-md transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2',
+          'flex items-center space-x-2.5 bg-slate-50 hover:bg-white px-2 py-1.5 rounded-full border border-slate-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2',
           themed &&
             'dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:hover:border-slate-600 dark:focus:ring-offset-slate-900',
         )}
@@ -149,7 +149,7 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
         aria-label={t.avatarMenu.openUserMenu}
       >
         {/* Avatar */}
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center ring-2 ring-white shadow-sm">
+        <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center ring-2 ring-white shadow-sm">
           {user.avatarUrl ? (
             <img
               src={user.avatarUrl}
@@ -197,13 +197,13 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
         {/* User Info Header */}
         <div
           className={cx(
-            'px-4 py-3.5 bg-gradient-to-r from-slate-50 to-indigo-50/50 border-b border-slate-100',
+            'px-4 py-3.5 bg-gradient-to-r from-slate-50 to-blue-50/50 border-b border-slate-100',
             themed && 'dark:from-slate-800 dark:to-slate-800/60 dark:border-slate-700',
           )}
         >
           <div className="flex items-center space-x-3">
             <div className="relative group/avatar">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center ring-2 ring-white shadow-md">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center ring-2 ring-white shadow-md">
                 {isUploading && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-full">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -224,7 +224,7 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
               <button
                 onClick={handleAvatarClick}
                 disabled={isUploading}
-                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center text-white hover:bg-indigo-600 transition-colors shadow-md opacity-0 group-hover/avatar:opacity-100 disabled:opacity-50"
+                className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white hover:bg-blue-600 transition-colors shadow-md opacity-0 group-hover/avatar:opacity-100 disabled:opacity-50"
                 title={t.avatarMenu.changePhoto}
               >
                 <Camera size={10} />
@@ -245,7 +245,7 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
                 className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
                   user.role === 'ADMIN'
                     ? 'bg-amber-100 text-amber-700'
-                    : 'bg-indigo-100 text-indigo-700'
+                    : 'bg-blue-100 text-blue-700'
                 }`}
               >
                 {user.role === 'ADMIN' ? t.roles.admin : t.roles.student}
@@ -263,22 +263,22 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
             to="/profile"
             onClick={() => setIsOpen(false)}
             className={cx(
-              'flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group',
-              themed && 'dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400',
+              'flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors group',
+              themed && 'dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400',
             )}
             role="menuitem"
           >
             <div
               className={cx(
-                'w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors',
+                'w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors',
                 themed && 'dark:bg-slate-800 dark:group-hover:bg-slate-700',
               )}
             >
-              <User size={16} className="text-slate-500 group-hover:text-indigo-600" />
+              <User size={16} className="text-slate-500 group-hover:text-blue-600" />
             </div>
             <div>
               <p className="font-semibold">{t.avatarMenu.accountInfo}</p>
-              <p className="text-[11px] text-slate-400 group-hover:text-indigo-500">{t.avatarMenu.accountInfoHint}</p>
+              <p className="text-[11px] text-slate-400 group-hover:text-blue-500">{t.avatarMenu.accountInfoHint}</p>
             </div>
           </Link>
 
@@ -286,22 +286,22 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
             to="/security"
             onClick={() => setIsOpen(false)}
             className={cx(
-              'flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 transition-colors group',
-              themed && 'dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-indigo-400',
+              'flex items-center space-x-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-colors group',
+              themed && 'dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-blue-400',
             )}
             role="menuitem"
           >
             <div
               className={cx(
-                'w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-indigo-100 flex items-center justify-center transition-colors',
+                'w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors',
                 themed && 'dark:bg-slate-800 dark:group-hover:bg-slate-700',
               )}
             >
-              <Shield size={16} className="text-slate-500 group-hover:text-indigo-600" />
+              <Shield size={16} className="text-slate-500 group-hover:text-blue-600" />
             </div>
             <div>
               <p className="font-semibold">{t.avatarMenu.accountSecurity}</p>
-              <p className="text-[11px] text-slate-400 group-hover:text-indigo-500">{t.avatarMenu.accountSecurityHint}</p>
+              <p className="text-[11px] text-slate-400 group-hover:text-blue-500">{t.avatarMenu.accountSecurityHint}</p>
             </div>
           </Link>
 

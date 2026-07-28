@@ -203,7 +203,7 @@ const AdminLessons: React.FC = () => {
             <div>
               <Link
                 to="/admin/courses"
-                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-2"
+                className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors mb-2"
               >
                 <ArrowLeft size={14} />
                 <span>Quay lại Khóa học</span>
@@ -222,7 +222,7 @@ const AdminLessons: React.FC = () => {
             </div>
             <button
               onClick={openCreate}
-              className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all"
+              className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all"
             >
               <Plus size={16} />
               <span>Thêm bài học</span>
@@ -278,8 +278,8 @@ const AdminLessons: React.FC = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center space-x-2 text-slate-300">
-                          {lesson.videoUrl && <PlayCircle size={16} className="text-indigo-500" />}
-                          {lesson.audioUrl && <Headphones size={16} className="text-indigo-500" />}
+                          {lesson.videoUrl && <PlayCircle size={16} className="text-blue-500" />}
+                          {lesson.audioUrl && <Headphones size={16} className="text-blue-500" />}
                           {!lesson.videoUrl && !lesson.audioUrl && <span className="text-[10px] font-bold">—</span>}
                         </div>
                       </td>
@@ -308,14 +308,14 @@ const AdminLessons: React.FC = () => {
                                 state: { lessonTitle: lesson.title, courseId, courseTitle },
                               })
                             }
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Quiz"
                           >
                             <CheckSquare size={16} />
                           </button>
                           <button
                             onClick={() => openEdit(lesson)}
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                             title="Chỉnh sửa"
                           >
                             <Pencil size={16} />
@@ -357,7 +357,7 @@ const AdminLessons: React.FC = () => {
                 required
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div>
@@ -366,7 +366,7 @@ const AdminLessons: React.FC = () => {
                 rows={2}
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -377,7 +377,7 @@ const AdminLessons: React.FC = () => {
                   placeholder="https://..."
                   value={form.videoUrl}
                   onChange={(e) => setForm((f) => ({ ...f, videoUrl: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                 />
               </div>
               <div>
@@ -387,7 +387,7 @@ const AdminLessons: React.FC = () => {
                   placeholder="https://..."
                   value={form.audioUrl}
                   onChange={(e) => setForm((f) => ({ ...f, audioUrl: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                 />
               </div>
             </div>
@@ -401,7 +401,7 @@ const AdminLessons: React.FC = () => {
                 placeholder="https://..."
                 value={form.pdfUrl}
                 onChange={(e) => setForm((f) => ({ ...f, pdfUrl: e.target.value }))}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -412,7 +412,7 @@ const AdminLessons: React.FC = () => {
                   min={0}
                   value={form.videoDurationMinutes}
                   onChange={(e) => setForm((f) => ({ ...f, videoDurationMinutes: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                 />
               </div>
               <div>
@@ -422,7 +422,7 @@ const AdminLessons: React.FC = () => {
                   min={0}
                   value={form.estimatedStudyMinutes}
                   onChange={(e) => setForm((f) => ({ ...f, estimatedStudyMinutes: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                 />
               </div>
             </div>
@@ -435,7 +435,7 @@ const AdminLessons: React.FC = () => {
                 value={form.learningObjectives}
                 onChange={(e) => setForm((f) => ({ ...f, learningObjectives: e.target.value }))}
                 placeholder={'Ví dụ:\nHiểu cấu trúc thì hiện tại đơn\nPhân biệt hiện tại đơn và hiện tại tiếp diễn'}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
             </div>
             <div>
@@ -456,7 +456,7 @@ const AdminLessons: React.FC = () => {
                   '## Form and Structure\nAffirmative: S + V / V-s/es\n\n' +
                   '## Examples\nShe works at a bank. — Cô ấy làm việc ở ngân hàng.'
                 }
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
               {/* Tiered on purpose: a bài Ngữ pháp cơ bản (Present Simple,
                   Articles, Pronouns) phải KHÔNG bị đẩy về phía các mục TOEIC. */}
@@ -501,7 +501,7 @@ const AdminLessons: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60"
               >
                 {isSaving ? 'Đang lưu...' : editingLesson ? 'Lưu thay đổi' : 'Thêm bài học'}
               </button>

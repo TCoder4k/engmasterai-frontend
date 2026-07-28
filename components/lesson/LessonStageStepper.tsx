@@ -73,19 +73,19 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
         const isCompleted = status === 'completed';
 
         const shellClass = isActive
-          ? 'border-indigo-500 bg-indigo-50 dark:bg-ink-800 dark:border-indigo-500 shadow-md shadow-indigo-500/10'
+          ? 'border-blue-500 bg-blue-50 dark:bg-ink-800 dark:border-blue-500 shadow-md shadow-blue-500/10'
           : isCompleted
             ? 'border-emerald-300 bg-emerald-50/60 dark:bg-ink-950 dark:border-emerald-500/40'
             : isSelectable
-              ? 'border-slate-100 bg-slate-50 hover:border-indigo-300 dark:bg-ink-950 dark:border-ink-700 dark:hover:border-indigo-500'
+              ? 'border-slate-100 bg-slate-50 hover:border-blue-300 dark:bg-ink-950 dark:border-ink-700 dark:hover:border-blue-500'
               : 'border-dashed border-slate-200 bg-transparent dark:border-ink-700';
 
         const badgeClass = isCompleted
           ? 'bg-emerald-500 text-white'
           : isActive
-            ? 'bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md'
+            ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md'
             : isSelectable
-              ? 'bg-white text-indigo-500 border border-slate-200 dark:bg-ink-900 dark:text-indigo-400 dark:border-ink-700'
+              ? 'bg-white text-blue-500 border border-slate-200 dark:bg-ink-900 dark:text-blue-400 dark:border-ink-700'
               : 'bg-slate-100 text-slate-400 dark:bg-ink-900 dark:text-slate-600';
 
         const content = (
@@ -118,7 +118,7 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
               <span
                 className={`flex items-center gap-1.5 text-[11px] sm:text-xs font-bold truncate ${
                   isActive
-                    ? 'text-indigo-700 dark:text-white'
+                    ? 'text-blue-700 dark:text-white'
                     : isSelectable
                       ? 'text-slate-700 dark:text-slate-200'
                       : 'text-slate-400 dark:text-slate-500'
@@ -132,7 +132,7 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
                   isCompleted
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : isActive
-                      ? 'text-indigo-500 dark:text-indigo-300'
+                      ? 'text-blue-500 dark:text-blue-300'
                       : 'text-slate-400 dark:text-slate-500'
                 }`}
               >
@@ -149,7 +149,7 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
                 type="button"
                 onClick={() => onSelectStage(stage.id)}
                 aria-current={isActive ? 'step' : undefined}
-                className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border-2 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${shellClass}`}
+                className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border-2 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${shellClass}`}
               >
                 {content}
               </button>

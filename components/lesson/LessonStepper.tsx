@@ -49,7 +49,7 @@ const LessonStepper: React.FC<LessonStepperProps> = ({ hasNotes }) => {
           <span
             className={`w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0 ${
               step.available
-                ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400'
+                ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400'
                 : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600'
             }`}
             aria-hidden="true"

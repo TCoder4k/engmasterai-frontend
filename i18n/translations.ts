@@ -68,11 +68,25 @@ const en = {
     continueReviewTitle: 'Vocabulary review',
     continueWordsDue: 'words due today',
     viewRoadmap: 'View roadmap',
+    progress: 'Progress',
+    curatedCourses: 'Curated TOEIC courses',
   },
   tracks: {
-    grammar: { label: 'Grammar', description: 'Build strong grammar step by step' },
-    vocabulary: { label: 'Vocabulary', description: 'Expand your vocabulary and expressions' },
-    listening: { label: 'Listening', description: 'Improve your listening skills with real tests' },
+    grammar: {
+      label: 'Grammar',
+      description: 'Build strong grammar step by step',
+      countUnit: 'Lessons',
+    },
+    vocabulary: {
+      label: 'Vocabulary',
+      description: 'Expand your vocabulary and expressions',
+      countUnit: 'Sub-Decks',
+    },
+    listening: {
+      label: 'Listening',
+      description: 'Improve your listening skills with real tests',
+      countUnit: 'Segments',
+    },
   },
   widgets: {
     level: 'Level',
@@ -84,6 +98,20 @@ const en = {
     practice: 'Practice',
     newWords: 'New Words',
     weekDays: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+    minutesShort: 'min',
+    minutesLearned: 'min learned',
+    days: 'days',
+    onFire: 'On fire!',
+    viewAll: 'View all',
+    // Achievement names — see components/user/dashboardContent.ts: the
+    // achievements system does not exist, these are placeholders.
+    firstLesson: 'First Lesson',
+    firstLessonHint: 'Complete your first lesson',
+    weekStreak: '7 Day Streak',
+    weekStreakHint: 'Study 7 days in a row',
+    hundredWords: '100 Words',
+    hundredWordsHint: 'Learn 100 new words',
+    sampleData: 'Sample data',
   },
   premium: {
     goPremium: 'Go Premium',
@@ -346,6 +374,7 @@ const en = {
     secondsShortUnit: 's',
     loadFailed: 'Failed to load the quiz',
     submitFailed: 'Failed to submit the quiz',
+    finishBlocked: 'Some questions still need an answer — taking you to the first one.',
     questionRegionLabel: 'Quiz question',
     // Sprint 06B.5 — immediate feedback
     checkAction: 'Check answer',
@@ -542,11 +571,25 @@ const vi: TranslationDict = {
     continueReviewTitle: 'Ôn tập từ vựng',
     continueWordsDue: 'từ đến hạn hôm nay',
     viewRoadmap: 'Xem lộ trình',
+    progress: 'Tiến độ',
+    curatedCourses: 'Khóa học TOEIC chọn lọc',
   },
   tracks: {
-    grammar: { label: 'Ngữ pháp', description: 'Xây nền ngữ pháp vững chắc từng bước' },
-    vocabulary: { label: 'Từ vựng', description: 'Mở rộng vốn từ và cách diễn đạt' },
-    listening: { label: 'Nghe', description: 'Cải thiện kỹ năng nghe với bài luyện thực tế' },
+    grammar: {
+      label: 'Ngữ pháp',
+      description: 'Xây nền ngữ pháp vững chắc từng bước',
+      countUnit: 'Bài học',
+    },
+    vocabulary: {
+      label: 'Từ vựng',
+      description: 'Mở rộng vốn từ và cách diễn đạt',
+      countUnit: 'Bộ từ',
+    },
+    listening: {
+      label: 'Nghe',
+      description: 'Cải thiện kỹ năng nghe với bài luyện thực tế',
+      countUnit: 'Bài nghe',
+    },
   },
   widgets: {
     level: 'Cấp độ',
@@ -558,6 +601,20 @@ const vi: TranslationDict = {
     practice: 'Luyện tập',
     newWords: 'Từ mới',
     weekDays: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
+    minutesShort: 'phút',
+    minutesLearned: 'phút đã học',
+    days: 'ngày',
+    onFire: 'Giữ phong độ!',
+    viewAll: 'Xem tất cả',
+    // Tên thành tích — xem components/user/dashboardContent.ts: hệ thống
+    // thành tích chưa tồn tại, đây là dữ liệu mẫu.
+    firstLesson: 'Bài học đầu tiên',
+    firstLessonHint: 'Hoàn thành bài học đầu tiên',
+    weekStreak: 'Chuỗi 7 ngày',
+    weekStreakHint: 'Học liên tục 7 ngày',
+    hundredWords: '100 từ vựng',
+    hundredWordsHint: 'Học được 100 từ mới',
+    sampleData: 'Dữ liệu mẫu',
   },
   premium: {
     goPremium: 'Nâng cấp Premium',
@@ -792,6 +849,7 @@ const vi: TranslationDict = {
     secondsShortUnit: 'giây',
     loadFailed: 'Không tải được bài quiz',
     submitFailed: 'Không nộp được bài quiz',
+    finishBlocked: 'Vẫn còn câu chưa trả lời — đang đưa bạn tới câu đầu tiên còn thiếu.',
     questionRegionLabel: 'Câu hỏi trong bài quiz',
     // Sprint 06B.5 — phản hồi ngay
     checkAction: 'Kiểm tra',

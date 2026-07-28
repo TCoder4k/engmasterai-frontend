@@ -280,7 +280,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
           onClick={onToggleSaveSentence}
           aria-pressed={isSentenceSaved}
           title={t.practice.sessionOnlySaveNote}
-          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
             isSentenceSaved
               ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500 text-amber-600 dark:text-amber-400'
               : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -315,7 +315,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
               aria-pressed={fontSize === size}
               className={`px-2 py-1 text-[11px] font-bold rounded-lg transition-colors ${
                 fontSize === size
-                  ? 'bg-indigo-500 text-white'
+                  ? 'bg-blue-500 text-white'
                   : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
               }`}
             >
@@ -335,7 +335,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
         autoCapitalize="off"
         autoCorrect="off"
         spellCheck={false}
-        className={`w-full p-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-400 dark:focus:border-indigo-500 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium resize-none focus:outline-none ${answerTextClass}`}
+        className={`w-full p-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-400 dark:focus:border-blue-500 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium resize-none focus:outline-none ${answerTextClass}`}
       />
 
       {solved && (
@@ -377,7 +377,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
           onClick={handleFirstLetterHint}
           className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5"
         >
-          <Type size={14} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+          <Type size={14} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
           <span>
             {t.practice.listeningHintFirstLetter}{' '}
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">[Alt+H]</span>
@@ -397,7 +397,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
         <button
           type="button"
           onClick={handleRevealAll}
-          className="px-3.5 py-2 text-indigo-600 dark:text-indigo-400 hover:underline font-bold text-xs rounded-xl transition-colors"
+          className="px-3.5 py-2 text-blue-600 dark:text-blue-400 hover:underline font-bold text-xs rounded-xl transition-colors"
         >
           {t.practice.listeningRevealAll}
         </button>
@@ -406,7 +406,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
           type="button"
           onClick={onAdvance}
           disabled={!solved}
-          className="ml-auto px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="ml-auto px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <span>{t.practice.listeningNextAction}</span>
         </button>

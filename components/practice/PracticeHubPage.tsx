@@ -23,14 +23,14 @@ const PracticeHubPage: React.FC = () => {
           <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
             {t.practice.title}
           </h2>
-          <div className="h-1 w-12 bg-gradient-to-r from-indigo-500 to-violet-500 mt-2.5 rounded-full" />
+          <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-indigo-500 mt-2.5 rounded-full" />
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-3">{t.practice.subtitle}</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
             to="/vocab"
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500/40 hover:shadow-md transition-all flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-blue-200 dark:hover:border-blue-500/40 hover:shadow-md transition-all flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <div className="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <BookMarked size={22} aria-hidden="true" />
@@ -43,9 +43,9 @@ const PracticeHubPage: React.FC = () => {
 
           <Link
             to="/practice/listening"
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500/40 hover:shadow-md transition-all flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-blue-200 dark:hover:border-blue-500/40 hover:shadow-md transition-all flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center shrink-0">
               <Headphones size={22} aria-hidden="true" />
             </div>
             <div>
@@ -62,7 +62,7 @@ const PracticeHubPage: React.FC = () => {
               session's own empty state handles "nothing due" honestly. */}
           <Link
             to="/practice/review"
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-500/40 hover:shadow-md transition-all flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-blue-200 dark:hover:border-blue-500/40 hover:shadow-md transition-all flex items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
             <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
               <Clock3 size={22} aria-hidden="true" />

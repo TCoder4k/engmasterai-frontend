@@ -59,7 +59,7 @@ const TagInput: React.FC<{ label: string; values: string[]; onChange: (values: s
         {values.map((v) => (
           <span
             key={v}
-            className="inline-flex items-center space-x-1 bg-indigo-50 text-indigo-600 text-xs font-semibold px-2.5 py-1 rounded-lg"
+            className="inline-flex items-center space-x-1 bg-blue-50 text-blue-600 text-xs font-semibold px-2.5 py-1 rounded-lg"
           >
             <span>{v}</span>
             <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}>
@@ -80,7 +80,7 @@ const TagInput: React.FC<{ label: string; values: string[]; onChange: (values: s
             }
           }}
           placeholder="Nhập rồi bấm Enter..."
-          className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+          className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
         />
         <button
           type="button"
@@ -280,7 +280,7 @@ const AdminVocabWordEditor: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-8">
           <Link
             to="/admin/vocab/words"
-            className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors mb-4"
+            className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors mb-4"
           >
             <ArrowLeft size={14} />
             <span>Quay lại Ngân hàng từ</span>
@@ -307,7 +307,7 @@ const AdminVocabWordEditor: React.FC = () => {
                     required
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -317,7 +317,7 @@ const AdminVocabWordEditor: React.FC = () => {
                     value={ipa}
                     onChange={(e) => setIpa(e.target.value)}
                     placeholder="/həˈloʊ/"
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                   />
                 </div>
                 <div>
@@ -325,7 +325,7 @@ const AdminVocabWordEditor: React.FC = () => {
                   <select
                     value={cefrLevel}
                     onChange={(e) => setCefrLevel(e.target.value as CefrLevel | '')}
-                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                    className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                   >
                     <option value="">— Không chọn —</option>
                     {CEFR_LEVELS.map((level) => (
@@ -345,7 +345,7 @@ const AdminVocabWordEditor: React.FC = () => {
                     type="text"
                     value={audioUrl}
                     onChange={(e) => setAudioUrl(e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                   />
                   {isEditing && (
                     <label className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer">
@@ -372,7 +372,7 @@ const AdminVocabWordEditor: React.FC = () => {
                     type="text"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
-                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                   />
                   {isEditing && (
                     <label className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer">
@@ -397,7 +397,7 @@ const AdminVocabWordEditor: React.FC = () => {
                 <button
                   type="button"
                   onClick={addMeaning}
-                  className="flex items-center space-x-1 text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                  className="flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-700"
                 >
                   <Plus size={14} />
                   <span>Thêm nghĩa</span>
@@ -408,7 +408,7 @@ const AdminVocabWordEditor: React.FC = () => {
                   <select
                     value={row.partOfSpeech}
                     onChange={(e) => updateMeaning(index, { partOfSpeech: e.target.value as PartOfSpeech | '' })}
-                    className="w-40 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                    className="w-40 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                   >
                     <option value="">— Loại từ —</option>
                     {PART_OF_SPEECH_OPTIONS.map((pos) => (
@@ -421,7 +421,7 @@ const AdminVocabWordEditor: React.FC = () => {
                     value={row.meaning}
                     onChange={(e) => updateMeaning(index, { meaning: e.target.value })}
                     placeholder="Nghĩa của từ..."
-                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                    className="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                   />
                   {meanings.length > 1 && (
                     <button
@@ -442,7 +442,7 @@ const AdminVocabWordEditor: React.FC = () => {
                 <button
                   type="button"
                   onClick={addExample}
-                  className="flex items-center space-x-1 text-xs font-bold text-indigo-600 hover:text-indigo-700"
+                  className="flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-700"
                 >
                   <Plus size={14} />
                   <span>Thêm ví dụ</span>
@@ -456,14 +456,14 @@ const AdminVocabWordEditor: React.FC = () => {
                       value={row.sentence}
                       onChange={(e) => updateExample(index, { sentence: e.target.value })}
                       placeholder="Câu ví dụ..."
-                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                     />
                     <input
                       type="text"
                       value={row.translation}
                       onChange={(e) => updateExample(index, { translation: e.target.value })}
                       placeholder="Bản dịch (tùy chọn)..."
-                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-500/30 focus:border-indigo-300 dark:focus:border-indigo-500"
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
                     />
                   </div>
                   <button
@@ -495,7 +495,7 @@ const AdminVocabWordEditor: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all disabled:opacity-60"
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all disabled:opacity-60"
               >
                 {isSaving ? 'Đang lưu...' : isEditing ? 'Lưu thay đổi' : 'Tạo từ'}
               </button>

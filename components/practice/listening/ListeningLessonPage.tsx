@@ -120,7 +120,7 @@ const ListeningLessonPage: React.FC = () => {
         <div className="max-w-3xl mx-auto space-y-4">
           <Link
             to="/practice/listening"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-indigo-500 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors min-h-[44px]"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors min-h-[44px]"
           >
             <ArrowLeft size={14} aria-hidden="true" />
             <span>{t.practice.backToListening}</span>
@@ -263,13 +263,13 @@ const ListeningLessonPage: React.FC = () => {
               type="button"
               onClick={() => navigate('/practice/listening')}
               aria-label={t.practice.backToListening}
-              className="shrink-0 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+              className="shrink-0 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
             >
               <ArrowLeft size={18} />
             </button>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[10px] font-black rounded-md uppercase">
+                <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-black rounded-md uppercase">
                   {lesson.level}
                 </span>
                 <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 truncate">
@@ -285,9 +285,9 @@ const ListeningLessonPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
             <label
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-blue-400 ${
                 autoAdvance
-                  ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
                   : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
@@ -295,14 +295,14 @@ const ListeningLessonPage: React.FC = () => {
                 type="checkbox"
                 checked={autoAdvance}
                 onChange={(e) => setAutoAdvance(e.target.checked)}
-                className="accent-indigo-500 w-4 h-4"
+                className="accent-blue-500 w-4 h-4"
               />
               <span>{t.practice.listeningAutoAdvance}</span>
             </label>
             <label
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-indigo-400 ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-blue-400 ${
                 hideTranslation
-                  ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
                   : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
               }`}
             >
@@ -310,7 +310,7 @@ const ListeningLessonPage: React.FC = () => {
                 type="checkbox"
                 checked={hideTranslation}
                 onChange={(e) => setHideTranslation(e.target.checked)}
-                className="accent-indigo-500 w-4 h-4"
+                className="accent-blue-500 w-4 h-4"
               />
               <span>{t.practice.listeningHideTranslation}</span>
             </label>

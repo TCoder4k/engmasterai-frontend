@@ -26,7 +26,7 @@ const SessionHeader: React.FC<SessionHeaderProps> = ({ deckName, libraryName, wo
           type="button"
           onClick={onExit}
           aria-label={t.practice.backToDecks}
-          className="shrink-0 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="shrink-0 p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <ArrowLeft size={18} />
         </button>

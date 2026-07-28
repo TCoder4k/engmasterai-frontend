@@ -24,10 +24,10 @@ const NextLessonCard: React.FC<NextLessonCardProps> = ({ courseId, currentLesson
     return (
       <Link
         to={`/courses/${courseId}/lessons/${next.id}`}
-        className="flex items-center justify-between bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl px-6 py-5 transition-colors"
+        className="flex items-center justify-between bg-blue-600 hover:bg-blue-500 text-white rounded-2xl px-6 py-5 transition-colors"
       >
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-indigo-200">{t.lesson.nextLesson}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-blue-200">{t.lesson.nextLesson}</p>
           <p className="text-[16px] font-extrabold mt-1 truncate">{next.title}</p>
         </div>
         <ArrowRight size={20} className="flex-shrink-0 ml-4" aria-hidden="true" />

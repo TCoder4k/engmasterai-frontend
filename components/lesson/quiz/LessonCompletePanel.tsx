@@ -41,7 +41,7 @@ const LessonCompletePanel: React.FC<LessonCompletePanelProps> = ({ result, cours
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={SPRING}
-              className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center"
+              className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center"
             >
               <PartyPopper size={26} className="text-white" aria-hidden="true" />
             </motion.div>

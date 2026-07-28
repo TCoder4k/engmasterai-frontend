@@ -41,7 +41,7 @@ export const VideoStageSidePanel: React.FC<VideoStagePanelProps> = ({
     <div className="bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl flex flex-col">
       <div className="p-4 border-b border-slate-100 dark:border-ink-700 flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
-          <ListTree size={15} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+          <ListTree size={15} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
           {hasOutline ? t.lesson.outlineTitle : t.lesson.objectivesTitle}
         </h3>
       </div>
@@ -60,9 +60,9 @@ export const VideoStageSidePanel: React.FC<VideoStagePanelProps> = ({
                 type="button"
                 onClick={() => applyRate(value)}
                 aria-pressed={rate === value}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
                   rate === value
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-blue-600 text-white'
                     : 'bg-slate-50 text-slate-500 dark:bg-ink-950 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
@@ -82,7 +82,7 @@ export const VideoStageSidePanel: React.FC<VideoStagePanelProps> = ({
                 key={section.heading}
                 type="button"
                 onClick={onGoToTheory}
-                className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-ink-950 border border-slate-100 dark:border-ink-700 hover:border-indigo-300 dark:hover:border-indigo-500/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                className="w-full text-left p-3 rounded-xl bg-slate-50 dark:bg-ink-950 border border-slate-100 dark:border-ink-700 hover:border-blue-300 dark:hover:border-blue-500/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
               >
                 <span className="block text-[13px] font-bold text-slate-800 dark:text-slate-100">
                   {section.heading}
@@ -97,7 +97,7 @@ export const VideoStageSidePanel: React.FC<VideoStagePanelProps> = ({
                 key={index}
                 className="flex items-start gap-2 text-[13px] font-medium text-slate-600 dark:text-slate-300"
               >
-                <Target size={13} className="text-indigo-400 mt-1 flex-shrink-0" aria-hidden="true" />
+                <Target size={13} className="text-blue-400 mt-1 flex-shrink-0" aria-hidden="true" />
                 <span>{objective}</span>
               </li>
             ))}
@@ -164,7 +164,7 @@ export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({
         <button
           type="button"
           onClick={onMarkRead}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-extrabold shadow-lg shadow-indigo-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <Check size={15} aria-hidden="true" />
           <span>{t.lesson.theoryReadCta}</span>
@@ -175,7 +175,7 @@ export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({
         <button
           type="button"
           onClick={onGoToQuiz}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white dark:bg-ink-900 border-2 border-indigo-200 dark:border-indigo-500/40 text-indigo-600 dark:text-indigo-300 text-xs font-bold hover:border-indigo-400 dark:hover:border-indigo-400 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white dark:bg-ink-900 border-2 border-blue-200 dark:border-blue-500/40 text-blue-600 dark:text-blue-300 text-xs font-bold hover:border-blue-400 dark:hover:border-blue-400 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <span>{t.lesson.nextStageQuiz}</span>
           <ArrowRight size={13} aria-hidden="true" />

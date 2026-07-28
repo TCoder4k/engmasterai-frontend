@@ -53,7 +53,7 @@ const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
           screen reader announces "Question 2 of 5" once per question
           instead of re-reading the full question text on every render. */}
       <div className="flex items-center justify-between mb-2">
-        <p aria-live="polite" className="text-[11px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400">
+        <p aria-live="polite" className="text-[11px] font-bold uppercase tracking-widest text-blue-500 dark:text-blue-400">
           {t.quiz.questionLabel} {index + 1}/{total}
         </p>
         {locked && (

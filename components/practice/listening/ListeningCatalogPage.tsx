@@ -52,9 +52,9 @@ const ListeningCatalogPage: React.FC = () => {
   );
 
   const chipClass = (active: boolean) =>
-    `px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+    `px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
       active
-        ? 'bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow'
+        ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow'
         : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
     }`;
 
@@ -62,11 +62,11 @@ const ListeningCatalogPage: React.FC = () => {
     <Link
       key={lesson.id}
       to={`/practice/listening/${lesson.id}`}
-      className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-500/40 transition-all overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      className="group bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-500/40 transition-all overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
     >
-      <div className="relative h-24 bg-gradient-to-tr from-indigo-500 to-violet-500 flex items-center justify-center">
+      <div className="relative h-24 bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center">
         <Headphones size={30} className="text-white/90" aria-hidden="true" />
-        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white/90 dark:bg-slate-950/80 text-indigo-600 dark:text-indigo-300 text-[10px] font-black rounded-md uppercase">
+        <span className="absolute top-2 left-2 px-2 py-0.5 bg-white/90 dark:bg-slate-950/80 text-blue-600 dark:text-blue-300 text-[10px] font-black rounded-md uppercase">
           {lesson.level}
         </span>
         {sessionBadge && (
@@ -76,7 +76,7 @@ const ListeningCatalogPage: React.FC = () => {
         )}
       </div>
       <div className="p-4 space-y-1.5">
-        <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug break-words group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+        <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug break-words group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
           {lesson.title}
         </p>
         <p className="text-xs font-medium text-slate-500 dark:text-slate-400 line-clamp-2">{lesson.description}</p>
@@ -102,7 +102,7 @@ const ListeningCatalogPage: React.FC = () => {
           <h1 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
             {t.practice.listeningSection}
           </h1>
-          <div className="h-1 w-12 bg-gradient-to-r from-indigo-500 to-violet-500 mt-2.5 rounded-full" />
+          <div className="h-1 w-12 bg-gradient-to-r from-blue-500 to-indigo-500 mt-2.5 rounded-full" />
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-3">
             {t.practice.listeningCatalogSubtitle}
           </p>

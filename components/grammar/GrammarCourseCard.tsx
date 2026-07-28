@@ -53,10 +53,10 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
   return (
     <Link
       to={`/courses/${course.id}`}
-      className="group flex flex-col bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl dark:hover:shadow-indigo-500/10 hover:border-indigo-200 dark:hover:border-indigo-500/50 hover:-translate-y-1 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+      className="group flex flex-col bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl dark:hover:shadow-blue-500/10 hover:border-blue-200 dark:hover:border-blue-500/50 hover:-translate-y-1 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
     >
       {/* Thumbnail band with a scrim so the badges stay legible on any image */}
-      <div className="relative h-44 w-full overflow-hidden bg-indigo-50 dark:bg-ink-950">
+      <div className="relative h-44 w-full overflow-hidden bg-blue-50 dark:bg-ink-950">
         {course.thumbnail ? (
           <img
             src={course.thumbnail}
@@ -65,7 +65,7 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
           />
         ) : (
           <div
-            className="w-full h-full flex items-center justify-center text-indigo-400 dark:text-indigo-400/70"
+            className="w-full h-full flex items-center justify-center text-blue-400 dark:text-blue-400/70"
             aria-hidden="true"
           >
             <BookOpen size={44} />
@@ -84,7 +84,7 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
               </span>
             )}
             {category && (
-              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-600/90 text-white backdrop-blur-md">
+              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-600/90 text-white backdrop-blur-md">
                 {categoryLabels[category]}
               </span>
             )}
@@ -101,7 +101,7 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
       </div>
 
       <div className="flex-1 flex flex-col p-6 gap-3">
-        <h3 className="text-[17px] font-black text-slate-900 dark:text-slate-100 leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors">
+        <h3 className="text-[17px] font-black text-slate-900 dark:text-slate-100 leading-snug line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors">
           {course.title}
         </h3>
 
@@ -112,7 +112,7 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
         <div className="pt-3 border-t border-slate-100 dark:border-ink-700/80 space-y-3">
           <div className="grid grid-cols-2 gap-2 text-[12px] font-semibold text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
-              <Layers size={14} className="text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+              <Layers size={14} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
               {lessonCount} {lessonCount === 1 ? t.grammar.oneLessonUnit : t.grammar.lessonsUnit}
             </span>
             {/* Absent, not zeroed, when no lesson carries a study time. */}
@@ -128,14 +128,14 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-bold">
                 <span className="text-slate-500 dark:text-slate-400">{t.grammar.progressLabel}</span>
-                <span className="text-indigo-600 dark:text-indigo-400">
+                <span className="text-blue-600 dark:text-blue-400">
                   {progress.completed}/{progress.total} ({progress.percent}%)
                 </span>
               </div>
               <div className="w-full h-2 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden">
                 <div
                   style={{ width: `${progress.percent}%` }}
-                  className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
                 />
               </div>
               <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
@@ -144,7 +144,7 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
             </div>
           )}
 
-          <p className="flex items-center justify-between text-[13px] font-bold text-indigo-600 dark:text-indigo-400 pt-0.5">
+          <p className="flex items-center justify-between text-[13px] font-bold text-blue-600 dark:text-blue-400 pt-0.5">
             <span>{t.grammar.viewLessons}</span>
             <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </p>

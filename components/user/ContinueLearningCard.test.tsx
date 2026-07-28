@@ -25,11 +25,11 @@ const entry = (over: Partial<RecentActivityEntry>): RecentActivityEntry => ({
 const seedActivity = (entries: RecentActivityEntry[]) =>
   localStorage.setItem(`recentActivity:${USER.id}`, JSON.stringify(entries));
 
-const renderCard = (dueTotal: number | null = null) =>
+const renderCard = (dueTotal: number | null = null, progressPercent: number | null = null) =>
   render(
     <LanguageProvider>
       <MemoryRouter initialEntries={['/home']}>
-        <ContinueLearningCard dueTotal={dueTotal} />
+        <ContinueLearningCard dueTotal={dueTotal} progressPercent={progressPercent} />
       </MemoryRouter>
     </LanguageProvider>,
   );
@@ -111,13 +111,35 @@ describe('ContinueLearningCard — priority order', () => {
   });
 });
 
-describe('ContinueLearningCard — no fabricated progress', () => {
-  it('renders no percentage or progress bar', () => {
+// The design reference shows a 65% bar here. It is now reproduced, but only
+// ever with the figure UserHome computes from real per-lesson stage progress
+// — never a placeholder, and never a 0 standing in for "not known".
+describe('ContinueLearningCard — the progress bar is real or absent', () => {
+  it('renders no percentage at all when none is known', () => {
     seedActivity([entry({ id: 'g-1', title: 'Present Perfect', courseType: 'GRAMMAR' })]);
 
     const { container } = renderCard(3);
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(container.textContent).not.toMatch(/%/);
+  });
+
+  it('renders the real percentage it is given', () => {
+    seedActivity([entry({ id: 'g-1', title: 'Present Perfect', courseType: 'GRAMMAR' })]);
+
+    renderCard(3, 65);
+
+    const bar = screen.getByRole('progressbar', { name: 'Progress' });
+    expect(bar).toHaveAttribute('aria-valuenow', '65');
+    expect(screen.getByText('65%')).toBeInTheDocument();
+  });
+
+  it('shows no bar for a variant that has no stage progress, even with a percentage in scope', () => {
+    // Vocabulary review is server-backed but has no lesson stages, so
+    // UserHome passes null and the slot stays empty rather than showing 0%.
+    renderCard(7, null);
+
+    expect(screen.getByText('Vocabulary review')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 });

@@ -80,7 +80,7 @@ const MultipleChoiceInput: React.FC<MultipleChoiceInputProps> = ({
     }
     return isSelected
       ? 'border-violet-500 bg-violet-50 dark:bg-violet-500/10 dark:border-violet-400 shadow-md shadow-violet-500/15'
-      : 'border-slate-200 hover:border-indigo-300 dark:border-ink-700 dark:hover:border-indigo-500/60';
+      : 'border-slate-200 hover:border-blue-300 dark:border-ink-700 dark:hover:border-blue-500/60';
   };
 
   const badgeClass = (option: QuizQuestionOption): string => {
@@ -125,7 +125,7 @@ const MultipleChoiceInput: React.FC<MultipleChoiceInputProps> = ({
             // short enough that it never feels like lag.
             whileTap={disabled ? undefined : { scale: 0.97 }}
             transition={{ duration: DURATION.micro }}
-            className={`relative overflow-hidden w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl border-2 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+            className={`relative overflow-hidden w-full flex items-center gap-3 text-left px-4 py-3.5 rounded-2xl border-2 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
               disabled ? 'cursor-default' : ''
             } ${shellClass(option)}`}
           >
