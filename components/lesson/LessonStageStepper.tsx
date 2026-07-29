@@ -44,6 +44,10 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
     { id: 'practice', label: t.lesson.stagePractice },
   ];
 
+  // Sprint 06C added the 'blocked' and 'skipped' cases. Both MUST be listed
+  // explicitly: the `default` below would otherwise label them "Not started",
+  // which is wrong in opposite directions — one is a stage you cannot begin,
+  // the other one you already earned your way past.
   const statusLabel = (status: StageStatus): string => {
     switch (status) {
       case 'completed':
@@ -52,6 +56,10 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
         return t.lesson.stageInProgress;
       case 'locked':
         return t.lesson.stageComingSoon;
+      case 'blocked':
+        return t.lesson.stageBlocked;
+      case 'skipped':
+        return t.lesson.stageSkipped;
       case 'unavailable':
         return t.lesson.stageUnavailable;
       default:
@@ -67,8 +75,14 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
       {stages.map((stage, index) => {
         const status = statuses[stage.id];
         const isLocked = status === 'locked';
+        // Sprint 06C — a real stage whose prerequisite is unmet. Carries the
+        // padlock like 'locked' (it genuinely cannot be opened yet) but its
+        // own label, so it never claims a shipped feature is unbuilt.
+        const isBlocked = status === 'blocked';
         const isUnavailable = status === 'unavailable';
-        const isSelectable = !isLocked && !isUnavailable;
+        // Nothing to do here, and nothing owed — a quiz answered perfectly.
+        const isSkipped = status === 'skipped';
+        const isSelectable = !isLocked && !isBlocked && !isUnavailable && !isSkipped;
         const isActive = currentStage === stage.id && isSelectable;
         const isCompleted = status === 'completed';
 
@@ -84,9 +98,14 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
           ? 'bg-emerald-500 text-white'
           : isActive
             ? 'bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md'
-            : isSelectable
-              ? 'bg-white text-blue-500 border border-slate-200 dark:bg-ink-900 dark:text-blue-400 dark:border-ink-700'
-              : 'bg-slate-100 text-slate-400 dark:bg-ink-900 dark:text-slate-600';
+            : // Skipped gets a tick, but a NEUTRAL one: the student did
+              // nothing here and owes nothing here, so emerald (which this
+              // stepper reserves for work completed) would overstate it.
+              isSkipped
+              ? 'bg-slate-200 text-slate-500 dark:bg-ink-800 dark:text-slate-400'
+              : isSelectable
+                ? 'bg-white text-blue-500 border border-slate-200 dark:bg-ink-900 dark:text-blue-400 dark:border-ink-700'
+                : 'bg-slate-100 text-slate-400 dark:bg-ink-900 dark:text-slate-600';
 
         const content = (
           <>
@@ -111,7 +130,13 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
               className={`w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-black flex-shrink-0 ${badgeClass}`}
               aria-hidden="true"
             >
-              {isCompleted ? <Check size={15} strokeWidth={3} /> : isLocked ? <Lock size={13} /> : index + 1}
+              {isCompleted || isSkipped ? (
+                <Check size={15} strokeWidth={3} />
+              ) : isLocked || isBlocked ? (
+                <Lock size={13} />
+              ) : (
+                index + 1
+              )}
             </motion.span>
 
             <span className="min-w-0 text-left">
@@ -135,6 +160,10 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
                       ? 'text-blue-500 dark:text-blue-300'
                       : 'text-slate-400 dark:text-slate-500'
                 }`}
+                // "No traps — perfect quiz" and "Finish the quiz first" are
+                // longer than every other status string and get truncated to
+                // nothing useful at this size on a narrow tile.
+                title={isSkipped || isBlocked ? statusLabel(status) : undefined}
               >
                 {statusLabel(status)}
               </span>

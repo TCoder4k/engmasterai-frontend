@@ -10,8 +10,13 @@ import { getCourseLessons } from '../../services/lessonService';
 import { authService } from '../../services/authService';
 import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
-import { getCourseProgress, QuizStageProgress } from '../../services/lessonProgress';
+import {
+  getCourseProgress,
+  QuizStageProgress,
+  TrapHunterStageProgress,
+} from '../../services/lessonProgress';
 import { getCourseQuizProgress } from '../../services/quizService';
+import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
 import {
@@ -44,6 +49,10 @@ const CourseDetailPage: React.FC = () => {
   const [quizProgressByLessonId, setQuizProgressByLessonId] = useState<Map<string, QuizStageProgress>>(
     new Map(),
   );
+  // Sprint 06C — the same arrangement for Trap Hunter.
+  const [trapProgressByLessonId, setTrapProgressByLessonId] = useState<
+    Map<string, TrapHunterStageProgress>
+  >(new Map());
 
   useEffect(() => {
     if (!id) return;
@@ -71,6 +80,30 @@ const CourseDetailPage: React.FC = () => {
       })
       .catch(() => {
         // Silent — quiz-bearing lessons simply render as not-yet-passed.
+      });
+  }, [id]);
+
+  // Sprint 06C — the companion fetch. Without it this page would call a
+  // lesson complete while the lesson page itself showed an open Trap Hunter
+  // stage. Failure leaves the map empty, which drops 'traphunter' out of
+  // availableStages entirely and reproduces the pre-06C percentage exactly
+  // — a stale number, never a wrong one.
+  useEffect(() => {
+    if (!id || !authService.getUser()) return;
+    getCourseTrapHunterProgress(id)
+      .then((res) => {
+        const map = new Map<string, TrapHunterStageProgress>();
+        res.data.forEach((row) => {
+          map.set(row.lessonId, {
+            hasSource: row.hasSource,
+            total: row.total,
+            cleared: row.cleared,
+          });
+        });
+        setTrapProgressByLessonId(map);
+      })
+      .catch(() => {
+        // Silent, same reasoning as the quiz fetch above.
       });
   }, [id]);
 
@@ -102,7 +135,12 @@ const CourseDetailPage: React.FC = () => {
   // Real, device-local completion (Sprint 06). Counts COMPLETED lessons —
   // every stage a lesson offers, finished — not videos watched, so the
   // Mini Check and Practice stages can land later without this UI changing.
-  const progress = getCourseProgress(authService.getUser()?.id, lessons, quizProgressByLessonId);
+  const progress = getCourseProgress(
+    authService.getUser()?.id,
+    lessons,
+    quizProgressByLessonId,
+    trapProgressByLessonId,
+  );
 
   const category = course && isGrammar ? deriveGrammarCategory(course) : null;
   const level = course && isGrammar ? deriveCourseLevel(course) : null;
@@ -252,6 +290,7 @@ const CourseDetailPage: React.FC = () => {
                   lesson={lesson}
                   orderNumber={index + 1}
                   quizProgress={quizProgressByLessonId.get(lesson.id)}
+                  trapProgress={trapProgressByLessonId.get(lesson.id)}
                 />
               ))}
             </div>

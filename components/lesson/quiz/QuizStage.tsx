@@ -35,6 +35,11 @@ interface QuizStageProps {
   // Lets LessonPage keep the stage stepper's 'quiz' tile in sync without
   // this component knowing anything about the stepper itself.
   onProgressChange?: (progress: { passed: boolean; attemptsCount: number }) => void;
+  // Sprint 06C — how to reach the correction round. This component decides
+  // WHETHER to offer it (only when the finished attempt actually has wrong
+  // answers) and LessonPage decides what "going there" means, so QuizStage
+  // still knows nothing about stages or routing.
+  onGoToTrapHunter?: () => void;
 }
 
 type Phase = 'loading' | 'error' | 'answering' | 'submitting' | 'summary' | 'complete';
@@ -62,6 +67,7 @@ const QuizStage: React.FC<QuizStageProps> = ({
   allLessons,
   userId,
   onProgressChange,
+  onGoToTrapHunter,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -336,6 +342,7 @@ const QuizStage: React.FC<QuizStageProps> = ({
         questions={quiz.questions}
         onContinue={() => setPhase('complete')}
         onRetake={handleRetake}
+        onGoToTrapHunter={onGoToTrapHunter}
       />
     );
   }

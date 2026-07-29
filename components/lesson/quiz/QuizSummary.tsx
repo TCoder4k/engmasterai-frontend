@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, ChevronDown, ChevronUp, RotateCcw, XCircle } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Target,
+  XCircle,
+} from 'lucide-react';
 import { StudentQuizQuestion, SubmitQuizResponse } from '../../../services/quizService';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { playComplete, playIncorrect } from '../../../services/feedbackSounds';
@@ -20,6 +28,10 @@ interface QuizSummaryProps {
   questions: StudentQuizQuestion[];
   onContinue: () => void;
   onRetake: () => void;
+  // Sprint 06C — offered only when this attempt actually produced traps.
+  // Absent, the summary is exactly what it was before, so a lesson outside
+  // the staged player is unchanged.
+  onGoToTrapHunter?: () => void;
 }
 
 const StatTile: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
@@ -33,7 +45,13 @@ const StatTile: React.FC<{ label: string; value: React.ReactNode }> = ({ label, 
 // best score, time taken. Every one comes straight off the server's
 // response; durationSeconds being null (the attempt-duration cap) simply
 // omits that tile rather than showing a fabricated 0.
-const QuizSummary: React.FC<QuizSummaryProps> = ({ result, questions, onContinue, onRetake }) => {
+const QuizSummary: React.FC<QuizSummaryProps> = ({
+  result,
+  questions,
+  onContinue,
+  onRetake,
+  onGoToTrapHunter,
+}) => {
   const { t } = useTranslation();
   const [showReview, setShowReview] = useState(false);
   const hasIncorrect = result.results.some((r) => !r.isCorrect);
@@ -145,6 +163,25 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({ result, questions, onContinue
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/*
+        Sprint 06C — the handoff. Offered on any attempt with a wrong answer,
+        passed or not: getting 8/10 is exactly the case where two mistakes
+        would otherwise be read once and never revisited. It sits above the
+        primary actions rather than replacing Continue, so the student is
+        pointed at the correction round without being trapped in it.
+      */}
+      {hasIncorrect && onGoToTrapHunter && (
+        <button
+          type="button"
+          onClick={onGoToTrapHunter}
+          className="mt-5 w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border-2 border-blue-200 dark:border-blue-500/40 bg-blue-50/60 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 font-bold text-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-400 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
+          <Target size={15} aria-hidden="true" />
+          {t.quiz.trapHandoffTitle}
+          <ArrowRight size={15} aria-hidden="true" />
+        </button>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3 mt-6">
         {!result.passed && (
