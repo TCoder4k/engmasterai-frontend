@@ -129,6 +129,14 @@ const App: React.FC = () => {
           <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/courses/:courseId/lessons" element={<AdminLessons />} />
           <Route path="/admin/lessons/:lessonId/quiz" element={<AdminLessonQuiz />} />
+          {/* Sprint 06D — the same editor, pointed at the lesson's PRACTICE
+              task. Parameterised rather than duplicated: identical DTOs, one
+              backend service, so a second editor would be two places to fix
+              every authoring bug. */}
+          <Route
+            path="/admin/lessons/:lessonId/practice"
+            element={<AdminLessonQuiz taskKind="practice" />}
+          />
           <Route path="/admin/vocab" element={<AdminVocabLibraries />} />
           <Route path="/admin/vocab/libraries/:libraryId/decks" element={<AdminVocabDecks />} />
           <Route path="/admin/vocab/words" element={<AdminVocabWords />} />

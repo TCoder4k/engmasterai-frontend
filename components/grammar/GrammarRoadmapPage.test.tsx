@@ -54,7 +54,7 @@ const lessonOf = (id: string, courseId: string, minutes: number) => ({
   orderIndex: 0,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
-  _count: { tasks: 0 },
+  publishedTaskTypes: [],
 });
 
 const LESSONS: Record<string, ReturnType<typeof lessonOf>[]> = {

@@ -49,7 +49,7 @@ const LESSONS = [
     orderIndex: 0,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
-    _count: { tasks: 0 },
+    publishedTaskTypes: [],
   },
   {
     id: 'l-2',
@@ -66,7 +66,7 @@ const LESSONS = [
     orderIndex: 1,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
-    _count: { tasks: 0 },
+    publishedTaskTypes: [],
   },
 ];
 

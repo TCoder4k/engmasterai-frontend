@@ -59,12 +59,18 @@ export interface Lesson {
   orderIndex: number;
   createdAt: string;
   updatedAt: string;
-  // Sprint 06B — PUBLISHED quiz tasks only (LessonService's USER_SELECT
-  // filters the relation count to `{ isPublished: true, type: 'QUIZ' }`).
-  // This is what services/lessonProgress.ts's availableStages() reads to
-  // decide whether the 'quiz' stage exists for this lesson at all.
-  _count: { tasks: number };
+  // Sprint 06D — REPLACES `_count: { tasks: number }`, which counted
+  // published QUIZ tasks only and could not be extended: Prisma cannot
+  // express two differently-filtered counts of the same relation, so there
+  // was nowhere to put "this lesson also has a published Practice task".
+  //
+  // The published task types this lesson actually has. Drafts never appear.
+  // services/lessonProgress.ts derives lessonHasQuiz/lessonHasPractice from
+  // it, and a future Vocabulary or Listening task needs no DTO change at all.
+  publishedTaskTypes: LessonTaskType[];
 }
+
+export type LessonTaskType = 'VIDEO' | 'QUIZ' | 'PRACTICE';
 
 export interface ManagedLesson extends Lesson {
   isPublished: boolean;

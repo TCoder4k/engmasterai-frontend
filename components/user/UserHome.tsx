@@ -14,8 +14,10 @@ import { getCourseLessons } from '../../services/lessonService';
 import { getLibrariesProgress } from '../../services/learningService';
 import { getCourseQuizProgress } from '../../services/quizService';
 import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
+import { getCourseStageProgress } from '../../services/practiceService';
 import {
   getCourseProgress,
+  PracticeStageProgress,
   QuizStageProgress,
   TrapHunterStageProgress,
 } from '../../services/lessonProgress';
@@ -109,8 +111,12 @@ const UserHome: React.FC = () => {
       // traps would count as finished here while the lesson page shows the
       // stage still open.
       getCourseTrapHunterProgress(courseId).catch(() => ({ data: [] })),
+      // Sprint 06D — same reasoning again: 'practice' now joins
+      // availableStages() whenever a published task exists, so without this a
+      // finished lesson would read incomplete here.
+      getCourseStageProgress(courseId).catch(() => []),
     ])
-      .then(([lessonsRes, quizRes, trapRes]) => {
+      .then(([lessonsRes, quizRes, trapRes, stageRows]) => {
         if (cancelled) return;
         const quizByLesson = new Map<string, QuizStageProgress>(
           quizRes.data.map((row): [string, QuizStageProgress] => [
@@ -124,8 +130,24 @@ const UserHome: React.FC = () => {
             { hasSource: row.hasSource, total: row.total, cleared: row.cleared },
           ]),
         );
+        const practiceByLesson = new Map<string, PracticeStageProgress>();
+        stageRows.forEach((row) => {
+          if (row.practice) {
+            practiceByLesson.set(row.lessonId, {
+              hasTask: true,
+              passed: row.practice.passed,
+              attemptsCount: row.practice.attemptsCount,
+            });
+          }
+        });
         setContinuePercent(
-          getCourseProgress(user.id, lessonsRes.data, quizByLesson, trapByLesson).percent,
+          getCourseProgress(
+            user.id,
+            lessonsRes.data,
+            quizByLesson,
+            trapByLesson,
+            practiceByLesson,
+          ).percent,
         );
       })
       .catch(() => {

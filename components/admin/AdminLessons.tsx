@@ -13,7 +13,18 @@ import {
   deleteLesson,
 } from '../../services/lessonService';
 import { ManagedLesson } from '../../types';
-import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowLeft, PlayCircle, Headphones, CheckSquare } from 'lucide-react';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  PlayCircle,
+  Headphones,
+  CheckSquare,
+  Target,
+} from 'lucide-react';
 
 interface LessonFormState {
   title: string;
@@ -312,6 +323,21 @@ const AdminLessons: React.FC = () => {
                             title="Quiz"
                           >
                             <CheckSquare size={16} />
+                          </button>
+                          {/* Sprint 06D — Advanced Practice authoring. Sits
+                              beside Quiz because they are siblings: two
+                              question-bearing tasks on the same lesson, each
+                              with its own questions and its own progress. */}
+                          <button
+                            onClick={() =>
+                              navigate(`/admin/lessons/${lesson.id}/practice`, {
+                                state: { lessonTitle: lesson.title, courseId, courseTitle },
+                              })
+                            }
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                            title="Advanced Practice"
+                          >
+                            <Target size={16} />
                           </button>
                           <button
                             onClick={() => openEdit(lesson)}

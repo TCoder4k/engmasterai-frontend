@@ -21,9 +21,17 @@ import { getVideoProgress } from './videoProgress';
 // have no module at all and stay constant-locked, preserving the invariant
 // that a stage with nothing behind it can never look finished.
 //
-// Sprint 06C: Trap Hunter is that moment for 'traphunter'. 'practice'
-// (Advanced Practice) is deliberately UNCHANGED — still constant-locked,
-// still no module, reserved for Sprint 06D.
+// Sprint 06C: Trap Hunter is that moment for 'traphunter'.
+//
+// Sprint 06D: Advanced Practice is that moment for 'practice' — the last of
+// the five. LOCKED_STAGES is therefore GONE rather than left as an empty
+// array: an empty list is dead code whose `includes()` can never be true, and
+// the comment above it would have gone on describing a mechanism that no
+// longer ran. Its job — a stage with no backend must never look startable —
+// is now done by getStageStatus's exhaustive switch, which makes an
+// unhandled stage a COMPILE error instead of a silent 'not_started'. That
+// matches how the backend already guards question types (a missing grader in
+// GRADERS is a compile error, not a runtime 500 in front of a student).
 //
 // INVARIANT A — LESSON COMPLETION IS STAGE-DRIVEN AND DYNAMIC.
 // isLessonComplete asks `availableStages(lesson).every(completed)` and must
@@ -75,16 +83,11 @@ export type StageStatus =
 // Ordered as the student meets them.
 export const LESSON_STAGE_IDS: LessonStageId[] = ['video', 'theory', 'quiz', 'traphunter', 'practice'];
 
-// Stages with no module behind them at all. Their status is a CONSTANT,
-// never read from storage or any server response, so no amount of stale or
-// hand-edited local state can make them look finished. 'quiz' left this set
-// in Sprint 06B and 'traphunter' in Sprint 06C; both now have real backends
-// (see getStageStatus below).
-//
-// 'practice' (Advanced Practice) stays. Sprint 06C does not remove, rename,
-// implement or unlock it — it is reserved for Sprint 06D, and until then a
-// locked tile is the honest thing to show.
-const LOCKED_STAGES: LessonStageId[] = ['practice'];
+// Every stage now has a real backend, so no stage is constant-locked and
+// LOCKED_STAGES no longer exists. If a SIXTH stage is ever added to
+// LessonStageId, getStageStatus's switch stops compiling until it is handled
+// — which is the point. 'locked' itself is kept in StageStatus for exactly
+// that case: a stage that ships in the UI before its module does.
 
 // The subset of a course-quiz-progress row getStageStatus/isLessonComplete
 // actually need — matches quizService.CourseQuizProgressRow without this
@@ -98,6 +101,23 @@ export interface QuizStageProgress {
 // Sprint 06C — the same arrangement for Trap Hunter: the subset of
 // trapHunterService's progress shape this module needs, declared here rather
 // than imported, so the dependency direction stays service -> progress.
+// Sprint 06D — the subset of the Advanced Practice progress row this module
+// needs, declared here rather than imported so the dependency direction stays
+// service -> progress.
+//
+// There is deliberately NO `prerequisitesMet` field. It is DERIVED below from
+// the quiz and trap progress this function already receives, because a fourth
+// value computed from the other three could disagree with them after any
+// partial update — and then the tile and the server would tell the student
+// different things. The server still enforces prerequisites on its own
+// mutations; this is only what the UI paints.
+export interface PracticeStageProgress {
+  // Whether a PUBLISHED practice task exists — not whether it was attempted.
+  hasTask: boolean;
+  passed: boolean;
+  attemptsCount: number;
+}
+
 export interface TrapHunterStageProgress {
   // Whether a COMPLETED quiz attempt exists to derive traps from. This is
   // what separates 'blocked' (no attempt yet) from 'skipped' (an attempt
@@ -147,8 +167,41 @@ export const lessonHasTheory = (lesson: Pick<Lesson, 'notes'>): boolean => {
 // counts published QUIZ tasks only), not a guess. A lesson with no quiz
 // authored/published never gains a 'quiz' stage, exactly like a lesson with
 // no video never gains a 'video' stage.
-export const lessonHasQuiz = (lesson: Pick<Lesson, '_count'>): boolean =>
-  (lesson._count?.tasks ?? 0) > 0;
+export const lessonHasQuiz = (
+  lesson: Pick<Lesson, 'publishedTaskTypes'>,
+): boolean => (lesson.publishedTaskTypes ?? []).includes('QUIZ');
+
+// Sprint 06D — the same signal, one entry along. A lesson without an authored
+// and published Practice task never gains a 'practice' stage, so it can still
+// reach 100% without one: a missing task must never create a requirement that
+// cannot be satisfied.
+export const lessonHasPractice = (
+  lesson: Pick<Lesson, 'publishedTaskTypes'>,
+): boolean => (lesson.publishedTaskTypes ?? []).includes('PRACTICE');
+
+// Sprint 06D — the two server-verifiable prerequisites for Advanced Practice,
+// derived on the client from progress it already holds.
+//
+// Mirrors the backend's practice-prerequisites.ts exactly, INCLUDING the rule
+// that absence satisfies: a lesson with no quiz has nothing to pass and no
+// mistakes to correct, so Practice opens immediately. Gating on "quiz passed"
+// alone would strand such a lesson permanently below 100%.
+//
+// Theory is deliberately absent here too. It is device-local, so the server
+// cannot verify it; the STAGE ORDER in the stepper communicates it instead.
+const practicePrerequisitesMet = (
+  lesson: Pick<Lesson, 'publishedTaskTypes'>,
+  quizProgress?: QuizStageProgress,
+  trapProgress?: TrapHunterStageProgress,
+): boolean => {
+  if (!lessonHasQuiz(lesson)) return true;
+  if (!quizProgress?.passed) return false;
+  // Traps only exist when a quiz does, and a perfect attempt leaves none.
+  if (trapProgress && trapProgress.total > 0) {
+    return trapProgress.cleared >= trapProgress.total;
+  }
+  return true;
+};
 
 // The stages this lesson can actually be completed through today. Locked
 // stages are deliberately NOT included: requiring a stage that cannot be
@@ -159,7 +212,7 @@ export const lessonHasQuiz = (lesson: Pick<Lesson, '_count'>): boolean =>
 // single place that decides what a lesson must finish. Sprint 06D adds
 // 'practice' to this list and nothing else in the codebase has to change.
 export const availableStages = (
-  lesson: Pick<Lesson, 'videoUrl' | 'notes' | '_count'>,
+  lesson: Pick<Lesson, 'videoUrl' | 'notes' | 'publishedTaskTypes'>,
   // Sprint 06C. Omitted, or with no traps to clear, 'traphunter' is simply
   // not one of this lesson's stages — which is the correct answer in all
   // three of the cases that produce it: the quiz has not been finished yet
@@ -178,6 +231,12 @@ export const availableStages = (
   if (lessonHasQuiz(lesson) && trapProgress?.hasSource && trapProgress.total > 0) {
     stages.push('traphunter');
   }
+  // Sprint 06D. Authored content decides, exactly as it does for every stage
+  // above: no published Practice task means no 'practice' stage, so the
+  // lesson completes without one. Note this is NOT gated on prerequisites —
+  // a blocked stage is still a stage the student owes, and excluding it would
+  // let the lesson read 100% while Practice sat untouched.
+  if (lessonHasPractice(lesson)) stages.push('practice');
   return stages;
 };
 
@@ -192,15 +251,16 @@ export const availableStages = (
 // CourseDetailPage) pass it through and get real 'completed'/'in_progress'.
 export const getStageStatus = (
   userId: string | undefined,
-  lesson: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | '_count'>,
+  lesson: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | 'publishedTaskTypes'>,
   stage: LessonStageId,
   quizProgress?: QuizStageProgress,
   // Sprint 06C — same contract as quizProgress: from the server, optional,
   // and its absence produces the honest "can't start this yet" rather than
   // a guess.
   trapProgress?: TrapHunterStageProgress,
+  // Sprint 06D — same contract again.
+  practiceProgress?: PracticeStageProgress,
 ): StageStatus => {
-  if (LOCKED_STAGES.includes(stage)) return 'locked';
   if (!userId) return 'not_started';
 
   if (stage === 'video') {
@@ -246,7 +306,32 @@ export const getStageStatus = (
     return trapProgress.cleared > 0 ? 'in_progress' : 'not_started';
   }
 
-  return 'not_started';
+  if (stage === 'practice') {
+    // No authored, published Practice task — the stage does not apply to this
+    // lesson and is not something the student owes.
+    if (!lessonHasPractice(lesson)) return 'unavailable';
+    // A real, live stage whose prerequisites are not met yet. Deliberately
+    // NOT 'locked': that renders "Coming soon" and would tell a student a
+    // shipped feature does not exist.
+    if (!practicePrerequisitesMet(lesson, quizProgress, trapProgress))
+      return 'blocked';
+    // Prerequisites are met but nothing has been fetched yet — honest
+    // 'not_started' rather than a fabricated 'completed'.
+    if (!practiceProgress) return 'not_started';
+    if (practiceProgress.passed) return 'completed';
+    return practiceProgress.attemptsCount > 0 ? 'in_progress' : 'not_started';
+  }
+
+  // Sprint 06D — EXHAUSTIVENESS GUARD, and the replacement for LOCKED_STAGES.
+  //
+  // Every LessonStageId is handled above, so `stage` is `never` here. Add a
+  // sixth stage id and this line stops compiling until it gets a real branch
+  // — which is the whole point: the old `return 'not_started'` fallthrough
+  // would have silently reported a stage with no backend as merely unstarted,
+  // making it look startable and (via availableStages) potentially blocking
+  // completion forever. A build error is a much better failure than that.
+  const exhaustive: never = stage;
+  return exhaustive;
 };
 
 export const markTheoryComplete = (userId: string, lessonId: string): void => {
@@ -270,15 +355,24 @@ export const markTheoryComplete = (userId: string, lessonId: string): void => {
 // Sprint 06D would have to unpick it to add Advanced Practice.
 export const isLessonComplete = (
   userId: string | undefined,
-  lesson: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | '_count'>,
+  lesson: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | 'publishedTaskTypes'>,
   quizProgress?: QuizStageProgress,
   trapProgress?: TrapHunterStageProgress,
+  practiceProgress?: PracticeStageProgress,
 ): boolean => {
   if (!userId) return false;
   const stages = availableStages(lesson, trapProgress);
   if (stages.length === 0) return false;
   return stages.every(
-    (stage) => getStageStatus(userId, lesson, stage, quizProgress, trapProgress) === 'completed',
+    (stage) =>
+      getStageStatus(
+        userId,
+        lesson,
+        stage,
+        quizProgress,
+        trapProgress,
+        practiceProgress,
+      ) === 'completed',
   );
 };
 
@@ -286,13 +380,21 @@ export const isLessonComplete = (
 // done — drives the neutral middle badge in lesson lists.
 export const isLessonStarted = (
   userId: string | undefined,
-  lesson: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | '_count'>,
+  lesson: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | 'publishedTaskTypes'>,
   quizProgress?: QuizStageProgress,
   trapProgress?: TrapHunterStageProgress,
+  practiceProgress?: PracticeStageProgress,
 ): boolean => {
   if (!userId) return false;
   return availableStages(lesson, trapProgress).some((stage) => {
-    const status = getStageStatus(userId, lesson, stage, quizProgress, trapProgress);
+    const status = getStageStatus(
+      userId,
+      lesson,
+      stage,
+      quizProgress,
+      trapProgress,
+      practiceProgress,
+    );
     return status === 'in_progress' || status === 'completed';
   });
 };
@@ -308,7 +410,7 @@ export interface CourseProgress {
 // published lesson always has completable content and 100% stays reachable.
 export const getCourseProgress = (
   userId: string | undefined,
-  lessons: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | '_count'>[],
+  lessons: Pick<Lesson, 'id' | 'videoUrl' | 'notes' | 'publishedTaskTypes'>[],
   // Sprint 06B — keyed by lessonId, from quizService.getCourseQuizProgress.
   // Omitted, every lesson with a real quiz is treated as not-yet-passed
   // (see getStageStatus) rather than fabricated as complete.
@@ -318,6 +420,11 @@ export const getCourseProgress = (
   // that has not been updated to fetch it behaves EXACTLY as it did before
   // this sprint rather than silently reporting a different percentage.
   trapProgressByLessonId?: Map<string, TrapHunterStageProgress>,
+  // Sprint 06D — same contract. Omitted, 'practice' still joins
+  // availableStages() when the lesson has a published task (that comes from
+  // the lesson itself, not from progress), and reports 'not_started', so an
+  // un-updated surface shows a STALE percentage, never a wrong one.
+  practiceProgressByLessonId?: Map<string, PracticeStageProgress>,
 ): CourseProgress => {
   const total = lessons.length;
   if (total === 0) return { completed: 0, total: 0, percent: 0 };
@@ -327,6 +434,7 @@ export const getCourseProgress = (
       lesson,
       quizProgressByLessonId?.get(lesson.id),
       trapProgressByLessonId?.get(lesson.id),
+      practiceProgressByLessonId?.get(lesson.id),
     ),
   ).length;
   // floor, matching the Learning Engine's percentages (ADR 007 §5) — a

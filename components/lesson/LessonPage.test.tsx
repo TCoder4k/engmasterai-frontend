@@ -41,7 +41,7 @@ const LESSON = {
   orderIndex: 0,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
-  _count: { tasks: 0 },
+  publishedTaskTypes: [],
 };
 
 const courseOf = (type: 'GRAMMAR' | 'LISTENING') => ({
@@ -178,32 +178,35 @@ describe('LessonPage — Grammar staged player', () => {
     // requesting ?stage=quiz falls back to Video rather than rendering
     // nothing (Sprint 06B).
     //
-    // Sprint 06C changed what the remaining tiles say, and the distinction
-    // is the point. Advanced practice is the ONLY stage left with no backend
-    // at all, so it is the only "Coming soon". Quiz and Trap Hunter both
-    // exist — this lesson simply has no quiz, and with no quiz there are no
-    // mistakes to correct — so both read "Not in this lesson".
+    // Sprint 06D removed the last "Coming soon" from this page: every stage
+    // now has a real module, so no tile is constant-locked. This lesson has
+    // no quiz (and therefore no mistakes to correct) and no practice task,
+    // so all three of Quiz / Trap Hunter / Advanced Practice honestly read
+    // "Not in this lesson".
     expect(await screen.findByTestId('video-player')).toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    expect(stepper().getAllByText('Coming soon')).toHaveLength(1);
-    expect(stepper().getAllByText('Not in this lesson')).toHaveLength(2);
+    expect(stepper().queryAllByText('Coming soon')).toHaveLength(0);
+    expect(stepper().getAllByText('Not in this lesson')).toHaveLength(3);
   });
 
   // Sprint 06C — the tile a student sees before they have finished a quiz.
   // It must never claim a shipped feature is unbuilt.
   it('shows Trap Hunter as blocked — not "Coming soon" — on a lesson that HAS a quiz', async () => {
-    global.fetch = buildFetch('GRAMMAR', { _count: { tasks: 1 } }) as unknown as typeof fetch;
+    global.fetch = buildFetch('GRAMMAR', { publishedTaskTypes: ['QUIZ'] }) as unknown as typeof fetch;
     renderPage();
 
     await screen.findByTestId('video-player');
     expect(stepper().getByText('Finish the quiz first')).toBeInTheDocument();
-    // Advanced practice is still the one and only "Coming soon".
-    expect(stepper().getAllByText('Coming soon')).toHaveLength(1);
+    // Sprint 06D — nothing on this page says "Coming soon" any more. This
+    // lesson has a quiz but no practice task, so Advanced Practice reads
+    // "Not in this lesson" rather than claiming to be unbuilt.
+    expect(stepper().queryAllByText('Coming soon')).toHaveLength(0);
+    expect(stepper().getAllByText('Not in this lesson')).toHaveLength(1);
   });
 });
 
 describe('LessonPage — Sprint 06B quiz stage', () => {
-  const LESSON_WITH_QUIZ = { ...LESSON, _count: { tasks: 1 } };
+  const LESSON_WITH_QUIZ = { ...LESSON, publishedTaskTypes: ['QUIZ'] };
 
   const QUIZ_RESPONSE = {
     quiz: {

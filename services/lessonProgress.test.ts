@@ -7,10 +7,12 @@ import {
   isLessonComplete,
   isLessonStarted,
   markTheoryComplete,
+  PracticeStageProgress,
   QuizStageProgress,
   TrapHunterStageProgress,
 } from './lessonProgress';
 import { VideoProgressEntry } from './videoProgress';
+import { LessonTaskType } from '../types';
 
 // Sprint 06 — these tests pin down the decision the whole sprint rests on:
 // progress counts COMPLETED LESSONS, not watched videos. A Lesson is
@@ -28,12 +30,12 @@ import { VideoProgressEntry } from './videoProgress';
 const USER = 'user-1';
 
 const lesson = (
-  over: Partial<{ id: string; videoUrl: string | null; notes: string | null; _count: { tasks: number } }> = {},
+  over: Partial<{ id: string; videoUrl: string | null; notes: string | null; publishedTaskTypes: LessonTaskType[] }> = {},
 ) => ({
   id: 'l-1',
   videoUrl: 'https://youtu.be/abc',
   notes: '## Rule one\nBody text',
-  _count: { tasks: 0 },
+  publishedTaskTypes: [],
   ...over,
 });
 
@@ -83,14 +85,14 @@ describe('availableStages', () => {
     // (Sprint 06B) and Trap Hunter (Sprint 06C) are different: they DO have
     // backends now, so each has its own test below.
     expect(availableStages(lesson())).not.toContain('practice');
-    expect(availableStages(lesson({ _count: { tasks: 1 } }), trapProgress())).not.toContain(
+    expect(availableStages(lesson({ publishedTaskTypes: ['QUIZ'] }), trapProgress())).not.toContain(
       'practice',
     );
   });
 
   it('includes quiz only when the lesson actually has a published one', () => {
     expect(availableStages(lesson())).not.toContain('quiz');
-    expect(availableStages(lesson({ _count: { tasks: 1 } }))).toContain('quiz');
+    expect(availableStages(lesson({ publishedTaskTypes: ['QUIZ'] }))).toContain('quiz');
   });
 
   it('treats whitespace-only notes as no theory content', () => {
@@ -130,36 +132,97 @@ describe('getStageStatus — theory', () => {
   });
 });
 
-describe('getStageStatus — stages with no backend are always locked', () => {
-  it('practice is locked', () => {
-    expect(getStageStatus(USER, lesson(), 'practice')).toBe('locked');
+// Sprint 06D REPLACED this block. It used to assert that 'practice' was
+// constant-`locked` in every state, which was correct while the stage had no
+// backend — and is now exactly wrong. What survives is the property those
+// tests were really protecting: a stage must never look startable or finished
+// on the strength of local storage alone.
+describe('getStageStatus — practice', () => {
+  const withPractice = (over: Record<string, unknown> = {}) =>
+    lesson({ publishedTaskTypes: ['QUIZ', 'PRACTICE'], ...over });
+
+  it('is unavailable when the lesson has no published practice task', () => {
+    expect(getStageStatus(USER, lesson({ publishedTaskTypes: ['QUIZ'] }), 'practice')).toBe(
+      'unavailable',
+    );
   });
 
-  it('stays locked even if storage is hand-edited to claim completion', () => {
-    // The status is a constant, never read from storage, so no stale or
-    // tampered localStorage can make an unbuilt stage look finished.
+  it('is blocked — not locked — until the quiz is passed', () => {
+    // 'locked' renders "Coming soon" and would tell a student a shipped
+    // feature does not exist. That was the bug Sprint 06B.5 fixed in
+    // TheoryCompletionBar and it must not come back here.
+    expect(getStageStatus(USER, withPractice(), 'practice')).toBe('blocked');
+  });
+
+  it('is blocked while traps are still outstanding', () => {
+    expect(
+      getStageStatus(
+        USER,
+        withPractice(),
+        'practice',
+        quizPassed,
+        trapProgress({ total: 2, cleared: 1 }),
+      ),
+    ).toBe('blocked');
+  });
+
+  it('opens once the quiz is passed and every trap is cleared', () => {
+    expect(
+      getStageStatus(
+        USER,
+        withPractice(),
+        'practice',
+        quizPassed,
+        trapProgress({ total: 2, cleared: 2 }),
+      ),
+    ).toBe('not_started');
+  });
+
+  it('opens on a perfect quiz, which leaves no traps to clear', () => {
+    expect(
+      getStageStatus(USER, withPractice(), 'practice', quizPassed, trapProgress({ total: 0 })),
+    ).toBe('not_started');
+  });
+
+  // The defect the plan review caught: gating on "quiz passed" alone left a
+  // lesson with a practice task and no quiz blocked forever, and since
+  // 'practice' still joins availableStages(), that lesson could never
+  // complete.
+  it('opens immediately on a lesson that has practice but NO quiz', () => {
+    expect(
+      getStageStatus(USER, lesson({ publishedTaskTypes: ['PRACTICE'] }), 'practice'),
+    ).toBe('not_started');
+  });
+
+  it('reports in_progress after an attempt and completed once passed', () => {
+    const open = { quiz: quizPassed, traps: trapProgress({ total: 0 }) };
+    expect(
+      getStageStatus(USER, withPractice(), 'practice', open.quiz, open.traps, {
+        hasTask: true,
+        passed: false,
+        attemptsCount: 1,
+      }),
+    ).toBe('in_progress');
+    expect(
+      getStageStatus(USER, withPractice(), 'practice', open.quiz, open.traps, {
+        hasTask: true,
+        passed: true,
+        attemptsCount: 2,
+      }),
+    ).toBe('completed');
+  });
+
+  it('never reads completion from local storage', () => {
+    // The surviving half of the old always-locked block: progress for a
+    // server-backed stage comes from the server, so hand-edited localStorage
+    // cannot make it look finished.
     localStorage.setItem(
       `lessonStages:${USER}:l-1`,
-      JSON.stringify({ theoryCompletedAt: 'x', quizCompletedAt: 'x', practiceCompletedAt: 'x' }),
+      JSON.stringify({ theoryCompletedAt: 'x', practiceCompletedAt: 'x' }),
     );
-    expect(getStageStatus(USER, lesson(), 'practice')).toBe('locked');
-  });
-
-  // Sprint 06C did not touch Advanced Practice, and this is what says so.
-  // Trap Hunter shipping must not have unlocked, renamed or implemented the
-  // stage after it — it is reserved for Sprint 06D.
-  it('stays locked in every state Trap Hunter can be in', () => {
-    const withQuiz = lesson({ _count: { tasks: 1 } });
-    const states: (TrapHunterStageProgress | undefined)[] = [
-      undefined,
-      trapProgress({ hasSource: false }),
-      trapProgress({ total: 0 }),
-      trapProgress({ total: 2, cleared: 0 }),
-      trapProgress({ total: 2, cleared: 2 }),
-    ];
-    states.forEach((state) => {
-      expect(getStageStatus(USER, withQuiz, 'practice', quizPassed, state)).toBe('locked');
-    });
+    expect(getStageStatus(USER, withPractice(), 'practice', quizPassed, trapProgress({ total: 0 }))).toBe(
+      'not_started',
+    );
   });
 });
 
@@ -167,7 +230,7 @@ describe('getStageStatus — stages with no backend are always locked', () => {
 // (the backend's published-QUIZ-task count), and quizProgress comes from
 // the server (quizService.getCourseQuizProgress), never localStorage.
 describe('getStageStatus — quiz', () => {
-  const withQuiz = lesson({ _count: { tasks: 1 } });
+  const withQuiz = lesson({ publishedTaskTypes: ['QUIZ'] });
   const passed: QuizStageProgress = { passed: true, attemptsCount: 1 };
   const attemptedNotPassed: QuizStageProgress = { passed: false, attemptsCount: 1 };
   const untouched: QuizStageProgress = { passed: false, attemptsCount: 0 };
@@ -228,7 +291,7 @@ describe('isLessonComplete — every available stage, not just the video', () =>
   });
 
   it('a lesson with a quiz is not complete until the quiz is passed too', () => {
-    const withQuiz = lesson({ notes: null, _count: { tasks: 1 } });
+    const withQuiz = lesson({ notes: null, publishedTaskTypes: ['QUIZ'] });
     seedVideo('l-1', { ended: true });
     expect(isLessonComplete(USER, withQuiz)).toBe(false); // no quizProgress passed
     expect(isLessonComplete(USER, withQuiz, { passed: false, attemptsCount: 1 })).toBe(false);
@@ -275,7 +338,7 @@ describe('getCourseProgress', () => {
   });
 
   it('folds server-side quiz progress into the course-wide total', () => {
-    const withQuiz = [lesson({ id: 'q-1', notes: null, _count: { tasks: 1 } })];
+    const withQuiz = [lesson({ id: 'q-1', notes: null, publishedTaskTypes: ['QUIZ'] })];
     seedVideo('q-1', { ended: true });
 
     expect(getCourseProgress(USER, withQuiz)).toEqual({ completed: 0, total: 1, percent: 0 });
@@ -293,7 +356,7 @@ describe('getCourseProgress', () => {
 // the mistakes of the most recent COMPLETED quiz attempt, so every input
 // here comes from trapHunterService, never localStorage.
 describe('getStageStatus — traphunter', () => {
-  const withQuiz = lesson({ _count: { tasks: 1 } });
+  const withQuiz = lesson({ publishedTaskTypes: ['QUIZ'] });
 
   it('is unavailable when the lesson has no published quiz — there are no mistakes to correct', () => {
     expect(getStageStatus(USER, lesson(), 'traphunter', undefined, trapProgress())).toBe(
@@ -337,7 +400,7 @@ describe('getStageStatus — traphunter', () => {
 });
 
 describe('availableStages — traphunter joins only when there are traps', () => {
-  const withQuiz = lesson({ _count: { tasks: 1 } });
+  const withQuiz = lesson({ publishedTaskTypes: ['QUIZ'] });
 
   it.each([
     ['not fetched', undefined],
@@ -366,7 +429,7 @@ describe('availableStages — traphunter joins only when there are traps', () =>
 });
 
 describe('isLessonComplete — Trap Hunter counts, through availableStages', () => {
-  const withQuiz = lesson({ notes: null, _count: { tasks: 1 } });
+  const withQuiz = lesson({ notes: null, publishedTaskTypes: ['QUIZ'] });
 
   beforeEach(() => seedVideo('l-1', { ended: true }));
 
@@ -393,47 +456,89 @@ describe('isLessonComplete — Trap Hunter counts, through availableStages', () 
   });
 });
 
-// INVARIANT A. The single most important test in this file for what comes
-// next: lesson completion must stay driven by availableStages(), never by a
-// hardcoded `theory && quiz && traphunter` conjunction. Trap Hunter is one
-// entry in a list, not the final stage.
+// INVARIANT A — lesson completion is stage-driven and dynamic.
 //
-// Sprint 06D adds Advanced Practice to availableStages() and completion has
-// to widen on its own. This test proves it will, WITHOUT importing or
-// touching a line of Trap Hunter's logic: it simulates the arrival of one
-// further available stage and asserts the lesson stops being complete.
+// Sprint 06D REPLACED the single test that used to live here. That test stood
+// in for "a hypothetical future stage" by using 'practice' itself, which
+// worked only while 'practice' was constant-locked. Now that it is a real
+// stage, the old assertion would still have passed — on a lesson with no
+// practice task the status is 'unavailable', which is not 'completed' — while
+// proving nothing at all. It had quietly become a tautology at exactly the
+// moment it was supposed to matter.
+//
+// Three tests replace it. The first is the one that actually kills the
+// forbidden rewrite; the others prove the fold widened and keeps delegating.
 describe('INVARIANT A — completion is stage-driven and dynamic', () => {
-  it('a lesson with every current stage done is incomplete the moment another stage becomes available', () => {
-    const withQuiz = lesson({ _count: { tasks: 1 } });
+  it('completes a lesson that SKIPS optional stages — a hardcoded conjunction cannot', () => {
+    // This is the discriminating case. A lesson with no notes and no video
+    // offers neither 'theory' nor 'video', so the forbidden
+    //     theoryCompleted && quizPassed && trapsCleared && practicePassed
+    // is FALSE here (theory was never completed — there was no theory), while
+    // `availableStages().every(...)` is TRUE. Any rewrite to a fixed
+    // conjunction fails this test, which is the whole reason it exists.
+    const sparse = lesson({
+      videoUrl: null,
+      notes: null,
+      publishedTaskTypes: ['QUIZ', 'PRACTICE'],
+    });
+    const noTraps = trapProgress({ total: 0 });
+    const practiceDone = { hasTask: true, passed: true, attemptsCount: 1 };
+
+    expect(availableStages(sparse, noTraps)).toEqual(['quiz', 'practice']);
+    expect(isLessonComplete(USER, sparse, quizPassed, noTraps, practiceDone)).toBe(true);
+  });
+
+  it('widened on its own when Advanced Practice arrived', () => {
+    // Everything Sprint 06C knew about is finished, and the lesson is still
+    // incomplete purely because availableStages() returned one more entry.
+    const full = lesson({ publishedTaskTypes: ['QUIZ', 'PRACTICE'] });
     seedVideo('l-1', { ended: true });
     markTheoryComplete(USER, 'l-1');
-
-    // Everything Sprint 06C knows about is finished.
     const done = trapProgress({ total: 2, cleared: 2 });
-    expect(isLessonComplete(USER, withQuiz, quizPassed, done)).toBe(true);
-    expect(availableStages(withQuiz, done)).toEqual([
+
+    expect(availableStages(full, done)).toEqual([
       'video',
       'theory',
       'quiz',
       'traphunter',
+      'practice',
     ]);
-
-    // Now stand in for Sprint 06D: one more stage becomes available and is
-    // not finished. isLessonComplete must fall to false purely because
-    // `stages.every(...)` has one more entry to satisfy.
-    const stages = availableStages(withQuiz, done);
-    const withFutureStage = [...stages, 'practice' as const];
-    const allComplete = withFutureStage.every(
-      (stage) => getStageStatus(USER, withQuiz, stage, quizPassed, done) === 'completed',
-    );
-    expect(allComplete).toBe(false);
-
-    // ...and the reason is the new stage, not anything Trap Hunter did.
+    expect(isLessonComplete(USER, full, quizPassed, done)).toBe(false);
     expect(
-      stages.every(
-        (stage) => getStageStatus(USER, withQuiz, stage, quizPassed, done) === 'completed',
-      ),
+      isLessonComplete(USER, full, quizPassed, done, {
+        hasTask: true,
+        passed: true,
+        attemptsCount: 1,
+      }),
     ).toBe(true);
+  });
+
+  it('stays equal to availableStages().every(completed) across a fixture matrix', () => {
+    // The mechanism check: isLessonComplete must keep DELEGATING, whatever
+    // the stage list happens to be. It fails the moment the body stops being
+    // a fold over availableStages() — including for a stage list this test
+    // does not know about yet.
+    const practiceDone = { hasTask: true, passed: true, attemptsCount: 1 };
+    const cases = [
+      { l: lesson(), t: undefined, p: undefined },
+      { l: lesson({ publishedTaskTypes: ['QUIZ'] }), t: trapProgress({ total: 0 }), p: undefined },
+      { l: lesson({ publishedTaskTypes: ['QUIZ', 'PRACTICE'] }), t: trapProgress({ total: 2, cleared: 1 }), p: undefined },
+      { l: lesson({ publishedTaskTypes: ['PRACTICE'] }), t: undefined, p: practiceDone },
+      { l: lesson({ videoUrl: null, notes: null, publishedTaskTypes: ['PRACTICE'] }), t: undefined, p: practiceDone },
+    ];
+
+    seedVideo('l-1', { ended: true });
+    markTheoryComplete(USER, 'l-1');
+
+    cases.forEach(({ l, t, p }) => {
+      const stages = availableStages(l, t);
+      const expected =
+        stages.length > 0 &&
+        stages.every(
+          (stage) => getStageStatus(USER, l, stage, quizPassed, t, p) === 'completed',
+        );
+      expect(isLessonComplete(USER, l, quizPassed, t, p)).toBe(expected);
+    });
   });
 });
 

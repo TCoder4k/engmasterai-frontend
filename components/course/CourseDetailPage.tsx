@@ -12,11 +12,13 @@ import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
 import {
   getCourseProgress,
+  PracticeStageProgress,
   QuizStageProgress,
   TrapHunterStageProgress,
 } from '../../services/lessonProgress';
 import { getCourseQuizProgress } from '../../services/quizService';
 import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
+import { getCourseStageProgress } from '../../services/practiceService';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
 import {
@@ -50,6 +52,13 @@ const CourseDetailPage: React.FC = () => {
     new Map(),
   );
   // Sprint 06C — the same arrangement for Trap Hunter.
+  // Sprint 06D — without this the page would show a lesson INCOMPLETE while
+  // the lesson page showed it finished: 'practice' now joins availableStages()
+  // whenever a published task exists, so an un-fetched map would leave it
+  // permanently 'not_started' here. Fetched through the aggregated endpoint.
+  const [practiceProgressByLessonId, setPracticeProgressByLessonId] = useState<
+    Map<string, PracticeStageProgress>
+  >(new Map());
   const [trapProgressByLessonId, setTrapProgressByLessonId] = useState<
     Map<string, TrapHunterStageProgress>
   >(new Map());
@@ -107,6 +116,28 @@ const CourseDetailPage: React.FC = () => {
       });
   }, [id]);
 
+  // Sprint 06D — one request covering every stage that has a backend.
+  // Failure leaves the map empty, which reports practice 'not_started' and so
+  // holds a lesson open rather than falsely completing it.
+  useEffect(() => {
+    if (!id || !authService.getUser()) return;
+    getCourseStageProgress(id)
+      .then((rows) => {
+        const map = new Map<string, PracticeStageProgress>();
+        rows.forEach((row) => {
+          if (row.practice) {
+            map.set(row.lessonId, {
+              hasTask: true,
+              passed: row.practice.passed,
+              attemptsCount: row.practice.attemptsCount,
+            });
+          }
+        });
+        setPracticeProgressByLessonId(map);
+      })
+      .catch(() => setPracticeProgressByLessonId(new Map()));
+  }, [id]);
+
   // Records the Continue Learning entry once the course is actually
   // loaded — this page has every id it needs in scope, so the ring buffer
   // entry stores the already-resolved path (design doc §5).
@@ -140,6 +171,7 @@ const CourseDetailPage: React.FC = () => {
     lessons,
     quizProgressByLessonId,
     trapProgressByLessonId,
+    practiceProgressByLessonId,
   );
 
   const category = course && isGrammar ? deriveGrammarCategory(course) : null;
@@ -291,6 +323,7 @@ const CourseDetailPage: React.FC = () => {
                   orderNumber={index + 1}
                   quizProgress={quizProgressByLessonId.get(lesson.id)}
                   trapProgress={trapProgressByLessonId.get(lesson.id)}
+                  practiceProgress={practiceProgressByLessonId.get(lesson.id)}
                 />
               ))}
             </div>

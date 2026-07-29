@@ -15,12 +15,14 @@ interface LessonStageStepperProps {
 // (numbered badge + icon + title + status line, 2-col on phones, 5-col from
 // sm up).
 //
-// Stages 3-5 (Quiz Part 5 / Trap Hunter / Advanced practice) require
-// LessonTask/Question, which exists as Prisma models with no module, no
-// controller and no endpoints. They render with the same shape but are
-// `aria-disabled`, are not buttons, carry a lock, and show "Coming soon"
-// instead of a status. That is deliberate: a locked tile is honest, whereas
-// a tile reading "Not started" would imply a student could start it.
+// As of Sprint 06D every one of the five stages has a real module behind it,
+// so no tile is constant-`locked` any more and "Coming soon" no longer
+// appears on this page. Nothing in this component changed to make that true:
+// it renders whatever StageStatus it is handed, and the four not-startable
+// statuses ('locked', 'blocked', 'unavailable', 'skipped') already had
+// distinct treatments from Sprint 06C. 'locked' is kept for a stage that
+// ever ships in the UI ahead of its backend — a locked tile is honest,
+// whereas one reading "Not started" would imply a student could start it.
 const STAGE_ICONS: Record<LessonStageId, React.ReactNode> = {
   video: <Video size={13} />,
   theory: <BookOpen size={13} />,
@@ -116,11 +118,11 @@ const LessonStageStepper: React.FC<LessonStageStepperProps> = ({
 
               This is also the generic "unlock" moment: it is driven purely
               by a stage's status changing, never special-cased to one
-              tile. Today only Quiz has a live status transition — Trap
-              Hunter and Advanced practice are constant-`locked` in
-              lessonProgress.ts, so nothing here will ever animate a stage
-              unlocking that does not exist. It is simply ready the day one
-              does.
+              tile. Sprint 06C gave it its first real transition (Trap
+              Hunter unlocking after a submit) and Sprint 06D a second
+              (Advanced Practice opening once traps are cleared) — both
+              without a line of change here, which is what "generic" was
+              supposed to buy.
             */}
             <motion.span
               key={status}
