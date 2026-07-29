@@ -10,8 +10,14 @@ import Skeleton from '../shared/Skeleton';
 import { getPublishedCourses } from '../../services/courseService';
 import { getCourseLessons } from '../../services/lessonService';
 import { authService } from '../../services/authService';
-import { getCourseProgress, CourseProgress, QuizStageProgress } from '../../services/lessonProgress';
+import {
+  getCourseProgress,
+  CourseProgress,
+  QuizStageProgress,
+  TrapHunterStageProgress,
+} from '../../services/lessonProgress';
 import { getCourseQuizProgress } from '../../services/quizService';
+import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
 import { handleAuthError } from '../../services/apiError';
 import { Course, Lesson } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -46,6 +52,11 @@ const GrammarRoadmapPage: React.FC = () => {
   const [quizProgressByLessonId, setQuizProgressByLessonId] = useState<Map<string, QuizStageProgress>>(
     new Map(),
   );
+  // Sprint 06C — merged the same way, from the same shape of per-course
+  // batch endpoint, under the same silent-degrade rule.
+  const [trapProgressByLessonId, setTrapProgressByLessonId] = useState<
+    Map<string, TrapHunterStageProgress>
+  >(new Map());
 
   useEffect(() => {
     getPublishedCourses(undefined, 100, 'GRAMMAR')
@@ -115,6 +126,34 @@ const GrammarRoadmapPage: React.FC = () => {
     };
   }, [courses, userId]);
 
+  useEffect(() => {
+    if (courses.length === 0 || !userId) return;
+    let cancelled = false;
+
+    Promise.all(
+      courses.map((course) =>
+        getCourseTrapHunterProgress(course.id)
+          .then((res) => res.data)
+          .catch(() => []),
+      ),
+    ).then((results) => {
+      if (cancelled) return;
+      const map = new Map<string, TrapHunterStageProgress>();
+      results.flat().forEach((row) => {
+        map.set(row.lessonId, {
+          hasSource: row.hasSource,
+          total: row.total,
+          cleared: row.cleared,
+        });
+      });
+      setTrapProgressByLessonId(map);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courses, userId]);
+
   // Only collections actually present get a chip, so a filter can never
   // resolve to an empty list.
   const categories = useMemo(() => presentGrammarCategories(courses), [courses]);
@@ -130,10 +169,13 @@ const GrammarRoadmapPage: React.FC = () => {
   const progressByCourse = useMemo(() => {
     const map = new Map<string, CourseProgress>();
     lessonsByCourse.forEach((lessons, courseId) => {
-      map.set(courseId, getCourseProgress(userId, lessons, quizProgressByLessonId));
+      map.set(
+        courseId,
+        getCourseProgress(userId, lessons, quizProgressByLessonId, trapProgressByLessonId),
+      );
     });
     return map;
-  }, [lessonsByCourse, userId, quizProgressByLessonId]);
+  }, [lessonsByCourse, userId, quizProgressByLessonId, trapProgressByLessonId]);
 
   // Roadmap-wide totals. Rendered only once every course's lessons are in,
   // so a partial figure never briefly claims a lower total than the truth.

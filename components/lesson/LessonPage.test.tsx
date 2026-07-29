@@ -55,13 +55,27 @@ const courseOf = (type: 'GRAMMAR' | 'LISTENING') => ({
   _count: { lessons: 1 },
 });
 
-const buildFetch = (type: 'GRAMMAR' | 'LISTENING') =>
-  vi.fn((url: string) => {
-    if (url.includes('/courses/c-1/lessons')) return Promise.resolve(jsonResponse(200, { data: [LESSON] }));
-    if (url.includes('/lessons/l-1')) return Promise.resolve(jsonResponse(200, LESSON));
+const buildFetch = (type: 'GRAMMAR' | 'LISTENING', lessonOver: Partial<typeof LESSON> = {}) => {
+  const lesson = { ...LESSON, ...lessonOver };
+  return vi.fn((url: string) => {
+    // Sprint 06C — matched BEFORE '/lessons/l-1', which this path also
+    // contains. hasSource: false is the honest default for a lesson nobody
+    // has finished a quiz on, and it is what makes the tile read "Finish the
+    // quiz first" rather than "Coming soon".
+    if (url.includes('/trap-hunter')) {
+      return Promise.resolve(
+        jsonResponse(200, {
+          traps: [],
+          progress: { hasSource: false, total: 0, cleared: 0, completed: false },
+        }),
+      );
+    }
+    if (url.includes('/courses/c-1/lessons')) return Promise.resolve(jsonResponse(200, { data: [lesson] }));
+    if (url.includes('/lessons/l-1')) return Promise.resolve(jsonResponse(200, lesson));
     if (url.includes('/courses/c-1')) return Promise.resolve(jsonResponse(200, courseOf(type)));
     return Promise.resolve(jsonResponse(404, { message: 'Not found' }));
   });
+};
 
 // The stepper is queried through its own landmark: "Theory cards" also
 // appears inside the video stage's CTA copy, and "Coming soon" appears in
@@ -162,13 +176,29 @@ describe('LessonPage — Grammar staged player', () => {
 
     // This fixture's _count.tasks is 0 — no quiz exists for it — so
     // requesting ?stage=quiz falls back to Video rather than rendering
-    // nothing (Sprint 06B). Trap Hunter and Advanced practice still have no
-    // backend at all and stay "Coming soon"; Quiz shows its own distinct
-    // "Not in this lesson" label instead of being lumped in with them.
+    // nothing (Sprint 06B).
+    //
+    // Sprint 06C changed what the remaining tiles say, and the distinction
+    // is the point. Advanced practice is the ONLY stage left with no backend
+    // at all, so it is the only "Coming soon". Quiz and Trap Hunter both
+    // exist — this lesson simply has no quiz, and with no quiz there are no
+    // mistakes to correct — so both read "Not in this lesson".
     expect(await screen.findByTestId('video-player')).toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
-    expect(stepper().getAllByText('Coming soon')).toHaveLength(2);
-    expect(stepper().getByText('Not in this lesson')).toBeInTheDocument();
+    expect(stepper().getAllByText('Coming soon')).toHaveLength(1);
+    expect(stepper().getAllByText('Not in this lesson')).toHaveLength(2);
+  });
+
+  // Sprint 06C — the tile a student sees before they have finished a quiz.
+  // It must never claim a shipped feature is unbuilt.
+  it('shows Trap Hunter as blocked — not "Coming soon" — on a lesson that HAS a quiz', async () => {
+    global.fetch = buildFetch('GRAMMAR', { _count: { tasks: 1 } }) as unknown as typeof fetch;
+    renderPage();
+
+    await screen.findByTestId('video-player');
+    expect(stepper().getByText('Finish the quiz first')).toBeInTheDocument();
+    // Advanced practice is still the one and only "Coming soon".
+    expect(stepper().getAllByText('Coming soon')).toHaveLength(1);
   });
 });
 

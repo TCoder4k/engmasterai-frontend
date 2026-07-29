@@ -1,15 +1,34 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, CheckCircle2, Flame, XCircle } from 'lucide-react';
-import { AnswerQuestionResponse } from '../../../services/quizService';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { DURATION, EASE, SPRING } from '../../shared/motion';
 import CelebrationBurst from '../../shared/CelebrationBurst';
 
+// Structural rather than `AnswerQuestionResponse` (Sprint 06C): Trap
+// Hunter's AnswerTrapResponse carries the same three server-decided fields,
+// and one panel rendering both is the point. Narrowing to what is actually
+// read also makes it obvious that nothing else in either response
+// influences what is shown.
+interface FeedbackVerdict {
+  isCorrect: boolean;
+  explanation: string | null;
+  currentStreak: number;
+}
+
 interface QuizFeedbackPanelProps {
-  feedback: AnswerQuestionResponse;
+  feedback: FeedbackVerdict;
   // Bumped by the parent on each new correct answer so the burst re-fires.
   burstKey: number;
+  // Sprint 06C — optional copy overrides so Trap Hunter can say "this one
+  // comes back" instead of "not quite" without a second near-identical
+  // panel. Defaulted to the quiz's own strings, so QuizStage is unchanged.
+  correctTitle?: string;
+  incorrectTitle?: string;
+  streakLabel?: string;
+  // An extra line under the verdict — Trap Hunter uses it to say a missed
+  // trap is being re-queued rather than marked wrong and lost.
+  footnote?: string;
 }
 
 // Sprint 06B.5 — the moment the student finds out.
@@ -23,7 +42,14 @@ interface QuizFeedbackPanelProps {
 // icon and the heading carry the meaning on their own, so under
 // prefers-reduced-motion (handled globally by MotionConfig in App.tsx)
 // nothing is lost.
-const QuizFeedbackPanel: React.FC<QuizFeedbackPanelProps> = ({ feedback, burstKey }) => {
+const QuizFeedbackPanel: React.FC<QuizFeedbackPanelProps> = ({
+  feedback,
+  burstKey,
+  correctTitle,
+  incorrectTitle,
+  streakLabel,
+  footnote,
+}) => {
   const { t } = useTranslation();
   const { isCorrect, explanation, currentStreak } = feedback;
 
@@ -60,7 +86,9 @@ const QuizFeedbackPanel: React.FC<QuizFeedbackPanelProps> = ({ feedback, burstKe
             isCorrect ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'
           }`}
         >
-          {isCorrect ? t.quiz.feedbackCorrectTitle : t.quiz.feedbackIncorrectTitle}
+          {isCorrect
+            ? (correctTitle ?? t.quiz.feedbackCorrectTitle)
+            : (incorrectTitle ?? t.quiz.feedbackIncorrectTitle)}
         </p>
 
         {/*
@@ -76,10 +104,21 @@ const QuizFeedbackPanel: React.FC<QuizFeedbackPanelProps> = ({ feedback, burstKe
             className="ml-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300"
           >
             <Flame size={12} aria-hidden="true" />
-            {currentStreak} {t.quiz.streakLabel}
+            {currentStreak} {streakLabel ?? t.quiz.streakLabel}
           </motion.span>
         )}
       </div>
+
+      {/*
+        Sprint 06C — a missed trap is not a failure to be recorded, it is a
+        trap that comes back. Saying so here is what keeps the rose panel
+        from reading as a verdict the student is stuck with.
+      */}
+      {!isCorrect && footnote && (
+        <p className="relative mt-2 text-xs font-semibold text-rose-600/80 dark:text-rose-300/80">
+          {footnote}
+        </p>
+      )}
 
       {/*
         Only ever rendered when an author wrote one. An absent explanation

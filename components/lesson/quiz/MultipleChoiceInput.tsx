@@ -13,6 +13,16 @@ interface MultipleChoiceInputProps {
   // becomes read-only and shows which option was right.
   disabled?: boolean;
   correctOptionId?: string | null;
+  // Sprint 06C — options a Trap Hunter Level 1 hint has ruled out. They are
+  // struck through but stay SELECTABLE: disabling them would rewrite this
+  // component's roving-tabindex model (which indexes by position) and rail
+  // the student down to one choice. A hint narrows the field; it does not
+  // answer for them.
+  //
+  // This styling is reinforcement, never the carrier: TrapHintPanel lists
+  // the ruled-out options as plain text, so a screen-reader user gets the
+  // same hint without depending on a line-through.
+  eliminatedOptionIds?: string[];
 }
 
 // role="radiogroup" with roving tabindex (WAI-ARIA radio pattern): Tab
@@ -26,7 +36,9 @@ const MultipleChoiceInput: React.FC<MultipleChoiceInputProps> = ({
   onChange,
   disabled = false,
   correctOptionId = null,
+  eliminatedOptionIds,
 }) => {
+  const eliminated = new Set(eliminatedOptionIds ?? []);
   const selectedIndex = Math.max(
     0,
     options.findIndex((o) => o.id === value),
@@ -142,7 +154,14 @@ const MultipleChoiceInput: React.FC<MultipleChoiceInputProps> = ({
             >
               {badgeGlyph(option, index)}
             </motion.span>
-            <span className="relative text-[15px] font-semibold text-slate-800 dark:text-slate-100">
+            <span
+              className={`relative text-[15px] font-semibold text-slate-800 dark:text-slate-100 ${
+                // Only before the verdict: once graded, the emerald/rose
+                // roles above own the styling and a leftover strikethrough
+                // would fight them.
+                !revealed && eliminated.has(option.id) ? 'line-through opacity-45' : ''
+              }`}
+            >
               {option.text}
             </span>
           </motion.button>

@@ -8,6 +8,7 @@ import {
   isLessonStarted,
   markTheoryComplete,
   QuizStageProgress,
+  TrapHunterStageProgress,
 } from './lessonProgress';
 import { VideoProgressEntry } from './videoProgress';
 
@@ -36,6 +37,20 @@ const lesson = (
   ...over,
 });
 
+// Sprint 06C fixtures. `hasSource: true` is the default because it is the
+// interesting case — a completed quiz attempt exists, and what varies is how
+// many mistakes it produced.
+const trapProgress = (
+  over: Partial<TrapHunterStageProgress> = {},
+): TrapHunterStageProgress => ({
+  hasSource: true,
+  total: 2,
+  cleared: 0,
+  ...over,
+});
+
+const quizPassed: QuizStageProgress = { passed: true, attemptsCount: 1 };
+
 const seedVideo = (lessonId: string, entry: Partial<VideoProgressEntry>) =>
   localStorage.setItem(
     `videoProgress:${USER}:${lessonId}`,
@@ -63,12 +78,14 @@ describe('availableStages', () => {
   });
 
   it('never includes a stage that has no backend at all', () => {
-    // Trap Hunter / Advanced practice need LessonTask/Question support that
-    // does not exist yet. Requiring them would make every lesson
-    // permanently incomplete. Quiz (Sprint 06B) is different: it DOES have
-    // a backend now, so it's covered by its own test below instead.
-    expect(availableStages(lesson())).not.toContain('traphunter');
+    // 'practice' (Advanced Practice) needs a module that does not exist yet.
+    // Requiring it would make every lesson permanently incomplete. Quiz
+    // (Sprint 06B) and Trap Hunter (Sprint 06C) are different: they DO have
+    // backends now, so each has its own test below.
     expect(availableStages(lesson())).not.toContain('practice');
+    expect(availableStages(lesson({ _count: { tasks: 1 } }), trapProgress())).not.toContain(
+      'practice',
+    );
   });
 
   it('includes quiz only when the lesson actually has a published one', () => {
@@ -114,8 +131,8 @@ describe('getStageStatus — theory', () => {
 });
 
 describe('getStageStatus — stages with no backend are always locked', () => {
-  it.each(['traphunter', 'practice'] as const)('%s is locked', (stage) => {
-    expect(getStageStatus(USER, lesson(), stage)).toBe('locked');
+  it('practice is locked', () => {
+    expect(getStageStatus(USER, lesson(), 'practice')).toBe('locked');
   });
 
   it('stays locked even if storage is hand-edited to claim completion', () => {
@@ -125,8 +142,24 @@ describe('getStageStatus — stages with no backend are always locked', () => {
       `lessonStages:${USER}:l-1`,
       JSON.stringify({ theoryCompletedAt: 'x', quizCompletedAt: 'x', practiceCompletedAt: 'x' }),
     );
-    expect(getStageStatus(USER, lesson(), 'traphunter')).toBe('locked');
     expect(getStageStatus(USER, lesson(), 'practice')).toBe('locked');
+  });
+
+  // Sprint 06C did not touch Advanced Practice, and this is what says so.
+  // Trap Hunter shipping must not have unlocked, renamed or implemented the
+  // stage after it — it is reserved for Sprint 06D.
+  it('stays locked in every state Trap Hunter can be in', () => {
+    const withQuiz = lesson({ _count: { tasks: 1 } });
+    const states: (TrapHunterStageProgress | undefined)[] = [
+      undefined,
+      trapProgress({ hasSource: false }),
+      trapProgress({ total: 0 }),
+      trapProgress({ total: 2, cleared: 0 }),
+      trapProgress({ total: 2, cleared: 2 }),
+    ];
+    states.forEach((state) => {
+      expect(getStageStatus(USER, withQuiz, 'practice', quizPassed, state)).toBe('locked');
+    });
   });
 });
 
@@ -253,6 +286,154 @@ describe('getCourseProgress', () => {
       total: 1,
       percent: 100,
     });
+  });
+});
+
+// Sprint 06C — Trap Hunter is real now. Traps are derived server-side from
+// the mistakes of the most recent COMPLETED quiz attempt, so every input
+// here comes from trapHunterService, never localStorage.
+describe('getStageStatus — traphunter', () => {
+  const withQuiz = lesson({ _count: { tasks: 1 } });
+
+  it('is unavailable when the lesson has no published quiz — there are no mistakes to correct', () => {
+    expect(getStageStatus(USER, lesson(), 'traphunter', undefined, trapProgress())).toBe(
+      'unavailable',
+    );
+  });
+
+  it('is blocked — never locked — before any attempt has been finished', () => {
+    // 'locked' renders "Coming soon" and would tell a student that a
+    // shipped feature does not exist. That is the exact bug Sprint 06B.5
+    // fixed in TheoryCompletionBar, and this test stops it recurring.
+    expect(getStageStatus(USER, withQuiz, 'traphunter', quizPassed, trapProgress({ hasSource: false }))).toBe(
+      'blocked',
+    );
+  });
+
+  it('is blocked when progress has not been fetched yet, never a guess', () => {
+    expect(getStageStatus(USER, withQuiz, 'traphunter', quizPassed, undefined)).toBe('blocked');
+  });
+
+  it('is SKIPPED, not unavailable, after a perfect attempt', () => {
+    // The student earned an empty stage. 'unavailable' reads as "not in this
+    // lesson", which is both wrong and a deflating thing to show someone who
+    // just scored 100%.
+    expect(getStageStatus(USER, withQuiz, 'traphunter', quizPassed, trapProgress({ total: 0 }))).toBe(
+      'skipped',
+    );
+  });
+
+  it('tracks not_started -> in_progress -> completed as traps are corrected', () => {
+    expect(
+      getStageStatus(USER, withQuiz, 'traphunter', quizPassed, trapProgress({ total: 3, cleared: 0 })),
+    ).toBe('not_started');
+    expect(
+      getStageStatus(USER, withQuiz, 'traphunter', quizPassed, trapProgress({ total: 3, cleared: 1 })),
+    ).toBe('in_progress');
+    expect(
+      getStageStatus(USER, withQuiz, 'traphunter', quizPassed, trapProgress({ total: 3, cleared: 3 })),
+    ).toBe('completed');
+  });
+});
+
+describe('availableStages — traphunter joins only when there are traps', () => {
+  const withQuiz = lesson({ _count: { tasks: 1 } });
+
+  it.each([
+    ['not fetched', undefined],
+    ['no completed attempt (blocked)', trapProgress({ hasSource: false })],
+    ['a perfect attempt (skipped)', trapProgress({ total: 0 })],
+  ])('is excluded when there is %s', (_label, progress) => {
+    expect(availableStages(withQuiz, progress as TrapHunterStageProgress | undefined)).toEqual([
+      'video',
+      'theory',
+      'quiz',
+    ]);
+  });
+
+  it('is included once an attempt actually produced traps', () => {
+    expect(availableStages(withQuiz, trapProgress({ total: 2 }))).toEqual([
+      'video',
+      'theory',
+      'quiz',
+      'traphunter',
+    ]);
+  });
+
+  it('is excluded on a lesson with no quiz, whatever is passed in', () => {
+    expect(availableStages(lesson(), trapProgress({ total: 5 }))).not.toContain('traphunter');
+  });
+});
+
+describe('isLessonComplete — Trap Hunter counts, through availableStages', () => {
+  const withQuiz = lesson({ notes: null, _count: { tasks: 1 } });
+
+  beforeEach(() => seedVideo('l-1', { ended: true }));
+
+  it('is NOT complete while traps remain, even with the quiz passed', () => {
+    expect(
+      isLessonComplete(USER, withQuiz, quizPassed, trapProgress({ total: 2, cleared: 1 })),
+    ).toBe(false);
+  });
+
+  it('completes once every trap is corrected', () => {
+    expect(
+      isLessonComplete(USER, withQuiz, quizPassed, trapProgress({ total: 2, cleared: 2 })),
+    ).toBe(true);
+  });
+
+  it('completes on the quiz alone after a perfect attempt — a skipped stage is owed nothing', () => {
+    expect(isLessonComplete(USER, withQuiz, quizPassed, trapProgress({ total: 0 }))).toBe(true);
+  });
+
+  it('behaves EXACTLY as it did before Sprint 06C when no trap progress is passed', () => {
+    // The compatibility guarantee: a caller that has not been updated to
+    // fetch trap progress reports a stale number, never a wrong one.
+    expect(isLessonComplete(USER, withQuiz, quizPassed)).toBe(true);
+  });
+});
+
+// INVARIANT A. The single most important test in this file for what comes
+// next: lesson completion must stay driven by availableStages(), never by a
+// hardcoded `theory && quiz && traphunter` conjunction. Trap Hunter is one
+// entry in a list, not the final stage.
+//
+// Sprint 06D adds Advanced Practice to availableStages() and completion has
+// to widen on its own. This test proves it will, WITHOUT importing or
+// touching a line of Trap Hunter's logic: it simulates the arrival of one
+// further available stage and asserts the lesson stops being complete.
+describe('INVARIANT A — completion is stage-driven and dynamic', () => {
+  it('a lesson with every current stage done is incomplete the moment another stage becomes available', () => {
+    const withQuiz = lesson({ _count: { tasks: 1 } });
+    seedVideo('l-1', { ended: true });
+    markTheoryComplete(USER, 'l-1');
+
+    // Everything Sprint 06C knows about is finished.
+    const done = trapProgress({ total: 2, cleared: 2 });
+    expect(isLessonComplete(USER, withQuiz, quizPassed, done)).toBe(true);
+    expect(availableStages(withQuiz, done)).toEqual([
+      'video',
+      'theory',
+      'quiz',
+      'traphunter',
+    ]);
+
+    // Now stand in for Sprint 06D: one more stage becomes available and is
+    // not finished. isLessonComplete must fall to false purely because
+    // `stages.every(...)` has one more entry to satisfy.
+    const stages = availableStages(withQuiz, done);
+    const withFutureStage = [...stages, 'practice' as const];
+    const allComplete = withFutureStage.every(
+      (stage) => getStageStatus(USER, withQuiz, stage, quizPassed, done) === 'completed',
+    );
+    expect(allComplete).toBe(false);
+
+    // ...and the reason is the new stage, not anything Trap Hunter did.
+    expect(
+      stages.every(
+        (stage) => getStageStatus(USER, withQuiz, stage, quizPassed, done) === 'completed',
+      ),
+    ).toBe(true);
   });
 });
 

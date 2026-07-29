@@ -3,7 +3,12 @@ import { Link } from 'react-router-dom';
 import { CheckCircle2, Clock, Play } from 'lucide-react';
 import { Lesson } from '../../types';
 import { authService } from '../../services/authService';
-import { isLessonComplete, isLessonStarted, QuizStageProgress } from '../../services/lessonProgress';
+import {
+  isLessonComplete,
+  isLessonStarted,
+  QuizStageProgress,
+  TrapHunterStageProgress,
+} from '../../services/lessonProgress';
 import { useTranslation } from '../../i18n/useTranslation';
 
 interface LessonListItemProps {
@@ -16,6 +21,11 @@ interface LessonListItemProps {
   // loaded yet — isLessonComplete already treats that as "not complete"
   // rather than fabricating a status.
   quizProgress?: QuizStageProgress;
+  // Sprint 06C — same contract, same source shape: fetched once by
+  // CourseDetailPage and passed down. Undefined drops 'traphunter' out of
+  // this lesson's available stages entirely, so an un-updated caller sees
+  // exactly the pre-06C badge rather than a wrong one.
+  trapProgress?: TrapHunterStageProgress;
 }
 
 // Row anatomy follows the design reference's lesson stack (status badge ->
@@ -26,12 +36,18 @@ interface LessonListItemProps {
 // API. The completion badge here is real but device-local, and it means
 // every stage the lesson offers is finished — not merely that the video
 // played to the end.
-const LessonListItem: React.FC<LessonListItemProps> = ({ courseId, lesson, orderNumber, quizProgress }) => {
+const LessonListItem: React.FC<LessonListItemProps> = ({
+  courseId,
+  lesson,
+  orderNumber,
+  quizProgress,
+  trapProgress,
+}) => {
   const { t } = useTranslation();
   const userId = authService.getUser()?.id;
 
-  const completed = isLessonComplete(userId, lesson, quizProgress);
-  const started = !completed && isLessonStarted(userId, lesson, quizProgress);
+  const completed = isLessonComplete(userId, lesson, quizProgress, trapProgress);
+  const started = !completed && isLessonStarted(userId, lesson, quizProgress, trapProgress);
 
   const badgeClass = completed
     ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/40'

@@ -13,7 +13,12 @@ import { getPublishedCourses } from '../../services/courseService';
 import { getCourseLessons } from '../../services/lessonService';
 import { getLibrariesProgress } from '../../services/learningService';
 import { getCourseQuizProgress } from '../../services/quizService';
-import { getCourseProgress, QuizStageProgress } from '../../services/lessonProgress';
+import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
+import {
+  getCourseProgress,
+  QuizStageProgress,
+  TrapHunterStageProgress,
+} from '../../services/lessonProgress';
 import { getMostRecentActivityOfType } from '../../services/recentActivity';
 import { getLessonSummaries } from '../practice/listening/listeningContent';
 import { handleAuthError } from '../../services/apiError';
@@ -100,8 +105,12 @@ const UserHome: React.FC = () => {
       // Quiz progress is server-side; without it a quiz-bearing lesson counts
       // as not-yet-passed, which understates rather than inflates.
       getCourseQuizProgress(courseId).catch(() => ({ data: [] })),
+      // Sprint 06C — same reasoning: without it a lesson with uncorrected
+      // traps would count as finished here while the lesson page shows the
+      // stage still open.
+      getCourseTrapHunterProgress(courseId).catch(() => ({ data: [] })),
     ])
-      .then(([lessonsRes, quizRes]) => {
+      .then(([lessonsRes, quizRes, trapRes]) => {
         if (cancelled) return;
         const quizByLesson = new Map<string, QuizStageProgress>(
           quizRes.data.map((row): [string, QuizStageProgress] => [
@@ -109,7 +118,15 @@ const UserHome: React.FC = () => {
             { passed: row.passed, attemptsCount: row.attemptsCount },
           ]),
         );
-        setContinuePercent(getCourseProgress(user.id, lessonsRes.data, quizByLesson).percent);
+        const trapByLesson = new Map<string, TrapHunterStageProgress>(
+          trapRes.data.map((row): [string, TrapHunterStageProgress] => [
+            row.lessonId,
+            { hasSource: row.hasSource, total: row.total, cleared: row.cleared },
+          ]),
+        );
+        setContinuePercent(
+          getCourseProgress(user.id, lessonsRes.data, quizByLesson, trapByLesson).percent,
+        );
       })
       .catch(() => {
         // Silent: no honest percentage, so none is shown.

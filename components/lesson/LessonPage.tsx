@@ -21,12 +21,15 @@ import {
   LessonStageId,
   StageStatus,
   QuizStageProgress,
+  TrapHunterStageProgress,
   getStageStatus,
   markTheoryComplete,
   lessonHasQuiz,
 } from '../../services/lessonProgress';
+import { getTrapHunter } from '../../services/trapHunterService';
 import { parseGrammarNotes, ParsedGrammarNotes } from './grammar/parseGrammarNotes';
 import QuizStage from './quiz/QuizStage';
+import TrapHunterStage from './traphunter/TrapHunterStage';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -34,8 +37,11 @@ import { useTranslation } from '../../i18n/useTranslation';
 const EMPTY_PARSED: ParsedGrammarNotes = { sections: [], fallbackText: null };
 
 // Sprint 06B — 'quiz' joins the set of stages this page can actually mount.
+// Sprint 06C — and 'traphunter'. 'practice' stays out: it has no module, and
+// a ?stage=practice that mounted an empty panel would be worse than the
+// fallback below.
 const isStageParam = (value: string | null): value is LessonStageId =>
-  value === 'video' || value === 'theory' || value === 'quiz';
+  value === 'video' || value === 'theory' || value === 'quiz' || value === 'traphunter';
 
 // Shared Lesson/Grammar shell (design doc §7.5) — one route, one video
 // player, one completion flow, content swapped by course.type. GET
@@ -67,6 +73,10 @@ const LessonPage: React.FC = () => {
   // (getStageStatus treats that as "not started", never a fabricated
   // "completed").
   const [quizProgress, setQuizProgress] = useState<QuizStageProgress | undefined>(undefined);
+  // Sprint 06C — same contract as quizProgress: undefined until the server
+  // has actually said something, which getStageStatus reports as 'blocked'
+  // rather than guessing.
+  const [trapProgress, setTrapProgress] = useState<TrapHunterStageProgress | undefined>(undefined);
 
   const userId = authService.getUser()?.id;
 
@@ -100,6 +110,23 @@ const LessonPage: React.FC = () => {
       courseType: course?.type,
     });
   }, [lesson, courseId, course]);
+
+  // Sprint 06C — the stepper's Trap Hunter tile must be right from the
+  // moment the page loads, not only once the student opens that stage, so
+  // this is fetched here rather than inside TrapHunterStage.
+  //
+  // `quizProgress` is a deliberate dependency: finishing an attempt is
+  // exactly what turns 'blocked' into a real status, and re-running on that
+  // change is what makes the tile visibly unlock without a reload.
+  useEffect(() => {
+    if (!lesson || !userId || !lessonHasQuiz(lesson)) return;
+    getTrapHunter(lesson.id)
+      .then((res) => setTrapProgress(res.progress))
+      // Left undefined on failure, which getStageStatus reports as
+      // 'blocked' — the honest "can't open this yet", never a fabricated
+      // completion.
+      .catch(() => setTrapProgress(undefined));
+  }, [lesson, userId, quizProgress]);
 
   const isGrammar = course?.type === 'GRAMMAR';
   const parsedNotes = useMemo(
@@ -139,10 +166,12 @@ const LessonPage: React.FC = () => {
       video: getStageStatus(userId, target, 'video'),
       theory: getStageStatus(userId, target, 'theory'),
       quiz: getStageStatus(userId, target, 'quiz', quizProgress),
-      traphunter: getStageStatus(userId, target, 'traphunter'),
+      traphunter: getStageStatus(userId, target, 'traphunter', quizProgress, trapProgress),
+      // Sprint 06D's stage. Still constant-`locked` in lessonProgress.ts —
+      // Sprint 06C did not touch it.
       practice: getStageStatus(userId, target, 'practice'),
     };
-  }, [lesson, userId, progressToken, quizProgress]);
+  }, [lesson, userId, progressToken, quizProgress, trapProgress]);
 
   // A bookmarked/typed ?stage=quiz on a lesson with no quiz falls back to
   // Video rather than rendering nothing — the same thing an unrecognised
@@ -150,8 +179,19 @@ const LessonPage: React.FC = () => {
   // isStageParam. Scoped to quiz only: 'theory' keeps its pre-existing
   // behavior untouched (it renders its own empty-state, never redirects)
   // per this sprint's "Theory must remain untouched" constraint.
+  //
+  // Sprint 06C extends the same rule to 'traphunter', but only for the two
+  // statuses that mean "there is genuinely nothing to render here":
+  // 'unavailable' (this lesson has no quiz) and 'skipped' (a perfect
+  // attempt). 'blocked' deliberately still mounts — the stage explains why
+  // it is closed and offers a way to the quiz, which is more use than a
+  // silent redirect to the video.
   const currentStage: LessonStageId =
-    requestedStage === 'quiz' && stageStatuses.quiz === 'unavailable' ? 'video' : requestedStage;
+    (requestedStage === 'quiz' && stageStatuses.quiz === 'unavailable') ||
+    (requestedStage === 'traphunter' &&
+      (stageStatuses.traphunter === 'unavailable' || stageStatuses.traphunter === 'skipped'))
+      ? 'video'
+      : requestedStage;
 
   const handleMarkTheoryRead = () => {
     if (!userId || !lesson) return;
@@ -350,6 +390,23 @@ const LessonPage: React.FC = () => {
                   allLessons={siblingLessons}
                   userId={userId}
                   onProgressChange={setQuizProgress}
+                  onGoToTrapHunter={() => selectStage('traphunter')}
+                />
+              </div>
+            )}
+
+            {/* Sprint 06C — driven by the student's own recorded mistakes,
+                so it mounts on exactly the same terms as the quiz: any
+                lesson with a published quiz. Nothing about it is
+                Grammar-specific; only this page's own Sprint 06 rule
+                (staged player for GRAMMAR courses) decides where the staged
+                flow appears at all. */}
+            {currentStage === 'traphunter' && lessonHasQuiz(lesson) && userId && (
+              <div className="mb-8">
+                <TrapHunterStage
+                  lessonId={lesson.id}
+                  onProgressChange={setTrapProgress}
+                  onGoToQuiz={() => selectStage('quiz')}
                 />
               </div>
             )}
