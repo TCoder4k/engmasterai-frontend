@@ -6,6 +6,7 @@ import { authService } from '../../services/authService';
 import {
   isLessonComplete,
   isLessonStarted,
+  PracticeStageProgress,
   QuizStageProgress,
   TrapHunterStageProgress,
 } from '../../services/lessonProgress';
@@ -26,6 +27,9 @@ interface LessonListItemProps {
   // this lesson's available stages entirely, so an un-updated caller sees
   // exactly the pre-06C badge rather than a wrong one.
   trapProgress?: TrapHunterStageProgress;
+  // Sprint 06D — same contract. Omitted, a lesson with a published practice
+  // task reports 'not_started', so it stays open rather than falsely complete.
+  practiceProgress?: PracticeStageProgress;
 }
 
 // Row anatomy follows the design reference's lesson stack (status badge ->
@@ -42,12 +46,14 @@ const LessonListItem: React.FC<LessonListItemProps> = ({
   orderNumber,
   quizProgress,
   trapProgress,
+  practiceProgress,
 }) => {
   const { t } = useTranslation();
   const userId = authService.getUser()?.id;
 
-  const completed = isLessonComplete(userId, lesson, quizProgress, trapProgress);
-  const started = !completed && isLessonStarted(userId, lesson, quizProgress, trapProgress);
+  const completed = isLessonComplete(userId, lesson, quizProgress, trapProgress, practiceProgress);
+  const started =
+    !completed && isLessonStarted(userId, lesson, quizProgress, trapProgress, practiceProgress);
 
   const badgeClass = completed
     ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/40'

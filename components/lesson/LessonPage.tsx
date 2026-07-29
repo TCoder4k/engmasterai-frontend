@@ -21,15 +21,19 @@ import {
   LessonStageId,
   StageStatus,
   QuizStageProgress,
+  PracticeStageProgress,
   TrapHunterStageProgress,
   getStageStatus,
   markTheoryComplete,
+  lessonHasPractice,
   lessonHasQuiz,
 } from '../../services/lessonProgress';
 import { getTrapHunter } from '../../services/trapHunterService';
 import { parseGrammarNotes, ParsedGrammarNotes } from './grammar/parseGrammarNotes';
 import QuizStage from './quiz/QuizStage';
 import TrapHunterStage from './traphunter/TrapHunterStage';
+import AdvancedPracticeStage from './practice/AdvancedPracticeStage';
+import { getPractice } from '../../services/practiceService';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -37,11 +41,16 @@ import { useTranslation } from '../../i18n/useTranslation';
 const EMPTY_PARSED: ParsedGrammarNotes = { sections: [], fallbackText: null };
 
 // Sprint 06B — 'quiz' joins the set of stages this page can actually mount.
-// Sprint 06C — and 'traphunter'. 'practice' stays out: it has no module, and
-// a ?stage=practice that mounted an empty panel would be worse than the
-// fallback below.
+// Sprint 06C — and 'traphunter'. Sprint 06D — and 'practice', the last of
+// the five. Every stage now has a real module behind it, so every one of
+// them is a legitimate ?stage= value; the fallback below still catches the
+// cases where a named stage has nothing to render for THIS lesson.
 const isStageParam = (value: string | null): value is LessonStageId =>
-  value === 'video' || value === 'theory' || value === 'quiz' || value === 'traphunter';
+  value === 'video' ||
+  value === 'theory' ||
+  value === 'quiz' ||
+  value === 'traphunter' ||
+  value === 'practice';
 
 // Shared Lesson/Grammar shell (design doc §7.5) — one route, one video
 // player, one completion flow, content swapped by course.type. GET
@@ -77,6 +86,9 @@ const LessonPage: React.FC = () => {
   // has actually said something, which getStageStatus reports as 'blocked'
   // rather than guessing.
   const [trapProgress, setTrapProgress] = useState<TrapHunterStageProgress | undefined>(undefined);
+  const [practiceProgress, setPracticeProgress] = useState<PracticeStageProgress | undefined>(
+    undefined,
+  );
 
   const userId = authService.getUser()?.id;
 
@@ -128,6 +140,28 @@ const LessonPage: React.FC = () => {
       .catch(() => setTrapProgress(undefined));
   }, [lesson, userId, quizProgress]);
 
+  // Sprint 06D — same arrangement for Advanced Practice, and safe to call on
+  // page load precisely because this GET is read-only: it creates no progress
+  // row, stamps no attempt clock and mints no shuffle seed, so merely opening
+  // the lesson can never record an attempt the student did not take.
+  //
+  // `trapProgress` joins the dependencies because clearing the last trap is
+  // exactly what turns Practice from 'blocked' into an open stage.
+  useEffect(() => {
+    if (!lesson || !userId || !lessonHasPractice(lesson)) return;
+    getPractice(lesson.id)
+      .then((res) =>
+        setPracticeProgress({
+          hasTask: res.availability.state !== 'unavailable',
+          passed: res.progress.passed,
+          attemptsCount: res.progress.attemptsCount,
+        }),
+      )
+      // Left undefined on failure, which getStageStatus reports as
+      // 'not_started' once prerequisites are met — never a fabricated pass.
+      .catch(() => setPracticeProgress(undefined));
+  }, [lesson, userId, quizProgress, trapProgress]);
+
   const isGrammar = course?.type === 'GRAMMAR';
   const parsedNotes = useMemo(
     () => (isGrammar ? parseGrammarNotes(lesson?.notes) : EMPTY_PARSED),
@@ -158,7 +192,7 @@ const LessonPage: React.FC = () => {
   );
 
   const stageStatuses = useMemo((): Record<LessonStageId, StageStatus> => {
-    const target = lesson ?? { id: '', videoUrl: null, notes: null, _count: { tasks: 0 } };
+    const target = lesson ?? { id: '', videoUrl: null, notes: null, publishedTaskTypes: [] };
     // progressToken is a deliberate dependency: local stage state lives in
     // localStorage, which React cannot observe on its own.
     void progressToken;
@@ -167,11 +201,20 @@ const LessonPage: React.FC = () => {
       theory: getStageStatus(userId, target, 'theory'),
       quiz: getStageStatus(userId, target, 'quiz', quizProgress),
       traphunter: getStageStatus(userId, target, 'traphunter', quizProgress, trapProgress),
-      // Sprint 06D's stage. Still constant-`locked` in lessonProgress.ts —
-      // Sprint 06C did not touch it.
-      practice: getStageStatus(userId, target, 'practice'),
+      // Sprint 06D — a real, server-backed stage at last. Its prerequisites
+      // are DERIVED from quizProgress/trapProgress here rather than fetched
+      // as a fourth value, so the tile can never disagree with the two
+      // stages it depends on.
+      practice: getStageStatus(
+        userId,
+        target,
+        'practice',
+        quizProgress,
+        trapProgress,
+        practiceProgress,
+      ),
     };
-  }, [lesson, userId, progressToken, quizProgress, trapProgress]);
+  }, [lesson, userId, progressToken, quizProgress, trapProgress, practiceProgress]);
 
   // A bookmarked/typed ?stage=quiz on a lesson with no quiz falls back to
   // Video rather than rendering nothing — the same thing an unrecognised
@@ -189,7 +232,11 @@ const LessonPage: React.FC = () => {
   const currentStage: LessonStageId =
     (requestedStage === 'quiz' && stageStatuses.quiz === 'unavailable') ||
     (requestedStage === 'traphunter' &&
-      (stageStatuses.traphunter === 'unavailable' || stageStatuses.traphunter === 'skipped'))
+      (stageStatuses.traphunter === 'unavailable' || stageStatuses.traphunter === 'skipped')) ||
+    // Sprint 06D — same rule, same exception: 'blocked' still mounts,
+    // because PracticeIntro says WHICH prerequisite is missing and that is
+    // more use than a silent redirect.
+    (requestedStage === 'practice' && stageStatuses.practice === 'unavailable')
       ? 'video'
       : requestedStage;
 
@@ -407,6 +454,19 @@ const LessonPage: React.FC = () => {
                   lessonId={lesson.id}
                   onProgressChange={setTrapProgress}
                   onGoToQuiz={() => selectStage('quiz')}
+                />
+              </div>
+            )}
+
+            {/* Sprint 06D — Advanced Practice. Mounted for any lesson with a
+                published practice task; the stage itself renders the intro,
+                the blocked explanation or the questions depending on what
+                the server reports. */}
+            {currentStage === 'practice' && userId && (
+              <div className="mb-8">
+                <AdvancedPracticeStage
+                  lessonId={lesson.id}
+                  onCompleted={() => setProgressToken((token) => token + 1)}
                 />
               </div>
             )}

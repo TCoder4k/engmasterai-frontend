@@ -15,7 +15,15 @@ import {
   QuestionDifficulty,
   QuizQuestionOption,
   UpsertQuestionInput,
+  UpsertQuizInput,
 } from '../../services/quizService';
+import {
+  getManagePractice,
+  upsertPractice,
+  publishPractice,
+  unpublishPractice,
+  deletePractice,
+} from '../../services/practiceService';
 import {
   ArrowLeft,
   ChevronDown,
@@ -154,7 +162,62 @@ const toUpsertInput = (q: EditableQuestion): UpsertQuestionInput => {
 const inputClass =
   'w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500';
 
-const AdminLessonQuiz: React.FC = () => {
+// Sprint 06D — the same editor now authors BOTH question-bearing tasks.
+//
+// Parameterised rather than duplicated: the backend serves quiz and practice
+// through one service, the DTOs are identical, and a second 700-line editor
+// would be two places to fix every authoring bug. `taskKind` swaps the five
+// API calls, the copy, and the route it returns to — nothing else differs.
+export type AdminTaskKind = 'quiz' | 'practice';
+
+interface TaskKindConfig {
+  api: {
+    load: (lessonId: string) => Promise<ManageQuiz>;
+    save: (lessonId: string, dto: UpsertQuizInput) => Promise<ManageQuiz>;
+    publish: (lessonId: string) => Promise<ManageQuiz>;
+    unpublish: (lessonId: string) => Promise<ManageQuiz>;
+    remove: (lessonId: string) => Promise<void>;
+  };
+  title: string;
+  // Shown at the top of the editor so an author knows which of the two they
+  // are writing, and what makes them different. This is an AUTHORING
+  // expectation, not something the engine enforces: nothing classifies a
+  // question as advanced automatically and nothing generates one.
+  purpose: string;
+}
+
+const TASK_KINDS: Record<AdminTaskKind, TaskKindConfig> = {
+  quiz: {
+    api: {
+      load: getManageQuiz,
+      save: upsertQuiz,
+      publish: publishQuiz,
+      unpublish: unpublishQuiz,
+      remove: deleteQuiz,
+    },
+    title: 'Lesson Quiz',
+    purpose: 'Checks understanding of the lesson.',
+  },
+  practice: {
+    api: {
+      load: getManagePractice,
+      save: upsertPractice,
+      publish: publishPractice,
+      unpublish: unpublishPractice,
+      remove: deletePractice,
+    },
+    title: 'Advanced Practice',
+    purpose:
+      'Harder, contextual questions that reinforce and extend the lesson — longer sentence context, distractors that reflect common misconceptions, application rather than recall. Difficulty comes from what you write here.',
+  },
+};
+
+interface AdminLessonQuizProps {
+  taskKind?: AdminTaskKind;
+}
+
+const AdminLessonQuiz: React.FC<AdminLessonQuizProps> = ({ taskKind = 'quiz' }) => {
+  const kind = TASK_KINDS[taskKind];
   const navigate = useNavigate();
   const location = useLocation();
   const { lessonId } = useParams<{ lessonId: string }>();
@@ -177,7 +240,7 @@ const AdminLessonQuiz: React.FC = () => {
     if (!lessonId) return;
     setIsLoading(true);
     setError(null);
-    getManageQuiz(lessonId)
+    kind.api.load(lessonId)
       .then((res) => {
         setManage(res);
         setPassingScorePercent(res.passingScorePercent ? String(res.passingScorePercent) : '');
@@ -281,7 +344,7 @@ const AdminLessonQuiz: React.FC = () => {
         feedbackMode,
         questions: questions.map(toUpsertInput),
       };
-      const res = await upsertQuiz(lessonId, dto);
+      const res = await kind.api.save(lessonId, dto);
       setManage(res);
       setQuestions(res.questions.map(fromManageQuestion));
       setNotice('Đã lưu bài quiz.');
@@ -297,7 +360,9 @@ const AdminLessonQuiz: React.FC = () => {
     setIsPublishing(true);
     setError(null);
     try {
-      const res = manage.isPublished ? await unpublishQuiz(lessonId) : await publishQuiz(lessonId);
+      const res = manage.isPublished
+        ? await kind.api.unpublish(lessonId)
+        : await kind.api.publish(lessonId);
       setManage(res);
     } catch (err) {
       // Includes the backend's "zero questions" message as-is.
@@ -312,7 +377,7 @@ const AdminLessonQuiz: React.FC = () => {
     if (!window.confirm('Xóa toàn bộ bài quiz này? Hành động này không thể hoàn tác.')) return;
     setError(null);
     try {
-      await deleteQuiz(lessonId);
+      await kind.api.remove(lessonId);
       load();
     } catch (err) {
       // Includes the backend's "existing attempts" refusal as-is.
@@ -340,10 +405,16 @@ const AdminLessonQuiz: React.FC = () => {
                 <span>Quay lại Bài học</span>
               </Link>
               <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                Quiz — {state?.lessonTitle ?? lessonId}
+                {kind.title} — {state?.lessonTitle ?? lessonId}
               </h1>
+              {/* Sprint 06D — the two tasks look identical in this editor, so
+                  the difference has to be stated. Otherwise an author has no
+                  way to know that Advanced Practice is meant to be harder. */}
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Câu hỏi được lưu toàn bộ mỗi lần bấm "Lưu bài quiz". Học viên chỉ thấy được sau khi Công khai.
+                {kind.purpose}
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                Câu hỏi được lưu toàn bộ mỗi lần bấm "Lưu". Học viên chỉ thấy được sau khi Công khai.
               </p>
             </div>
 

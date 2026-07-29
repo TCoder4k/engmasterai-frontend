@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   BookOpen,
-  BookText,
   Library,
   BookMarked,
   Gamepad2,
@@ -27,9 +26,20 @@ const navLinkClass = (isActive: boolean) =>
 // Nav items with no backing page/API yet — rendered disabled with a "Sắp có"
 // badge rather than a dead href="#" link, so it's honest about what's not
 // built instead of looking like a broken link.
+// Sprint 06D — "Bài học (Lessons)" and "Luyện tập (Practice)" were REMOVED
+// from this list because both were misleading, in different ways:
+//
+//   Lessons  — already manageable, just not from here. They are reached
+//              through Khóa học → a course → its lessons, which is the right
+//              hierarchy (a lesson has no meaning without its course). The
+//              badge implied a missing feature that has existed since Sprint 05.
+//   Practice — as of Sprint 06D, authored per lesson from the lesson row,
+//              beside Quiz. Neither is a top-level section, so neither gets a
+//              nav item; a "Coming soon" badge on a shipped feature is the
+//              same lie in the other direction.
+//
+// Entries below are genuinely unbuilt: no page, no API, no route.
 const comingSoonItems = [
-  { icon: <BookText size={20} />, label: 'Bài học (Lessons)' },
-  { icon: <Zap size={20} />, label: 'Luyện tập (Practice)' },
   { icon: <Gamepad2 size={20} />, label: 'Hệ thống Level' },
   { icon: <LineChart size={20} />, label: 'Phân tích học tập' },
   { icon: <Wallet size={20} />, label: 'Doanh thu' },

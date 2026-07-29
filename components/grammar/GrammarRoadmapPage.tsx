@@ -13,10 +13,12 @@ import { authService } from '../../services/authService';
 import {
   getCourseProgress,
   CourseProgress,
+  PracticeStageProgress,
   QuizStageProgress,
   TrapHunterStageProgress,
 } from '../../services/lessonProgress';
 import { getCourseQuizProgress } from '../../services/quizService';
+import { getCourseStageProgress } from '../../services/practiceService';
 import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
 import { handleAuthError } from '../../services/apiError';
 import { Course, Lesson } from '../../types';
@@ -54,6 +56,12 @@ const GrammarRoadmapPage: React.FC = () => {
   );
   // Sprint 06C — merged the same way, from the same shape of per-course
   // batch endpoint, under the same silent-degrade rule.
+  // Sprint 06D — without this a lesson whose Advanced Practice is finished
+  // would still count as incomplete in the roadmap percentage, because
+  // 'practice' now joins availableStages() whenever a published task exists.
+  const [practiceProgressByLessonId, setPracticeProgressByLessonId] = useState<
+    Map<string, PracticeStageProgress>
+  >(new Map());
   const [trapProgressByLessonId, setTrapProgressByLessonId] = useState<
     Map<string, TrapHunterStageProgress>
   >(new Map());
@@ -126,6 +134,35 @@ const GrammarRoadmapPage: React.FC = () => {
     };
   }, [courses, userId]);
 
+  // Sprint 06D — one aggregated request per course. Failure leaves the map
+  // empty, which reports practice 'not_started': a stale, never inflated,
+  // percentage.
+  useEffect(() => {
+    if (courses.length === 0 || !userId) return;
+    let cancelled = false;
+
+    Promise.all(
+      courses.map((course) => getCourseStageProgress(course.id).catch(() => [])),
+    ).then((results) => {
+      if (cancelled) return;
+      const map = new Map<string, PracticeStageProgress>();
+      results.flat().forEach((row) => {
+        if (row.practice) {
+          map.set(row.lessonId, {
+            hasTask: true,
+            passed: row.practice.passed,
+            attemptsCount: row.practice.attemptsCount,
+          });
+        }
+      });
+      setPracticeProgressByLessonId(map);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [courses, userId]);
+
   useEffect(() => {
     if (courses.length === 0 || !userId) return;
     let cancelled = false;
@@ -171,11 +208,23 @@ const GrammarRoadmapPage: React.FC = () => {
     lessonsByCourse.forEach((lessons, courseId) => {
       map.set(
         courseId,
-        getCourseProgress(userId, lessons, quizProgressByLessonId, trapProgressByLessonId),
+        getCourseProgress(
+          userId,
+          lessons,
+          quizProgressByLessonId,
+          trapProgressByLessonId,
+          practiceProgressByLessonId,
+        ),
       );
     });
     return map;
-  }, [lessonsByCourse, userId, quizProgressByLessonId, trapProgressByLessonId]);
+  }, [
+    lessonsByCourse,
+    userId,
+    quizProgressByLessonId,
+    trapProgressByLessonId,
+    practiceProgressByLessonId,
+  ]);
 
   // Roadmap-wide totals. Rendered only once every course's lessons are in,
   // so a partial figure never briefly claims a lower total than the truth.
