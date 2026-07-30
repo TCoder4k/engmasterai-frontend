@@ -10,11 +10,30 @@ interface ContinueLearningCardProps {
   // is not known yet (loading / failed). Never treated as 0 when null.
   dueTotal?: number | null;
   /**
-   * Real completion percentage for the resolved Grammar course, computed by
-   * UserHome from services/lessonProgress. `null` means "no honest number
+   * Real completion percentage for the featured Grammar course, derived by the
+   * SERVER and passed down by UserHome. `null` means "no honest number
    * available" — the bar is then not rendered at all rather than shown at 0.
    */
   progressPercent?: number | null;
+  /**
+   * Sprint 08 — where the server says this student should resume, if a Grammar
+   * course is being featured.
+   *
+   * `recentActivity` records the last course OPENED, which is not the same as
+   * the next lesson to do: a student who opened the course page and then
+   * finished lesson 3 elsewhere would be sent back to the course index. The
+   * server knows the earliest unfinished lesson; this is that.
+   *
+   * `null`/absent falls back to the recent-activity path, which is still right
+   * for decks, listening and anything else with no server-side continuation.
+   */
+  grammarContinuePath?: string | null;
+  /**
+   * The featured Grammar course's title, when it was chosen from server
+   * progress rather than from this device's recent activity — a fresh browser
+   * has no ring buffer, and used to show nothing at all here.
+   */
+  grammarFallbackTitle?: string | null;
 }
 
 type Resolved = {
@@ -38,17 +57,24 @@ type Resolved = {
 //      users' localStorage without a `courseType`.
 //   5. The original honest empty state.
 //
-// Steps 1/3/4 read the client-side recent-activity ring buffer, so they are
-// DEVICE-LOCAL: a student signing in on a new browser sees step 2 or the
-// empty state, never a wrong lesson. Step 2 is the only server-backed one.
+// Steps 3/4 read the client-side recent-activity ring buffer, so they are
+// DEVICE-LOCAL. Step 2 is server-backed.
 //
-// The design reference shows a 65% progress bar here. It is now reproduced
-// with a REAL figure — Sprint 06 shipped per-lesson stage progress, so
-// UserHome can compute the resolved course's true completion — and it is
-// simply absent whenever that cannot be computed.
+// SPRINT 08 — STEP 1 NO LONGER DEPENDS ON THE RING BUFFER.
+// Recent activity may still choose WHICH Grammar course is featured, because
+// "the one you were just looking at" is a genuinely good answer. But when this
+// browser has no ring buffer — a new device, a cleared profile — UserHome
+// falls back to the first course the SERVER reports as in progress, and the
+// destination comes from the server's continuation rule either way. The card
+// used to render nothing at all in that case, which is bug 7 on the dashboard.
+//
+// The design reference shows a 65% progress bar here. It is reproduced with a
+// REAL, server-derived figure, and is simply absent when there isn't one.
 const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
   dueTotal = null,
   progressPercent = null,
+  grammarContinuePath = null,
+  grammarFallbackTitle = null,
 }) => {
   const { t } = useTranslation();
   const user = authService.getUser();
@@ -57,12 +83,15 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
     if (!user) return null;
 
     const grammar = getMostRecentActivityOfType(user.id, 'GRAMMAR');
-    if (grammar) {
+    // Either this device remembers a Grammar course, or the server told us
+    // one is in progress. Both are real; only the first is device-local.
+    if (grammar || grammarFallbackTitle) {
       return {
         moduleLabel: t.tracks.grammar.label,
-        title: grammar.title,
+        title: grammar?.title ?? grammarFallbackTitle!,
         detail: null,
-        path: grammar.path,
+        // The server's next-lesson target wins over the last page opened.
+        path: grammarContinuePath ?? grammar?.path ?? '/grammar',
         icon: <BookOpen className="w-8 h-8" aria-hidden="true" />,
       };
     }

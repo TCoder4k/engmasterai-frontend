@@ -11,12 +11,12 @@ import { authService } from '../../services/authService';
 import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
 import {
-  getCourseProgress,
-  LessonProgressSnapshot,
-} from '../../services/lessonProgress';
-import { getCourseProgressMap } from '../../services/progressService';
+  CourseProgressSummary,
+  getCourseProgressSummaries,
+} from '../../services/courseProgressService';
+import { resolveLessonRowState } from '../../services/courseStatus';
 import { Course, Lesson } from '../../types';
-import { ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
 import {
   GrammarCategory,
   deriveCourseLevel,
@@ -39,14 +39,19 @@ const CourseDetailPage: React.FC = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Sprint 07 — one server-side snapshot per lesson, keyed by lessonId,
-  // replacing three parallel maps built from three separate requests.
-  // Supplementary: the page has already painted from course+lessons by the
-  // time this resolves, and a failure just leaves every lesson looking
-  // not-yet-finished rather than breaking the page.
-  const [progressByLessonId, setProgressByLessonId] = useState<
-    Map<string, LessonProgressSnapshot>
-  >(new Map());
+  // Sprint 08 — the SERVER's course summary and per-lesson statuses.
+  //
+  // `progressState` is tracked separately and explicitly, because "we have no
+  // progress" and "we could not load the progress" are different facts and the
+  // page previously conflated them: every failure set an empty map, which
+  // rendered as every lesson not-yet-started. A student who had finished half
+  // the course was told they had finished none of it, silently.
+  const [progress, setProgress] = useState<CourseProgressSummary | null>(null);
+  const [progressState, setProgressState] = useState<
+    'loading' | 'ready' | 'error'
+  >('loading');
+  // Bumped by the retry button to re-run the effect below.
+  const [progressAttempt, setProgressAttempt] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -62,30 +67,41 @@ const CourseDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Sprint 07 — ONE request covering every stage, including the video and
-  // theory steps that used to be read from localStorage.
+  // Sprint 08 — ONE request, and the server has already done the deriving.
   //
-  // Fetching the steps is not an enhancement, it is what keeps this page
-  // CORRECT: both gate isLessonComplete(), so without them every lesson here
-  // would read as incomplete no matter how much the student had watched, while
-  // the lesson page showed it finished.
-  //
-  // Failure leaves the map empty, which reports every stage not-started — a
-  // stale percentage, never a wrong one.
+  // `include=lessons` because this is the one surface that renders a row per
+  // lesson; the catalog and the dashboard ask for summaries only.
   useEffect(() => {
-    if (!id || !authService.getUser()) return;
+    if (!id) return;
+    // Logged out there is no progress to speak of, and the endpoint requires
+    // auth — asking would be a guaranteed 401.
+    if (!authService.getUser()) {
+      setProgressState('ready');
+      return;
+    }
+
     let cancelled = false;
-    getCourseProgressMap(id)
+    setProgressState('loading');
+    getCourseProgressSummaries([id], { includeLessons: true })
       .then((map) => {
-        if (!cancelled) setProgressByLessonId(map);
+        if (cancelled) return;
+        // A visible course always comes back. An absent one means unpublished
+        // or unknown, which is not an error here — the page itself already
+        // 404s in that case through getPublishedCourse.
+        setProgress(map.get(id) ?? null);
+        setProgressState('ready');
       })
       .catch(() => {
-        if (!cancelled) setProgressByLessonId(new Map());
+        if (cancelled) return;
+        // Explicit, and NOT an empty map. The rows render an error state with
+        // a retry rather than quietly claiming nothing has been started.
+        setProgress(null);
+        setProgressState('error');
       });
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, progressAttempt]);
 
   // Records the Continue Learning entry once the course is actually
   // loaded — this page has every id it needs in scope, so the ring buffer
@@ -112,16 +128,10 @@ const CourseDetailPage: React.FC = () => {
   const backTo = isGrammar ? '/grammar' : '/courses';
   const backLabel = isGrammar ? t.grammar.backToRoadmap : t.course.backToCourses;
 
-  // Real completion. Counts COMPLETED lessons — every stage a lesson offers,
-  // finished — not videos watched.
-  //
-  // Sprint 07: no longer device-local. Every input now comes from the server,
-  // so this number follows the student to another browser instead of
-  // silently resetting.
-  const progress = getCourseProgress(
-    authService.getUser()?.id,
-    lessons,
-    progressByLessonId,
+  // Sprint 08 — the status of each lesson, keyed for the rows below. Built
+  // from the server's answer; this page no longer derives completion at all.
+  const statusByLessonId = new Map(
+    (progress?.lessons ?? []).map((row) => [row.lessonId, row.status]),
   );
 
   const category = course && isGrammar ? deriveGrammarCategory(course) : null;
@@ -206,7 +216,11 @@ const CourseDetailPage: React.FC = () => {
                     <div className="p-4 bg-slate-50 dark:bg-ink-950/80 dark:border dark:border-ink-700 rounded-2xl text-center space-y-1">
                       <Layers size={16} className="mx-auto text-blue-500 dark:text-blue-400" aria-hidden="true" />
                       <p className="text-lg font-black text-slate-900 dark:text-white">
-                        {progress.completed}/{lessons.length}
+                        {/* An em dash, not a zero, until the real number
+                            arrives — "0/5" is a claim about the student. */}
+                        {progress
+                          ? `${progress.completedLessons}/${progress.totalLessons}`
+                          : '—'}
                       </p>
                       <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
                         {t.grammar.lessonsCompleted}
@@ -231,25 +245,44 @@ const CourseDetailPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Real progress only — absent entirely until at least one
-                  lesson has actually been completed on this device. */}
-              {progress.completed > 0 && (
+              {/* Real progress only. A 0% bar is not a neutral placeholder —
+                  it is a claim an untouched course has not earned. */}
+              {progress && progress.completedLessons > 0 && (
                 <div className="relative mt-6 pt-5 border-t border-slate-100 dark:border-ink-700 space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-bold">
                     <span className="text-slate-500 dark:text-slate-300">{t.grammar.progressLabel}</span>
                     <span className="text-blue-600 dark:text-blue-400">
-                      {progress.percent}% ({progress.completed}/{progress.total})
+                      {progress.progressPercent}% ({progress.completedLessons}/
+                      {progress.totalLessons})
                     </span>
                   </div>
                   <div className="w-full h-2.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden">
                     <div
-                      style={{ width: `${progress.percent}%` }}
+                      style={{ width: `${progress.progressPercent}%` }}
                       className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
                     />
                   </div>
                   <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                     {t.grammar.progressSynced}
                   </p>
+                </div>
+              )}
+
+              {/* Said out loud, with a way out. The page used to swallow this
+                  and render every lesson as not-yet-started. */}
+              {progressState === 'error' && (
+                <div className="relative mt-6 pt-5 border-t border-slate-100 dark:border-ink-700 flex items-center justify-between gap-3 flex-wrap">
+                  <span className="flex items-center gap-2 text-xs font-bold text-rose-600 dark:text-rose-400">
+                    <AlertCircle size={14} aria-hidden="true" />
+                    {t.course.progressLoadFailed}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setProgressAttempt((n) => n + 1)}
+                    className="px-3 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-ink-800 dark:text-slate-300 dark:hover:bg-ink-700 transition-colors min-h-[36px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  >
+                    {t.course.retryProgress}
+                  </button>
                 </div>
               )}
             </section>
@@ -271,7 +304,10 @@ const CourseDetailPage: React.FC = () => {
                   courseId={course.id}
                   lesson={lesson}
                   orderNumber={index + 1}
-                  progress={progressByLessonId.get(lesson.id)}
+                  state={resolveLessonRowState(
+                    progressState,
+                    statusByLessonId.get(lesson.id),
+                  )}
                 />
               ))}
             </div>

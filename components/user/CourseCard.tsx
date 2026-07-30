@@ -2,11 +2,23 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Star } from 'lucide-react';
 import { Course } from '../../types';
+import {
+  continuePath,
+  CourseProgressSummary,
+} from '../../services/courseProgressService';
+import { statusPresentation } from '../../services/courseStatus';
 import { useTranslation } from '../../i18n/useTranslation';
 import { mockRatingFor } from './dashboardContent';
 
 interface CourseCardProps {
   course: Course;
+  // Sprint 08 — the server's summary for this course.
+  //
+  // `undefined` while the batch request is in flight, `null` when it failed or
+  // the course was not in the response. Neither renders a status: a card that
+  // guesses "Sẵn sàng học" for a course the student is half-way through is
+  // wrong in the one way that matters to them.
+  progress?: CourseProgressSummary | null;
 }
 
 // "Recommended for You" card, restyled to the design reference: a type chip,
@@ -42,15 +54,24 @@ const TYPE_STYLES: Record<
   },
 };
 
-const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
+const CourseCard: React.FC<CourseCardProps> = ({ course, progress }) => {
   const { t } = useTranslation();
   const style = TYPE_STYLES[course.type];
   const rating = mockRatingFor(course.id);
   const lessonCount = course._count?.lessons ?? 0;
+  const presentation = progress ? statusPresentation(progress.status, t) : null;
+
+  // A card links to the course, except when the student has somewhere
+  // specific to resume — then it goes straight there, which is what makes
+  // "Học tiếp" mean what it says.
+  const target =
+    progress && progress.status === 'IN_PROGRESS'
+      ? (continuePath(progress) ?? `/courses/${course.id}`)
+      : `/courses/${course.id}`;
 
   return (
     <Link
-      to={`/courses/${course.id}`}
+      to={target}
       className={`group flex flex-col justify-between gap-3 p-4 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${style.hoverBorder}`}
     >
       <div className="space-y-1 min-w-0">
@@ -64,22 +85,43 @@ const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
         >
           {course.title}
         </h3>
-        {/* Real figure, and only when there is one. */}
+        {/* Real figure, and only when there is one. Once progress has loaded
+            it becomes "1/5 bài", which is the same fact with the student's
+            position in it. */}
         {lessonCount > 0 && (
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            {lessonCount} {t.widgets.lessons}
+            {progress && progress.totalLessons > 0
+              ? `${progress.completedLessons}/${progress.totalLessons} ${t.widgets.lessons} (${progress.progressPercent}%)`
+              : `${lessonCount} ${t.widgets.lessons}`}
           </p>
+        )}
+
+        {/* Only once something is actually finished. A 0% bar is not a neutral
+            placeholder — it is a claim an untouched course has not earned. */}
+        {progress && progress.completedLessons > 0 && (
+          <div className="w-full h-1.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden mt-1.5">
+            <div
+              style={{ width: `${progress.progressPercent}%` }}
+              className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+            />
+          </div>
         )}
       </div>
 
       <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-ink-700 text-[11px] font-bold">
-        <span
-          className="flex items-center gap-1 text-amber-500 dark:text-amber-400"
-          title={t.widgets.sampleData}
-        >
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
-          {rating.score} ({rating.count})
-        </span>
+        {/* The CTA replaces the mock rating once real progress exists: one is
+            a fact about this student, the other is decoration. */}
+        {presentation ? (
+          <span className="text-blue-600 dark:text-blue-400">{presentation.cta}</span>
+        ) : (
+          <span
+            className="flex items-center gap-1 text-amber-500 dark:text-amber-400"
+            title={t.widgets.sampleData}
+          >
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
+            {rating.score} ({rating.count})
+          </span>
+        )}
         <ChevronRight
           className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:translate-x-0.5 transition-transform"
           aria-hidden="true"

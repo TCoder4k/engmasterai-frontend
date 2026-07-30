@@ -8,16 +8,13 @@ import EmptyState from '../shared/EmptyState';
 import ErrorState from '../shared/ErrorState';
 import Skeleton from '../shared/Skeleton';
 import { getPublishedCourses } from '../../services/courseService';
-import { getCourseLessons } from '../../services/lessonService';
 import { authService } from '../../services/authService';
 import {
-  getCourseProgress,
-  CourseProgress,
-  LessonProgressSnapshot,
-} from '../../services/lessonProgress';
-import { getCourseProgressMap } from '../../services/progressService';
+  CourseProgressSummary,
+  getCourseProgressSummaries,
+} from '../../services/courseProgressService';
 import { handleAuthError } from '../../services/apiError';
-import { Course, Lesson } from '../../types';
+import { Course } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // /grammar — the Grammar ROADMAP. The product model is
@@ -42,14 +39,13 @@ const GrammarRoadmapPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<GrammarCategory | null>(null);
-  const [lessonsByCourse, setLessonsByCourse] = useState<Map<string, Lesson[]>>(new Map());
-  // Sprint 07 — one flat map keyed by lessonId (ids are unique across
-  // courses), merged from one aggregated call per course. It replaced three
-  // parallel maps built from three requests per course. Same silent-degrade
-  // rule as before: a failure just leaves lessons looking not-yet-finished.
-  const [progressByLessonId, setProgressByLessonId] = useState<
-    Map<string, LessonProgressSnapshot>
-  >(new Map());
+  // Sprint 08 — one map of server-derived summaries, keyed by courseId.
+  // `null` until the single batch request resolves, so a card renders no
+  // status rather than a guessed one.
+  const [progressByCourse, setProgressByCourse] = useState<Map<
+    string,
+    CourseProgressSummary
+  > | null>(null);
 
   useEffect(() => {
     getPublishedCourses(undefined, 100, 'GRAMMAR')
@@ -59,70 +55,33 @@ const GrammarRoadmapPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Real duration and real completion both need per-course lesson data, and
-  // GET /courses does not carry it. Fetching one lessons request per course
-  // is a DELIBERATE trade-off, not an oversight: Grammar holds roughly 10-30
-  // courses, so this is a few dozen small parallel requests once, on one
-  // page — cheaper than widening a backend contract that the Learning Engine
-  // work just stabilised. If the roadmap ever grows well past that, the fix
-  // is a backend aggregate on the course endpoint.
+  // Sprint 08 — ONE request for the whole roadmap.
   //
-  // It is also supplementary: cards have already painted from the course
-  // response by the time this resolves, and a failure here leaves them with
-  // title, badges and lesson count but no duration or progress — the same
-  // silent-degrade rule VocabLibraryPage uses.
-  useEffect(() => {
-    if (courses.length === 0) return;
-    let cancelled = false;
-
-    Promise.all(
-      courses.map((course) =>
-        getCourseLessons(course.id)
-          .then((res) => [course.id, res.data] as const)
-          .catch(() => null),
-      ),
-    ).then((results) => {
-      if (cancelled) return;
-      const next = new Map<string, Lesson[]>();
-      results.forEach((entry) => {
-        if (entry) next.set(entry[0], entry[1]);
-      });
-      setLessonsByCourse(next);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [courses]);
-
-  // Sprint 07 — ONE aggregated request per course, covering every stage
-  // including the video and theory steps.
+  // This page used to issue TWO requests per course: one for its lessons (to
+  // count them and sum their durations) and one for its stage progress (to
+  // roll up completion here in the browser). Twelve courses meant 24 round
+  // trips, and the count grew with the catalog — a client-side N+1 that the
+  // old comment here defended as a deliberate trade-off.
   //
-  // Fetching the steps is what keeps this page CORRECT rather than merely
-  // richer: both gate isLessonComplete(), so without them every lesson would
-  // read as incomplete here no matter how much had been watched, while the
-  // lesson page showed it finished.
+  // Both halves are gone. The server derives completion and returns
+  // totalLessons; GET /courses now carries totalEstimatedMinutes beside
+  // _count.lessons. Neither number needs a per-course fetch any more.
   //
-  // Failure leaves the map empty, which reports every stage not-started — a
-  // stale percentage, never an inflated one.
+  // Still supplementary: cards have already painted from the course response
+  // by the time this resolves, and a failure leaves them with title, badges
+  // and a lesson count but no status — the silent-degrade rule this page has
+  // always used, except that it can no longer degrade into a WRONG percentage.
   useEffect(() => {
     if (courses.length === 0 || !userId) return;
     let cancelled = false;
 
-    Promise.all(
-      courses.map((course) =>
-        getCourseProgressMap(course.id).catch(
-          () => new Map<string, LessonProgressSnapshot>(),
-        ),
-      ),
-    ).then((results) => {
-      if (cancelled) return;
-      const map = new Map<string, LessonProgressSnapshot>();
-      results.forEach((courseMap) => {
-        courseMap.forEach((snapshot, lessonId) => map.set(lessonId, snapshot));
+    getCourseProgressSummaries(courses.map((course) => course.id))
+      .then((map) => {
+        if (!cancelled) setProgressByCourse(map);
+      })
+      .catch(() => {
+        // Stays null: no progress shown, none invented.
       });
-      setProgressByLessonId(map);
-    });
 
     return () => {
       cancelled = true;
@@ -141,26 +100,19 @@ const GrammarRoadmapPage: React.FC = () => {
     [courses, activeCategory],
   );
 
-  const progressByCourse = useMemo(() => {
-    const map = new Map<string, CourseProgress>();
-    lessonsByCourse.forEach((lessons, courseId) => {
-      map.set(
-        courseId,
-        getCourseProgress(userId, lessons, progressByLessonId),
-      );
-    });
-    return map;
-  }, [lessonsByCourse, userId, progressByLessonId]);
-
-  // Roadmap-wide totals. Rendered only once every course's lessons are in,
-  // so a partial figure never briefly claims a lower total than the truth.
+  // Roadmap-wide totals, summed across the server's per-course summaries.
+  //
+  // The old guard here waited for every course's lessons to arrive, so a
+  // partial figure could never briefly claim a lower total than the truth.
+  // That guard is now simply "the one request resolved" — there are no
+  // partial results to wait out.
   const roadmapProgress = useMemo(() => {
-    if (courses.length === 0 || lessonsByCourse.size !== courses.length) return null;
+    if (!progressByCourse || courses.length === 0) return null;
     let completed = 0;
     let total = 0;
     progressByCourse.forEach((progress) => {
-      completed += progress.completed;
-      total += progress.total;
+      completed += progress.completedLessons;
+      total += progress.totalLessons;
     });
     if (total === 0) return null;
     return {
@@ -171,7 +123,7 @@ const GrammarRoadmapPage: React.FC = () => {
       // about progress a student who has started nothing has not earned.
       showBar: completed > 0,
     };
-  }, [courses, lessonsByCourse, progressByCourse]);
+  }, [courses, progressByCourse]);
 
   const categoryLabels: Record<GrammarCategory, string> = {
     TOEIC: t.grammar.categoryTOEIC,
@@ -318,8 +270,7 @@ const GrammarRoadmapPage: React.FC = () => {
                 <GrammarCourseCard
                   key={course.id}
                   course={course}
-                  lessons={lessonsByCourse.get(course.id) ?? null}
-                  progress={progressByCourse.get(course.id) ?? null}
+                  progress={progressByCourse?.get(course.id) ?? null}
                 />
               ))}
             </div>

@@ -1,18 +1,27 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, CheckCircle2, ChevronRight, Clock, Layers } from 'lucide-react';
-import { Course, Lesson } from '../../types';
+import { Course } from '../../types';
 import { GrammarCategory, deriveCourseLevel, deriveGrammarCategory } from './grammarCategory';
-import { CourseProgress } from '../../services/lessonProgress';
+import {
+  continuePath,
+  CourseProgressSummary,
+} from '../../services/courseProgressService';
+import { statusPresentation } from '../../services/courseStatus';
 import { useTranslation } from '../../i18n/useTranslation';
 
 interface GrammarCourseCardProps {
   course: Course;
-  // Published lessons for this course, fetched by the roadmap page. `null`
-  // while that request is still in flight or after it failed — the card then
-  // renders without duration or progress rather than guessing either.
-  lessons: Lesson[] | null;
-  progress: CourseProgress | null;
+  // Sprint 08 — the server's summary. `null` while the ONE batch request is in
+  // flight or after it failed; the card then shows no status rather than
+  // guessing one.
+  //
+  // The `lessons: Lesson[]` prop is GONE. It existed so the card could count
+  // lessons and sum durations, which forced the roadmap to fetch every lesson
+  // of every course — one request per card, on top of one progress request per
+  // card. Both numbers now arrive with the data that was already being
+  // fetched: totalLessons here, course.totalEstimatedMinutes on the course.
+  progress: CourseProgressSummary | null;
 }
 
 // Card anatomy follows the AI Studio reference (thumbnail band -> badge row
@@ -24,24 +33,36 @@ interface GrammarCourseCardProps {
 // line, the XP reward, and a "Hoàn thành" ribbon driven by fake completion.
 // The progress bar below IS real — see services/lessonProgress.ts — but it
 // is device-local, which is why the caption is not optional.
-const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, progress }) => {
+const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, progress }) => {
   const { t } = useTranslation();
 
   const category = deriveGrammarCategory(course);
   const level = deriveCourseLevel(course);
 
-  // Paints immediately from the course response; the lessons array arrives
-  // later and is authoritative once it does.
-  const lessonCount = lessons ? lessons.length : (course._count?.lessons ?? 0);
-  const totalMinutes = lessons
-    ? lessons.reduce((sum, lesson) => sum + (lesson.estimatedStudyMinutes ?? 0), 0)
-    : 0;
+  // Both come from GET /courses, which the roadmap already fetches. Neither
+  // needs a per-course lessons request any more.
+  //
+  // `_count.lessons` counts every published lesson; `progress.totalLessons`
+  // counts only the ones a student can actually complete. They differ when a
+  // course holds an audio-only lesson, and the completable figure is the
+  // honest one to show beside a percentage derived from it.
+  const lessonCount = progress ? progress.totalLessons : (course._count?.lessons ?? 0);
+  const totalMinutes = course.totalEstimatedMinutes ?? 0;
+
+  const presentation = progress ? statusPresentation(progress.status, t) : null;
 
   // Only once something has actually been completed. A 0% bar is not a
   // neutral placeholder — it is a claim about the student's progress that
   // an untouched course has not earned.
-  const showProgress = progress !== null && progress.completed > 0;
-  const isComplete = showProgress && progress.completed === progress.total;
+  const showProgress = progress !== null && progress.completedLessons > 0;
+  const isComplete = progress?.status === 'COMPLETED';
+
+  // Resume where they left off, rather than sending them back to the top of a
+  // course they are half-way through.
+  const target =
+    progress && progress.status === 'IN_PROGRESS'
+      ? (continuePath(progress) ?? `/courses/${course.id}`)
+      : `/courses/${course.id}`;
 
   const categoryLabels: Record<GrammarCategory, string> = {
     TOEIC: t.grammar.categoryTOEIC,
@@ -52,7 +73,7 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
 
   return (
     <Link
-      to={`/courses/${course.id}`}
+      to={target}
       className="group flex flex-col bg-white dark:bg-ink-900 border border-slate-100 dark:border-ink-700 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl dark:hover:shadow-blue-500/10 hover:border-blue-200 dark:hover:border-blue-500/50 hover:-translate-y-1 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
     >
       {/* Thumbnail band with a scrim so the badges stay legible on any image */}
@@ -129,12 +150,13 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
               <div className="flex items-center justify-between text-[11px] font-bold">
                 <span className="text-slate-500 dark:text-slate-400">{t.grammar.progressLabel}</span>
                 <span className="text-blue-600 dark:text-blue-400">
-                  {progress.completed}/{progress.total} ({progress.percent}%)
+                  {progress.completedLessons}/{progress.totalLessons} (
+                  {progress.progressPercent}%)
                 </span>
               </div>
               <div className="w-full h-2 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden">
                 <div
-                  style={{ width: `${progress.percent}%` }}
+                  style={{ width: `${progress.progressPercent}%` }}
                   className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
                 />
               </div>
@@ -144,8 +166,11 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
             </div>
           )}
 
+          {/* The CTA says what this card will actually do. Before progress
+              lands it stays the neutral "view lessons" rather than guessing
+              between Bắt đầu and Học tiếp. */}
           <p className="flex items-center justify-between text-[13px] font-bold text-blue-600 dark:text-blue-400 pt-0.5">
-            <span>{t.grammar.viewLessons}</span>
+            <span>{presentation ? presentation.cta : t.grammar.viewLessons}</span>
             <ChevronRight size={16} className="transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </p>
         </div>

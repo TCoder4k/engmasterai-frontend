@@ -10,13 +10,12 @@ import UserSidebar from './UserSidebar';
 import CourseCard from './CourseCard';
 import { authService } from '../../services/authService';
 import { getPublishedCourses } from '../../services/courseService';
-import { getCourseLessons } from '../../services/lessonService';
 import { getLibrariesProgress } from '../../services/learningService';
 import {
-  getCourseProgress,
-  LessonProgressSnapshot,
-} from '../../services/lessonProgress';
-import { getCourseProgressMap } from '../../services/progressService';
+  continuePath,
+  CourseProgressSummary,
+  getCourseProgressSummaries,
+} from '../../services/courseProgressService';
 import { getMostRecentActivityOfType } from '../../services/recentActivity';
 import { getLessonSummaries } from '../practice/listening/listeningContent';
 import { handleAuthError } from '../../services/apiError';
@@ -59,7 +58,13 @@ const UserHome: React.FC = () => {
   // treats that as "say nothing", never as zero.
   const [dueTotal, setDueTotal] = useState<number | null>(null);
   const [deckCount, setDeckCount] = useState<number | null>(null);
-  const [continuePercent, setContinuePercent] = useState<number | null>(null);
+  // Sprint 08 — server-derived progress for every course on this page. `null`
+  // until the one batch request resolves, so cards show no status rather than
+  // an invented one.
+  const [progressByCourse, setProgressByCourse] = useState<Map<
+    string,
+    CourseProgressSummary
+  > | null>(null);
 
   useEffect(() => {
     getPublishedCourses()
@@ -88,40 +93,61 @@ const UserHome: React.FC = () => {
     };
   }, []);
 
-  // The real completion figure for whatever Continue Learning is pointing at.
-  // Only Grammar lessons carry stage progress, so this stays null for every
-  // other variant and the bar is simply not rendered.
+  // Sprint 08 — ONE request covering every course on the page.
+  //
+  // This replaced a lookup that started from the recent-activity ring buffer:
+  // if THIS browser had no entry, no course id could be resolved, no request
+  // was made, and the dashboard showed no progress whatsoever — on an account
+  // that might be 80% through a course. Progress now comes from the courses
+  // the page already fetched, so a fresh browser shows the same numbers as an
+  // old one.
   useEffect(() => {
-    if (!user) return;
-    const grammar = getMostRecentActivityOfType(user.id, 'GRAMMAR');
-    const courseId = grammar ? courseIdFromPath(grammar.path) : null;
-    if (!courseId) return;
-
+    if (courses.length === 0 || !user) return;
     let cancelled = false;
-    Promise.all([
-      getCourseLessons(courseId),
-      // Sprint 07 — ONE aggregated request replacing three. It also carries
-      // the video and theory steps, without which every lesson would count as
-      // unfinished here now that those two live on the server rather than in
-      // this browser's localStorage.
-      getCourseProgressMap(courseId).catch(
-        () => new Map<string, LessonProgressSnapshot>(),
-      ),
-    ])
-      .then(([lessonsRes, progressByLesson]) => {
-        if (cancelled) return;
-        setContinuePercent(
-          getCourseProgress(user.id, lessonsRes.data, progressByLesson).percent,
-        );
+    getCourseProgressSummaries(courses.map((course) => course.id))
+      .then((map) => {
+        if (!cancelled) setProgressByCourse(map);
       })
       .catch(() => {
-        // Silent: no honest percentage, so none is shown.
+        // Stays null: no honest numbers, so none are shown.
       });
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [courses, user?.id]);
+
+  // Which Grammar course Continue Learning features, and where it points.
+  //
+  // Recent activity gets first say — "the course you were just in" is a good
+  // answer and costs nothing. But it is only a HINT now: with no ring buffer,
+  // the first course the server reports as in progress is used instead, and
+  // the destination lesson always comes from the server's continuation rule
+  // rather than from the last page this device happened to open.
+  const featuredGrammar = useMemo(() => {
+    if (!user || !progressByCourse) return null;
+
+    const recent = getMostRecentActivityOfType(user.id, 'GRAMMAR');
+    const recentCourseId = recent ? courseIdFromPath(recent.path) : null;
+    const fromRecent = recentCourseId
+      ? progressByCourse.get(recentCourseId)
+      : undefined;
+    if (fromRecent) return { summary: fromRecent, fromRecentActivity: true };
+
+    const grammarIds = new Set(
+      courses.filter((course) => course.type === 'GRAMMAR').map((c) => c.id),
+    );
+    const inProgress = [...progressByCourse.values()].find(
+      (summary) =>
+        grammarIds.has(summary.courseId) && summary.status === 'IN_PROGRESS',
+    );
+    return inProgress ? { summary: inProgress, fromRecentActivity: false } : null;
+  }, [user, progressByCourse, courses]);
+
+  const featuredTitle = featuredGrammar
+    ? (courses.find((c) => c.id === featuredGrammar.summary.courseId)?.title ??
+      null)
+    : null;
 
   const trackCounts: Record<CourseType, number | null> = useMemo(
     () => ({
@@ -156,7 +182,20 @@ const UserHome: React.FC = () => {
             <ReviewDueCard dueTotal={dueTotal} />
           </div>
 
-          <ContinueLearningCard dueTotal={dueTotal} progressPercent={continuePercent} />
+          <ContinueLearningCard
+            dueTotal={dueTotal}
+            progressPercent={featuredGrammar?.summary.progressPercent ?? null}
+            grammarContinuePath={
+              featuredGrammar ? continuePath(featuredGrammar.summary) : null
+            }
+            // Only needed when recent activity did NOT name the course — the
+            // card already has a title in that case.
+            grammarFallbackTitle={
+              featuredGrammar && !featuredGrammar.fromRecentActivity
+                ? featuredTitle
+                : null
+            }
+          />
 
           {/* Learning Tracks — the three module entry points. Horizontal snap
               carousel on phones, 3-col grid from sm up. The carousel's own
@@ -206,7 +245,11 @@ const UserHome: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {courses.map((course) => (
-                <CourseCard key={course.id} course={course} />
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  progress={progressByCourse?.get(course.id) ?? null}
+                />
               ))}
             </div>
           </section>
