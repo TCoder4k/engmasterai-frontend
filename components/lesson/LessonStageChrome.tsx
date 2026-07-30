@@ -133,6 +133,12 @@ interface TheoryCompletionBarProps {
   // how to get there. Absent means it genuinely has none.
   hasQuiz?: boolean;
   onGoToQuiz?: () => void;
+  // Sprint 07 — marking theory read is a server write now, so the button has
+  // an in-flight state and can fail. Both are shown rather than swallowed: a
+  // completion that silently did not happen is the exact class of lie this
+  // sprint removes.
+  isPending?: boolean;
+  error?: string | null;
 }
 
 // Footer of the theory stage. Marking it read is what makes the theory stage
@@ -150,10 +156,18 @@ export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({
   onMarkRead,
   hasQuiz = false,
   onGoToQuiz,
+  isPending = false,
+  error = null,
 }) => {
   const { t } = useTranslation();
 
   return (
+    <div className="space-y-3">
+    {error && (
+      <p role="alert" className="text-[13px] font-bold text-rose-600 dark:text-rose-400">
+        {error}
+      </p>
+    )}
     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
       {isComplete ? (
         <div className="flex items-center gap-2 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-sm font-bold">
@@ -164,7 +178,12 @@ export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({
         <button
           type="button"
           onClick={onMarkRead}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          // Guards against the double-click producing two writes. The server
+          // is idempotent regardless, so this is about the UI not lying about
+          // what is happening, not about data integrity.
+          disabled={isPending}
+          aria-busy={isPending}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
         >
           <Check size={15} aria-hidden="true" />
           <span>{t.lesson.theoryReadCta}</span>
@@ -189,6 +208,7 @@ export const TheoryCompletionBar: React.FC<TheoryCompletionBarProps> = ({
           <span>{t.lesson.nextStageLocked}</span>
         </div>
       )}
+    </div>
     </div>
   );
 };

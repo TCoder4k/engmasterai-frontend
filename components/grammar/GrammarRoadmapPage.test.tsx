@@ -63,22 +63,31 @@ const LESSONS: Record<string, ReturnType<typeof lessonOf>[]> = {
   'c-3': [lessonOf('l-4', 'c-3', 10)],
 };
 
-const seedCompletedVideo = (lessonId: string) =>
-  localStorage.setItem(
-    `videoProgress:${USER.id}:${lessonId}`,
-    JSON.stringify({
-      courseId: 'c-1',
-      resolvedLessonPath: `/courses/c-1/lessons/${lessonId}`,
-      youtubeVideoId: 'abc',
-      positionSeconds: 100,
-      durationSeconds: 100,
-      lastUpdatedAt: '2026-07-26T00:00:00.000Z',
-      ended: true,
-    }),
-  );
+// Sprint 07 — completion is SERVER state, so a test declares which lessons the
+// course aggregate reports as finished rather than seeding a browser key.
+const finishedLessons = (...lessonIds: string[]) =>
+  lessonIds.map((lessonId) => ({
+    lessonId,
+    quiz: null,
+    trapHunter: null,
+    practice: null,
+    steps: {
+      video: {
+        startedAt: '2026-07-30T00:00:00.000Z',
+        completedAt: '2026-07-30T00:10:00.000Z',
+      },
+      theory: null,
+    },
+  }));
 
-const buildFetch = (courses: unknown[] | null, lessonsOk = true) =>
+const buildFetch = (
+  courses: unknown[] | null,
+  lessonsOk = true,
+  stageRows: ReturnType<typeof finishedLessons> = [],
+) =>
   vi.fn((url: string) => {
+    // Matched BEFORE the generic '/courses' branch below.
+    if (url.includes('/stage-progress')) return Promise.resolve(jsonResponse(200, stageRows));
     const lessonMatch = url.match(/\/courses\/(c-\d)\/lessons/);
     if (lessonMatch) {
       return Promise.resolve(
@@ -236,20 +245,29 @@ describe('GrammarRoadmapPage — progress is real or absent', () => {
     expect(screen.queryByText('Tracked on this device')).not.toBeInTheDocument();
   });
 
-  it('renders real completion once lessons are finished, with the device caption', async () => {
-    seedCompletedVideo('l-1'); // 1 of c-1's 2 video-only lessons
-    global.fetch = buildFetch(MOCK_COURSES) as unknown as typeof fetch;
+  it('renders real completion once lessons are finished', async () => {
+    // 1 of c-1's 2 video-only lessons.
+    global.fetch = buildFetch(
+      MOCK_COURSES,
+      true,
+      finishedLessons('l-1'),
+    ) as unknown as typeof fetch;
     renderPage();
 
     await screen.findByText('Grammar Fundamentals');
     expect(await screen.findByText('1/2 (50%)')).toBeInTheDocument();
-    // Never presented as server-backed progress.
-    expect(screen.getAllByText('Tracked on this device').length).toBeGreaterThan(0);
+    // Sprint 07 — the caption changed with the fact it describes. Progress is
+    // no longer device-local, so claiming it was would be the same kind of
+    // inaccuracy the old caption existed to avoid, in reverse.
+    expect(screen.getAllByText('Saved to your account').length).toBeGreaterThan(0);
   });
 
   it('never claims XP, streaks or accuracy', async () => {
-    seedCompletedVideo('l-1');
-    global.fetch = buildFetch(MOCK_COURSES) as unknown as typeof fetch;
+    global.fetch = buildFetch(
+      MOCK_COURSES,
+      true,
+      finishedLessons('l-1'),
+    ) as unknown as typeof fetch;
     const { container } = renderPage();
 
     await screen.findByText('Grammar Fundamentals');

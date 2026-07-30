@@ -263,7 +263,12 @@ const en = {
     // is mandatory wherever a percentage appears.
     progressLabel: 'Your progress',
     lessonsCompleted: 'lessons completed',
-    onThisDevice: 'Tracked on this device',
+    // Sprint 07 — replaces onThisDevice. Video and theory completion moved
+    // from localStorage to the server, so "tracked on this device" stopped
+    // being true: progress now follows the student to any browser. The old
+    // caption existed to be honest about a real limitation, and keeping it
+    // after the limitation was fixed would be the same kind of lie in reverse.
+    progressSynced: 'Saved to your account',
     overallProgress: 'Overall roadmap progress',
   },
   course: {
@@ -840,7 +845,7 @@ const vi: TranslationDict = {
     categoryFoundation: 'Nền tảng',
     progressLabel: 'Tiến độ học',
     lessonsCompleted: 'bài đã hoàn thành',
-    onThisDevice: 'Ghi nhận trên thiết bị này',
+    progressSynced: 'Đã lưu vào tài khoản của bạn',
     overallProgress: 'Tiến độ tổng quan lộ trình',
   },
   course: {

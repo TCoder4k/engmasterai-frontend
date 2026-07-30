@@ -12,13 +12,9 @@ import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
 import {
   getCourseProgress,
-  PracticeStageProgress,
-  QuizStageProgress,
-  TrapHunterStageProgress,
+  LessonProgressSnapshot,
 } from '../../services/lessonProgress';
-import { getCourseQuizProgress } from '../../services/quizService';
-import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
-import { getCourseStageProgress } from '../../services/practiceService';
+import { getCourseProgressMap } from '../../services/progressService';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
 import {
@@ -43,24 +39,13 @@ const CourseDetailPage: React.FC = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  // Sprint 06B — server-side quiz progress, keyed by lessonId. Supplementary
-  // (like GrammarRoadmapPage's per-course lesson fetch): the page has
-  // already painted from course+lessons by the time this resolves, and a
-  // failure here just leaves every quiz-bearing lesson looking not-yet-passed
-  // rather than breaking the page.
-  const [quizProgressByLessonId, setQuizProgressByLessonId] = useState<Map<string, QuizStageProgress>>(
-    new Map(),
-  );
-  // Sprint 06C — the same arrangement for Trap Hunter.
-  // Sprint 06D — without this the page would show a lesson INCOMPLETE while
-  // the lesson page showed it finished: 'practice' now joins availableStages()
-  // whenever a published task exists, so an un-fetched map would leave it
-  // permanently 'not_started' here. Fetched through the aggregated endpoint.
-  const [practiceProgressByLessonId, setPracticeProgressByLessonId] = useState<
-    Map<string, PracticeStageProgress>
-  >(new Map());
-  const [trapProgressByLessonId, setTrapProgressByLessonId] = useState<
-    Map<string, TrapHunterStageProgress>
+  // Sprint 07 — one server-side snapshot per lesson, keyed by lessonId,
+  // replacing three parallel maps built from three separate requests.
+  // Supplementary: the page has already painted from course+lessons by the
+  // time this resolves, and a failure just leaves every lesson looking
+  // not-yet-finished rather than breaking the page.
+  const [progressByLessonId, setProgressByLessonId] = useState<
+    Map<string, LessonProgressSnapshot>
   >(new Map());
 
   useEffect(() => {
@@ -77,65 +62,29 @@ const CourseDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Sprint 07 — ONE request covering every stage, including the video and
+  // theory steps that used to be read from localStorage.
+  //
+  // Fetching the steps is not an enhancement, it is what keeps this page
+  // CORRECT: both gate isLessonComplete(), so without them every lesson here
+  // would read as incomplete no matter how much the student had watched, while
+  // the lesson page showed it finished.
+  //
+  // Failure leaves the map empty, which reports every stage not-started — a
+  // stale percentage, never a wrong one.
   useEffect(() => {
     if (!id || !authService.getUser()) return;
-    getCourseQuizProgress(id)
-      .then((res) => {
-        const map = new Map<string, QuizStageProgress>();
-        res.data.forEach((row) => {
-          map.set(row.lessonId, { passed: row.passed, attemptsCount: row.attemptsCount });
-        });
-        setQuizProgressByLessonId(map);
+    let cancelled = false;
+    getCourseProgressMap(id)
+      .then((map) => {
+        if (!cancelled) setProgressByLessonId(map);
       })
       .catch(() => {
-        // Silent — quiz-bearing lessons simply render as not-yet-passed.
+        if (!cancelled) setProgressByLessonId(new Map());
       });
-  }, [id]);
-
-  // Sprint 06C — the companion fetch. Without it this page would call a
-  // lesson complete while the lesson page itself showed an open Trap Hunter
-  // stage. Failure leaves the map empty, which drops 'traphunter' out of
-  // availableStages entirely and reproduces the pre-06C percentage exactly
-  // — a stale number, never a wrong one.
-  useEffect(() => {
-    if (!id || !authService.getUser()) return;
-    getCourseTrapHunterProgress(id)
-      .then((res) => {
-        const map = new Map<string, TrapHunterStageProgress>();
-        res.data.forEach((row) => {
-          map.set(row.lessonId, {
-            hasSource: row.hasSource,
-            total: row.total,
-            cleared: row.cleared,
-          });
-        });
-        setTrapProgressByLessonId(map);
-      })
-      .catch(() => {
-        // Silent, same reasoning as the quiz fetch above.
-      });
-  }, [id]);
-
-  // Sprint 06D — one request covering every stage that has a backend.
-  // Failure leaves the map empty, which reports practice 'not_started' and so
-  // holds a lesson open rather than falsely completing it.
-  useEffect(() => {
-    if (!id || !authService.getUser()) return;
-    getCourseStageProgress(id)
-      .then((rows) => {
-        const map = new Map<string, PracticeStageProgress>();
-        rows.forEach((row) => {
-          if (row.practice) {
-            map.set(row.lessonId, {
-              hasTask: true,
-              passed: row.practice.passed,
-              attemptsCount: row.practice.attemptsCount,
-            });
-          }
-        });
-        setPracticeProgressByLessonId(map);
-      })
-      .catch(() => setPracticeProgressByLessonId(new Map()));
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   // Records the Continue Learning entry once the course is actually
@@ -163,15 +112,16 @@ const CourseDetailPage: React.FC = () => {
   const backTo = isGrammar ? '/grammar' : '/courses';
   const backLabel = isGrammar ? t.grammar.backToRoadmap : t.course.backToCourses;
 
-  // Real, device-local completion (Sprint 06). Counts COMPLETED lessons —
-  // every stage a lesson offers, finished — not videos watched, so the
-  // Mini Check and Practice stages can land later without this UI changing.
+  // Real completion. Counts COMPLETED lessons — every stage a lesson offers,
+  // finished — not videos watched.
+  //
+  // Sprint 07: no longer device-local. Every input now comes from the server,
+  // so this number follows the student to another browser instead of
+  // silently resetting.
   const progress = getCourseProgress(
     authService.getUser()?.id,
     lessons,
-    quizProgressByLessonId,
-    trapProgressByLessonId,
-    practiceProgressByLessonId,
+    progressByLessonId,
   );
 
   const category = course && isGrammar ? deriveGrammarCategory(course) : null;
@@ -298,7 +248,7 @@ const CourseDetailPage: React.FC = () => {
                     />
                   </div>
                   <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                    {t.grammar.onThisDevice}
+                    {t.grammar.progressSynced}
                   </p>
                 </div>
               )}
@@ -321,9 +271,7 @@ const CourseDetailPage: React.FC = () => {
                   courseId={course.id}
                   lesson={lesson}
                   orderNumber={index + 1}
-                  quizProgress={quizProgressByLessonId.get(lesson.id)}
-                  trapProgress={trapProgressByLessonId.get(lesson.id)}
-                  practiceProgress={practiceProgressByLessonId.get(lesson.id)}
+                  progress={progressByLessonId.get(lesson.id)}
                 />
               ))}
             </div>

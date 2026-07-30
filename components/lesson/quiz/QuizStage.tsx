@@ -6,6 +6,7 @@ import { Lesson } from '../../../types';
 import {
   answerQuizQuestion,
   getLessonQuiz,
+  startLessonQuiz,
   submitLessonQuiz,
   AnswerQuestionResponse,
   StudentQuiz,
@@ -90,11 +91,40 @@ const QuizStage: React.FC<QuizStageProps> = ({
   // the index, and it should never itself trigger one.
   const directionRef = useRef<1 | -1>(1);
 
-  const loadQuiz = useCallback(() => {
+  // Sprint 07 — `forceStart` is the "Thử lại" path: a student with a stored
+  // result sees it first, and only an explicit retry begins a new attempt.
+  const loadQuiz = useCallback(
+    (forceStart = false) => {
     setPhase('loading');
     setLoadError(null);
     getLessonQuiz(lessonId)
-      .then((res) => {
+      .then(async (res) => {
+        // ---- Sprint 07: decide whether to resume, summarise, or start -----
+        //
+        // This used to end unconditionally with `setSubmitResult(null);
+        // setPhase('answering')`, with no branch on what the server had
+        // already recorded. Reopening a passed quiz therefore always dropped
+        // the student into a blank question 1 and discarded the stored result,
+        // which arrived in `res.progress` and was simply never rendered.
+        const hasInFlightAttempt = Boolean(res.quiz.currentAttemptId);
+
+        if (!hasInFlightAttempt && !forceStart && res.lastResult) {
+          // Finished before, and not retrying: show what they scored. Nothing
+          // is started, so leaving the page again costs them nothing.
+          setQuiz(res.quiz);
+          onProgressChange?.(res.progress);
+          setSubmitResult(res.lastResult);
+          setPhase('summary');
+          return;
+        }
+
+        if (!hasInFlightAttempt) {
+          // A true first attempt (or an explicit retry). Started here rather
+          // than behind an intro screen, so the common case — a student
+          // opening a quiz they have never taken — costs no extra click.
+          res = await startLessonQuiz(lessonId);
+        }
+
         setQuiz(res.quiz);
         onProgressChange?.(res.progress);
 
@@ -156,7 +186,9 @@ const QuizStage: React.FC<QuizStageProps> = ({
         setPhase('error');
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, userId]);
+    },
+    [lessonId, userId],
+  );
 
   useEffect(() => {
     loadQuiz();
@@ -306,10 +338,17 @@ const QuizStage: React.FC<QuizStageProps> = ({
     setCurrentIndex((i) => Math.max(0, i - 1));
   };
 
+  // Sprint 07 — the ONLY thing that begins a new attempt once a stored result
+  // exists. Passing forceStart skips the summary branch in loadQuiz, so the
+  // student sees what they scored first and chooses to go again.
+  //
+  // The previous attempt is not destroyed: the server keeps every finished
+  // attempt in its append-only history, and `completedAt`, best score and
+  // attempt count all survive a worse retry.
   const handleRetake = () => {
     if (userId) clearQuizDraft(userId, lessonId);
     setGraded({});
-    loadQuiz(); // re-fetches — ORDERING options get a fresh server-side shuffle
+    loadQuiz(true); // re-fetches — ORDERING options get a fresh server-side shuffle
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

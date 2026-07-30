@@ -139,7 +139,7 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, lessons, 
                 />
               </div>
               <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                {t.grammar.onThisDevice}
+                {t.grammar.progressSynced}
               </p>
             </div>
           )}

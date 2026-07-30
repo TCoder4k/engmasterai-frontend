@@ -55,13 +55,57 @@ const courseOf = (type: 'GRAMMAR' | 'LISTENING') => ({
   _count: { lessons: 1 },
 });
 
-const buildFetch = (type: 'GRAMMAR' | 'LISTENING', lessonOver: Partial<typeof LESSON> = {}) => {
+// Sprint 07 — video and theory progress are SERVER state, so the fixture
+// serves them from here rather than the test seeding localStorage. That is the
+// point of the sprint: a test can no longer fake completion by writing a key,
+// for the same reason a student cannot.
+const step = (over: Partial<{ startedAt: string | null; completedAt: string | null }> = {}) => ({
+  startedAt: '2026-07-30T00:00:00.000Z',
+  completedAt: null,
+  highestPositionSeconds: null,
+  videoDurationSeconds: null,
+  ...over,
+});
+
+const emptyProgress = () => ({
+  steps: { video: null, theory: null },
+  quiz: null,
+  trapHunter: null,
+  practice: null,
+});
+
+const buildFetch = (
+  type: 'GRAMMAR' | 'LISTENING',
+  lessonOver: Partial<typeof LESSON> = {},
+  progressOver: Partial<ReturnType<typeof emptyProgress>> = {},
+) => {
   const lesson = { ...LESSON, ...lessonOver };
-  return vi.fn((url: string) => {
-    // Sprint 06C — matched BEFORE '/lessons/l-1', which this path also
-    // contains. hasSource: false is the honest default for a lesson nobody
-    // has finished a quiz on, and it is what makes the tile read "Finish the
-    // quiz first" rather than "Coming soon".
+  // Mutable so a completion POST is reflected by the next read, exactly as the
+  // real server would — the page re-reads progress after every write.
+  const progress = { ...emptyProgress(), ...progressOver };
+
+  return vi.fn((url: string, init?: RequestInit) => {
+    if (url.includes('/steps/theory/complete')) {
+      const completed = step({ completedAt: '2026-07-30T00:10:00.000Z' });
+      progress.steps = { ...progress.steps, theory: completed };
+      return Promise.resolve(jsonResponse(201, completed));
+    }
+    if (url.includes('/steps/theory/start')) {
+      progress.steps = { ...progress.steps, theory: progress.steps.theory ?? step() };
+      return Promise.resolve(jsonResponse(201, progress.steps.theory));
+    }
+    if (url.includes('/steps/video/progress')) {
+      return Promise.resolve(jsonResponse(201, step()));
+    }
+    // Matched BEFORE '/lessons/l-1', which this path also contains.
+    if (url.includes('/lessons/l-1/progress')) {
+      // Cloned per read. A real server sends fresh JSON every time; returning
+      // the same object identity would make React bail out of the re-render
+      // and hide a genuine update behind a test-fixture artifact.
+      return Promise.resolve(
+        jsonResponse(200, { ...progress, steps: { ...progress.steps } }),
+      );
+    }
     if (url.includes('/trap-hunter')) {
       return Promise.resolve(
         jsonResponse(200, {
@@ -147,27 +191,47 @@ describe('LessonPage — Grammar staged player', () => {
     await userEvent.click(screen.getByRole('button', { name: /I've finished reading/i }));
 
     expect(await screen.findByText('Theory marked as read')).toBeInTheDocument();
-    expect(localStorage.getItem(`lessonStages:${USER.id}:l-1`)).toContain('theoryCompletedAt');
+    // Sprint 07 — it went to the SERVER, not to localStorage. Nothing about
+    // completion is written to this browser any more.
+    const posted = (global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+      .map(([url]) => String(url))
+      .filter((url) => url.includes('/steps/theory/complete'));
+    expect(posted).toHaveLength(1);
+    expect(localStorage.getItem(`lessonStages:${USER.id}:l-1`)).toBeNull();
   });
 
   it('reflects a previously completed video in the stepper', async () => {
+    // Sprint 07 — served by the server, so this state follows the student to
+    // any browser instead of living in this one.
+    global.fetch = buildFetch('GRAMMAR', {}, {
+      steps: {
+        video: step({ completedAt: '2026-07-30T00:10:00.000Z' }),
+        theory: null,
+      },
+    }) as unknown as typeof fetch;
+    renderPage();
+
+    await screen.findByTestId('video-player');
+    expect(await stepper().findByText('Completed')).toBeInTheDocument();
+  });
+
+  it('does NOT read completion from localStorage', async () => {
+    // The regression guard for the sprint's central bug: two of five stages
+    // used to be device-local and client-forgeable, so writing these keys by
+    // hand marked a lesson complete and raised the course percentage.
     localStorage.setItem(
       `videoProgress:${USER.id}:l-1`,
-      JSON.stringify({
-        courseId: 'c-1',
-        resolvedLessonPath: '/courses/c-1/lessons/l-1',
-        youtubeVideoId: 'abc',
-        positionSeconds: 1080,
-        durationSeconds: 1080,
-        lastUpdatedAt: '2026-07-26T00:00:00.000Z',
-        ended: true,
-      }),
+      JSON.stringify({ positionSeconds: 1080, durationSeconds: 1080, ended: true }),
+    );
+    localStorage.setItem(
+      `lessonStages:${USER.id}:l-1`,
+      JSON.stringify({ theoryCompletedAt: '2026-07-30T00:00:00.000Z' }),
     );
     global.fetch = buildFetch('GRAMMAR') as unknown as typeof fetch;
     renderPage();
 
     await screen.findByTestId('video-player');
-    expect(stepper().getByText('Completed')).toBeInTheDocument();
+    expect(stepper().queryByText('Completed')).not.toBeInTheDocument();
   });
 
   it('falls back to the video stage when the lesson has no published quiz', async () => {

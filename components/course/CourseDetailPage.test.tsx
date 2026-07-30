@@ -70,8 +70,34 @@ const LESSONS = [
   },
 ];
 
-const buildFetch = (type: 'GRAMMAR' | 'VOCABULARY', lessons = LESSONS) =>
+// Sprint 07 — one row per lesson from GET /courses/:id/stage-progress,
+// carrying the video/theory steps that used to be read from localStorage.
+const stageRow = (
+  lessonId: string,
+  over: { videoDone?: boolean; theoryDone?: boolean } = {},
+) => ({
+  lessonId,
+  quiz: null,
+  trapHunter: null,
+  practice: null,
+  steps: {
+    video: over.videoDone
+      ? { startedAt: '2026-07-30T00:00:00.000Z', completedAt: '2026-07-30T00:10:00.000Z' }
+      : null,
+    theory: over.theoryDone
+      ? { startedAt: '2026-07-30T00:00:00.000Z', completedAt: '2026-07-30T00:10:00.000Z' }
+      : null,
+  },
+});
+
+const buildFetch = (
+  type: 'GRAMMAR' | 'VOCABULARY',
+  lessons = LESSONS,
+  stageRows: ReturnType<typeof stageRow>[] = [],
+) =>
   vi.fn((url: string) => {
+    // Matched BEFORE '/courses/c-1', which this path also contains.
+    if (url.includes('/stage-progress')) return Promise.resolve(jsonResponse(200, stageRows));
     if (url.includes('/lessons')) return Promise.resolve(jsonResponse(200, { data: lessons }));
     if (url.includes('/courses/c-1')) return Promise.resolve(jsonResponse(200, courseOf(type)));
     if (url.includes('/courses/missing')) {
@@ -146,29 +172,38 @@ describe('CourseDetailPage — real data only', () => {
     expect(screen.queryByText('Completed')).not.toBeInTheDocument();
   });
 
-  it('reflects real device-local completion in the lesson list and the hero', async () => {
+  it('reflects real SERVER-SIDE completion in the lesson list and the hero', async () => {
     // Both fixture lessons are video-only (notes: null), so a finished video
     // completes them.
+    //
+    // Sprint 07 — this comes from the course aggregate rather than from
+    // localStorage, which is what makes the percentage the same in every
+    // browser the student signs into.
+    global.fetch = buildFetch('GRAMMAR', LESSONS, [
+      stageRow('l-1', { videoDone: true }),
+    ]) as unknown as typeof fetch;
+    renderPage();
+
+    await screen.findByText('Present Simple');
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
+    expect(screen.getByText('1/2')).toBeInTheDocument();
+    expect(screen.getByText('50% (1/2)')).toBeInTheDocument();
+    expect(screen.getByText('Saved to your account')).toBeInTheDocument();
+  });
+
+  it('ignores forged localStorage progress', async () => {
+    // Before Sprint 07 this key WAS the authority for the video stage, so
+    // writing it by hand moved the course percentage with no server involved.
     localStorage.setItem(
       `videoProgress:${USER.id}:l-1`,
-      JSON.stringify({
-        courseId: 'c-1',
-        resolvedLessonPath: '/courses/c-1/lessons/l-1',
-        youtubeVideoId: 'abc',
-        positionSeconds: 900,
-        durationSeconds: 900,
-        lastUpdatedAt: '2026-07-26T00:00:00.000Z',
-        ended: true,
-      }),
+      JSON.stringify({ positionSeconds: 900, durationSeconds: 900, ended: true }),
     );
     global.fetch = buildFetch('GRAMMAR') as unknown as typeof fetch;
     renderPage();
 
     await screen.findByText('Present Simple');
-    expect(screen.getByText('Completed')).toBeInTheDocument();
-    expect(screen.getByText('1/2')).toBeInTheDocument();
-    expect(screen.getByText('50% (1/2)')).toBeInTheDocument();
-    expect(screen.getByText('Tracked on this device')).toBeInTheDocument();
+    expect(screen.getAllByText('Not started')).toHaveLength(2);
+    expect(screen.queryByText('Completed')).not.toBeInTheDocument();
   });
 
   it('shows an error state for an unknown course', async () => {
