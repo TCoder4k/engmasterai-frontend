@@ -7,6 +7,11 @@ import ErrorState from '../shared/ErrorState';
 import Skeleton from '../shared/Skeleton';
 import { getPublishedCourses } from '../../services/courseService';
 import { handleAuthError } from '../../services/apiError';
+import { authService } from '../../services/authService';
+import {
+  CourseProgressSummary,
+  getCourseProgressSummaries,
+} from '../../services/courseProgressService';
 import { Course } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
 
@@ -18,6 +23,13 @@ const CourseCatalogPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Sprint 08 — this page showed NO progress at all before now. `null` until
+  // the request resolves, so a card renders its neutral state rather than
+  // claiming a course is untouched.
+  const [progressByCourse, setProgressByCourse] = useState<Map<
+    string,
+    CourseProgressSummary
+  > | null>(null);
 
   useEffect(() => {
     getPublishedCourses()
@@ -26,6 +38,27 @@ const CourseCatalogPage: React.FC = () => {
       .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ONE request for every course on the page — summaries only, since a card
+  // renders a percentage and never a per-lesson row.
+  //
+  // Supplementary: the grid has already painted from GET /courses by the time
+  // this resolves, and a failure leaves the cards without a status rather than
+  // breaking the catalog.
+  useEffect(() => {
+    if (courses.length === 0 || !authService.getUser()) return;
+    let cancelled = false;
+    getCourseProgressSummaries(courses.map((course) => course.id))
+      .then((map) => {
+        if (!cancelled) setProgressByCourse(map);
+      })
+      .catch(() => {
+        // Stays null: no status shown, none invented.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courses]);
 
   return (
     <StudentLayout>
@@ -54,7 +87,11 @@ const CourseCatalogPage: React.FC = () => {
         {!isLoading && !error && courses.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
+              <CourseCard
+                key={course.id}
+                course={course}
+                progress={progressByCourse?.get(course.id) ?? null}
+              />
             ))}
           </div>
         )}

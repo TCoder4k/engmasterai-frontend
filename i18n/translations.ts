@@ -277,7 +277,27 @@ const en = {
     noLessonsYet: 'No lessons in this course yet.',
     lessonsHeading: 'Lessons',
     totalDuration: 'Total time',
-    startLesson: 'Start',
+    // Sprint 08 — status badges and their calls to action. These REPLACED a
+    // single static `startLesson: 'Start'` that every lesson row rendered
+    // regardless of how far the student had got.
+    //
+    // The CTA is chosen by STATUS, never by percentage: a student mid-way
+    // through the first lesson of five is at 0%, and offering them "Start"
+    // would throw away the place they had reached.
+    statusNotStarted: 'Ready to learn',
+    statusInProgress: 'In progress',
+    statusCompleted: 'Completed',
+    // A published lesson with no completable stage — audio only, no notes, no
+    // tasks. It is excluded from the course totals, so the row must say
+    // something other than "not started", which would be a false claim about
+    // a lesson nobody can begin.
+    statusNoContent: 'No content yet',
+    ctaStart: 'Start',
+    ctaContinue: 'Continue',
+    ctaReview: 'Review again',
+    ctaUnavailable: 'Unavailable',
+    progressLoadFailed: 'Progress unavailable',
+    retryProgress: 'Retry',
   },
   lesson: {
     backToCourse: 'Back to course',
@@ -854,7 +874,16 @@ const vi: TranslationDict = {
     noLessonsYet: 'Khóa học này chưa có bài học nào.',
     lessonsHeading: 'Danh sách bài học',
     totalDuration: 'Tổng thời lượng',
-    startLesson: 'Bắt đầu',
+    statusNotStarted: 'Sẵn sàng học',
+    statusInProgress: 'Đang học dở',
+    statusCompleted: 'Đã hoàn thành',
+    statusNoContent: 'Chưa có nội dung',
+    ctaStart: 'Bắt đầu',
+    ctaContinue: 'Học tiếp',
+    ctaReview: 'Ôn tập lại',
+    ctaUnavailable: 'Chưa khả dụng',
+    progressLoadFailed: 'Không tải được tiến độ',
+    retryProgress: 'Thử lại',
   },
   lesson: {
     backToCourse: 'Quay lại khóa học',

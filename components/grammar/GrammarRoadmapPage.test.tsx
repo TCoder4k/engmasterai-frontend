@@ -22,7 +22,9 @@ const jsonResponse = (status: number, body: unknown) =>
 
 const USER = { id: 'user-1', name: 'Tu', email: 't@example.com', role: 'USER' };
 
-const course = (id: string, title: string, lessons: number) => ({
+// Sprint 08 — totalEstimatedMinutes arrives WITH the course, so the roadmap no
+// longer fetches every lesson of every course just to add up durations.
+const course = (id: string, title: string, lessons: number, minutes = 0) => ({
   id,
   title,
   type: 'GRAMMAR' as const,
@@ -31,69 +33,60 @@ const course = (id: string, title: string, lessons: number) => ({
   isPublished: true,
   createdAt: '2026-01-01T00:00:00.000Z',
   _count: { lessons },
+  totalEstimatedMinutes: minutes,
 });
 
 const MOCK_COURSES = [
-  course('c-1', 'Grammar Fundamentals', 2),
-  course('c-2', 'TOEIC Grammar Mastery', 1),
-  course('c-3', 'Relative Clauses Deep Dive', 1),
+  course('c-1', 'Grammar Fundamentals', 2, 55),
+  course('c-2', 'TOEIC Grammar Mastery', 1, 40),
+  course('c-3', 'Relative Clauses Deep Dive', 1, 10),
 ];
 
-const lessonOf = (id: string, courseId: string, minutes: number) => ({
-  id,
+// Sprint 08 — one summary per course from GET /progress/courses. Completion is
+// derived on the SERVER, so a test declares the outcome rather than composing
+// stage rows and hoping the client rolls them up the same way.
+const courseSummary = (
+  courseId: string,
+  totalLessons: number,
+  completedLessons: number,
+  overrides: { status?: string; inProgressLessons?: number } = {},
+) => ({
   courseId,
-  title: `Lesson ${id}`,
-  description: null,
-  notes: null, // video-only, so finishing the video completes the lesson
-  videoUrl: 'https://youtu.be/abc',
-  pdfUrl: null,
-  audioUrl: null,
-  videoDurationMinutes: minutes,
-  estimatedStudyMinutes: minutes,
-  learningObjectives: [],
-  orderIndex: 0,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-  publishedTaskTypes: [],
+  totalLessons,
+  completedLessons,
+  inProgressLessons: overrides.inProgressLessons ?? 0,
+  notStartedLessons:
+    totalLessons - completedLessons - (overrides.inProgressLessons ?? 0),
+  progressPercent:
+    totalLessons === 0 ? 0 : Math.floor((completedLessons / totalLessons) * 100),
+  status:
+    overrides.status ??
+    (totalLessons > 0 && completedLessons === totalLessons
+      ? 'COMPLETED'
+      : completedLessons > 0 || (overrides.inProgressLessons ?? 0) > 0
+        ? 'IN_PROGRESS'
+        : 'NOT_STARTED'),
+  continueLessonId: 'l-1',
+  lessons: null,
 });
 
-const LESSONS: Record<string, ReturnType<typeof lessonOf>[]> = {
-  'c-1': [lessonOf('l-1', 'c-1', 30), lessonOf('l-2', 'c-1', 25)],
-  'c-2': [lessonOf('l-3', 'c-2', 40)],
-  'c-3': [lessonOf('l-4', 'c-3', 10)],
-};
-
-// Sprint 07 — completion is SERVER state, so a test declares which lessons the
-// course aggregate reports as finished rather than seeding a browser key.
-const finishedLessons = (...lessonIds: string[]) =>
-  lessonIds.map((lessonId) => ({
-    lessonId,
-    quiz: null,
-    trapHunter: null,
-    practice: null,
-    steps: {
-      video: {
-        startedAt: '2026-07-30T00:00:00.000Z',
-        completedAt: '2026-07-30T00:10:00.000Z',
-      },
-      theory: null,
-    },
-  }));
+const NOTHING_DONE = [
+  courseSummary('c-1', 2, 0),
+  courseSummary('c-2', 1, 0),
+  courseSummary('c-3', 1, 0),
+];
 
 const buildFetch = (
   courses: unknown[] | null,
-  lessonsOk = true,
-  stageRows: ReturnType<typeof finishedLessons> = [],
+  progress: ReturnType<typeof courseSummary>[] | null = NOTHING_DONE,
 ) =>
   vi.fn((url: string) => {
     // Matched BEFORE the generic '/courses' branch below.
-    if (url.includes('/stage-progress')) return Promise.resolve(jsonResponse(200, stageRows));
-    const lessonMatch = url.match(/\/courses\/(c-\d)\/lessons/);
-    if (lessonMatch) {
+    if (url.includes('/progress/courses')) {
       return Promise.resolve(
-        lessonsOk
-          ? jsonResponse(200, { data: LESSONS[lessonMatch[1]] ?? [] })
-          : jsonResponse(500, { message: 'boom' }),
+        progress === null
+          ? jsonResponse(500, { message: 'boom' })
+          : jsonResponse(200, progress),
       );
     }
     if (url.includes('/courses')) {
@@ -148,12 +141,35 @@ describe('GrammarRoadmapPage — data', () => {
     expect(await screen.findByText('2 lessons')).toBeInTheDocument();
   });
 
-  it('shows real total duration once the lesson fetches resolve', async () => {
-    global.fetch = buildFetch(MOCK_COURSES) as unknown as typeof fetch;
+  it('shows real total duration from the course response, with no lesson fetch', async () => {
+    const fetchMock = buildFetch(MOCK_COURSES);
+    global.fetch = fetchMock as unknown as typeof fetch;
     renderPage();
 
-    // c-1 = 30 + 25 real study minutes.
+    // c-1 = 30 + 25 real study minutes, summed server-side.
     expect(await screen.findByText('55 min')).toBeInTheDocument();
+    // Sprint 08 — the roadmap issued one lessons request PER COURSE to compute
+    // this. That loop is gone; the number arrives with the course.
+    expect(
+      fetchMock.mock.calls.filter(([url]) => /\/courses\/c-\d\/lessons/.test(url as string)),
+    ).toHaveLength(0);
+  });
+
+  it('issues exactly ONE progress request for the whole roadmap', async () => {
+    // The N+1 this sprint removed: three courses used to mean six requests
+    // (lessons + progress each), and the count grew with the catalog.
+    const fetchMock = buildFetch(MOCK_COURSES);
+    global.fetch = fetchMock as unknown as typeof fetch;
+    renderPage();
+
+    await screen.findByText('Grammar Fundamentals');
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([url]) =>
+          (url as string).includes('/progress/courses'),
+        ),
+      ).toHaveLength(1),
+    );
   });
 
   it('shows an error state when the course request fails', async () => {
@@ -171,15 +187,17 @@ describe('GrammarRoadmapPage — data', () => {
     expect(await screen.findByText('No grammar courses have been published yet.')).toBeInTheDocument();
   });
 
-  it('still renders every card when the lesson fetches fail', async () => {
-    global.fetch = buildFetch(MOCK_COURSES, false) as unknown as typeof fetch;
+  it('still renders every card when the progress request fails', async () => {
+    global.fetch = buildFetch(MOCK_COURSES, null) as unknown as typeof fetch;
     renderPage();
 
-    // Supplementary data degrades silently: titles and lesson counts stay,
-    // duration and progress simply do not appear.
+    // Supplementary data degrades silently: titles, lesson counts and duration
+    // all come from the course response and stay. Only the status is missing —
+    // and crucially, no percentage is invented in its place.
     expect(await screen.findByText('Grammar Fundamentals')).toBeInTheDocument();
     expect(screen.getByText('2 lessons')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText('55 min')).not.toBeInTheDocument());
+    expect(screen.getByText('55 min')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText(/%/)).not.toBeInTheDocument());
   });
 
   it('links each card to the existing course detail route', async () => {
@@ -246,12 +264,12 @@ describe('GrammarRoadmapPage — progress is real or absent', () => {
   });
 
   it('renders real completion once lessons are finished', async () => {
-    // 1 of c-1's 2 video-only lessons.
-    global.fetch = buildFetch(
-      MOCK_COURSES,
-      true,
-      finishedLessons('l-1'),
-    ) as unknown as typeof fetch;
+    // 1 of c-1's 2 lessons, as the SERVER reports it.
+    global.fetch = buildFetch(MOCK_COURSES, [
+      courseSummary('c-1', 2, 1),
+      courseSummary('c-2', 1, 0),
+      courseSummary('c-3', 1, 0),
+    ]) as unknown as typeof fetch;
     renderPage();
 
     await screen.findByText('Grammar Fundamentals');
@@ -263,11 +281,9 @@ describe('GrammarRoadmapPage — progress is real or absent', () => {
   });
 
   it('never claims XP, streaks or accuracy', async () => {
-    global.fetch = buildFetch(
-      MOCK_COURSES,
-      true,
-      finishedLessons('l-1'),
-    ) as unknown as typeof fetch;
+    global.fetch = buildFetch(MOCK_COURSES, [
+      courseSummary('c-1', 2, 1),
+    ]) as unknown as typeof fetch;
     const { container } = renderPage();
 
     await screen.findByText('Grammar Fundamentals');

@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   availableStages,
-  getCourseProgress,
   getStageStatus,
-  isLessonComplete,
-  isLessonStarted,
+  lessonHasTheory,
   purgeLegacyLocalProgress,
   LessonProgressSnapshot,
   PracticeStageProgress,
@@ -274,134 +272,80 @@ describe('getStageStatus — practice', () => {
   });
 });
 
-describe('isLessonComplete', () => {
-  it('needs every stage the lesson offers, not just the video', () => {
-    expect(
-      isLessonComplete(USER, lesson(), { steps: { video: doneStep, theory: null } }),
-    ).toBe(false);
-    expect(
-      isLessonComplete(USER, lesson(), { steps: { video: doneStep, theory: doneStep } }),
-    ).toBe(true);
-  });
-
-  it('completes a video-only lesson on the video alone', () => {
-    expect(
-      isLessonComplete(USER, lesson({ notes: null }), {
-        steps: { video: doneStep, theory: null },
-      }),
-    ).toBe(true);
-  });
-
-  it('is never complete for a lesson with no completable content', () => {
-    expect(isLessonComplete(USER, lesson({ videoUrl: null, notes: null }), allDone())).toBe(false);
-  });
-
-  it('is false when signed out', () => {
-    expect(isLessonComplete(undefined, lesson(), allDone())).toBe(false);
-  });
-
-  it('requires the quiz to be PASSED, not merely attempted', () => {
-    const withQuiz = lesson({ publishedTaskTypes: ['QUIZ'] });
-    const base = { steps: { video: doneStep, theory: doneStep } };
-    expect(
-      isLessonComplete(USER, withQuiz, { ...base, quiz: { passed: false, attemptsCount: 3 } }),
-    ).toBe(false);
-    expect(isLessonComplete(USER, withQuiz, { ...base, quiz: quizPassed })).toBe(true);
-  });
-
-  it('stays incomplete while traps remain, even with the quiz passed', () => {
-    const withQuiz = lesson({ notes: null, publishedTaskTypes: ['QUIZ'] });
-    expect(
-      isLessonComplete(USER, withQuiz, {
-        steps: { video: doneStep, theory: null },
-        quiz: quizPassed,
-        trapHunter: trapProgress({ total: 2, cleared: 1 }),
-      }),
-    ).toBe(false);
-  });
-});
-
-describe('isLessonStarted', () => {
-  it('is true once any stage has been touched', () => {
-    expect(
-      isLessonStarted(USER, lesson(), { steps: { video: step(), theory: null } }),
-    ).toBe(true);
-  });
-
-  it('is false when nothing has been touched', () => {
-    expect(
-      isLessonStarted(USER, lesson(), { steps: { video: null, theory: null } }),
-    ).toBe(false);
-  });
-});
-
-describe('getCourseProgress', () => {
-  const lessons = [lesson({ id: 'a' }), lesson({ id: 'b' }), lesson({ id: 'c' })];
-
-  it('counts completed lessons and FLOORS the percentage', () => {
-    const map = new Map<string, LessonProgressSnapshot>([
-      ['a', { steps: { video: doneStep, theory: doneStep } }],
-    ]);
-    // 1/3 must read 33, never 34 — a single finished lesson must not round up.
-    expect(getCourseProgress(USER, lessons, map)).toEqual({
-      completed: 1,
-      total: 3,
-      percent: 33,
-    });
-  });
-
-  it('returns a zeroed shape for a course with no lessons', () => {
-    expect(getCourseProgress(USER, [], new Map())).toEqual({
-      completed: 0,
-      total: 0,
-      percent: 0,
-    });
-  });
-
-  it('reports zero rather than guessing when progress was never fetched', () => {
-    expect(getCourseProgress(USER, lessons).completed).toBe(0);
-  });
-});
-
-// INVARIANT A — lesson completion is stage-driven and dynamic.
+// SPRINT 08 — lesson and course completion MOVED TO THE SERVER.
 //
-// Sprint 06D replaced the single test that used to live here, which stood in
-// for "a hypothetical future stage" by using 'practice' itself and became a
-// tautology the moment practice shipped. Three tests replace it: the first is
-// the one that actually kills the forbidden rewrite, the others prove the fold
-// widened and keeps delegating.
-describe('INVARIANT A — completion is stage-driven and dynamic', () => {
-  it('completes a lesson that SKIPS optional stages — a hardcoded conjunction cannot', () => {
+// The `isLessonComplete`, `isLessonStarted` and `getCourseProgress` blocks
+// that stood here are gone with the functions. Their successors are
+// engmasterai-backend/src/lesson/progress/lesson-status.spec.ts, which covers
+// the same cases plus the one this module could not express: a lesson with no
+// completable stage at all.
+//
+// What is still tested below is what this module still owns — which stages a
+// lesson offers, and the status of each — because the lesson stepper renders
+// them per stage.
+
+// THE SHARED FIXTURE TABLE.
+//
+// An identical table lives at
+// engmasterai-backend/src/lesson/progress/lesson-status.spec.ts. Change one,
+// change both: if the two disagree about whether a lesson HAS theory, the
+// lesson page and the course page disagree about whether that lesson is
+// finished — the exact class of bug Sprint 07 was called in to fix.
+describe('lessonHasTheory — shared with the backend port', () => {
+  const cases: [string, string | null, boolean][] = [
+    ['null notes', null, false],
+    ['empty notes', '', false],
+    ['whitespace only', '   \n  \t ', false],
+    ['plain text, no heading', 'Just some prose.', true],
+    // A trim check would say true. parseGrammarNotes strips tags first,
+    // leaving nothing, so the student would see an empty theory pane.
+    ['HTML-only notes', '<p></p>', false],
+    ['HTML wrapping real text', '<p>Real content</p>', true],
+    // A heading with no body yields no section and no fallback. A trim check
+    // would say true and create a stage with nothing in it to complete.
+    ['heading with no body', '## Heading', false],
+    ['heading with blank body', '## Heading\n\n   \n', false],
+    ['heading with body', '## Heading\nSome body text.', true],
+    ['heading with HTML-only body', '## Heading\n<span></span>', false],
+    ['text before the first heading', 'Intro text\n## Heading', true],
+    ['two headings, second has the body', '## A\n\n## B\nbody', true],
+    ['heading-like line that is not a heading', '##NoSpace', true],
+  ];
+
+  it.each(cases)('%s', (_name, notes, expected) => {
+    expect(lessonHasTheory({ notes })).toBe(expected);
+  });
+});
+
+// INVARIANT A — completion is stage-driven and dynamic.
+//
+// The invariant MOVED to the server with the rule it protects; its successor
+// is the `deriveLessonStatus` block in lesson-status.spec.ts. What survives
+// here is the half this module still owns: `availableStages` must keep
+// deciding membership from CONTENT, because that list is what the server's
+// fold runs over. A lesson that offers neither video nor theory must produce a
+// two-entry list, or the server would demand stages that do not exist.
+describe('INVARIANT A — availableStages is content-driven', () => {
+  it('omits stages a lesson does not offer — a fixed five-stage list cannot', () => {
     // The discriminating case. A lesson with no notes and no video offers
-    // neither 'theory' nor 'video', so the forbidden
-    //     theoryCompleted && quizPassed && trapsCleared && practicePassed
-    // is FALSE here (theory was never completed — there was no theory), while
-    // `availableStages().every(...)` is TRUE. Any rewrite to a fixed
-    // conjunction fails this test, which is the whole reason it exists.
+    // neither 'theory' nor 'video', so a hardcoded
+    //     ['video', 'theory', 'quiz', 'traphunter', 'practice']
+    // would require two stages this lesson can never satisfy, and it could
+    // never be completed.
     const sparse = lesson({
       videoUrl: null,
       notes: null,
       publishedTaskTypes: ['QUIZ', 'PRACTICE'],
     });
-    const progress: LessonProgressSnapshot = {
-      steps: { video: null, theory: null },
-      quiz: quizPassed,
-      trapHunter: trapProgress({ total: 0 }),
-      practice: practiceDone,
-    };
-
-    expect(availableStages(sparse, progress.trapHunter)).toEqual(['quiz', 'practice']);
-    expect(isLessonComplete(USER, sparse, progress)).toBe(true);
+    expect(availableStages(sparse, trapProgress({ total: 0 }))).toEqual([
+      'quiz',
+      'practice',
+    ]);
   });
 
   it('widened on its own when Advanced Practice arrived', () => {
     const full = lesson({ publishedTaskTypes: ['QUIZ', 'PRACTICE'] });
     const done = trapProgress({ total: 2, cleared: 2 });
-    const withoutPractice: LessonProgressSnapshot = {
-      steps: { video: doneStep, theory: doneStep },
-      quiz: quizPassed,
-      trapHunter: done,
-    };
 
     expect(availableStages(full, done)).toEqual([
       'video',
@@ -410,17 +354,20 @@ describe('INVARIANT A — completion is stage-driven and dynamic', () => {
       'traphunter',
       'practice',
     ]);
-    expect(isLessonComplete(USER, full, withoutPractice)).toBe(false);
-    expect(
-      isLessonComplete(USER, full, { ...withoutPractice, practice: practiceDone }),
-    ).toBe(true);
   });
 
-  it('stays equal to availableStages().every(completed) across a fixture matrix', () => {
-    // The mechanism check: isLessonComplete must keep DELEGATING, whatever the
-    // stage list happens to be. It fails the moment the body stops being a
-    // fold over availableStages() — including for a stage list this test does
-    // not know about yet.
+  it('reports an empty list for a lesson with no completable content', () => {
+    // The audio-only lesson. The server reads this empty list as NO_CONTENT
+    // and leaves the lesson out of its course totals; before Sprint 08 it
+    // simply made 100% unreachable.
+    expect(
+      availableStages(lesson({ videoUrl: null, notes: null }), undefined),
+    ).toEqual([]);
+  });
+
+  it('never reports a stage as completed unless its own progress says so', () => {
+    // The mechanism check for what remains here: each stage's status is
+    // derived from that stage's inputs, with no cross-talk.
     const steps = { video: doneStep, theory: doneStep };
     const cases: { l: ReturnType<typeof lesson>; p: LessonProgressSnapshot }[] = [
       { l: lesson(), p: { steps } },
@@ -436,18 +383,15 @@ describe('INVARIANT A — completion is stage-driven and dynamic', () => {
         l: lesson({ publishedTaskTypes: ['PRACTICE'] }),
         p: { steps, practice: practiceDone },
       },
-      {
-        l: lesson({ videoUrl: null, notes: null, publishedTaskTypes: ['PRACTICE'] }),
-        p: { steps: { video: null, theory: null }, practice: practiceDone },
-      },
     ];
 
     cases.forEach(({ l, p }) => {
-      const stages = availableStages(l, p.trapHunter);
-      const expected =
-        stages.length > 0 &&
-        stages.every((stage) => getStageStatus(USER, l, stage, p) === 'completed');
-      expect(isLessonComplete(USER, l, p)).toBe(expected);
+      availableStages(l, p.trapHunter).forEach((stage) => {
+        const status = getStageStatus(USER, l, stage, p);
+        expect(['not_started', 'in_progress', 'completed', 'blocked', 'skipped']).toContain(
+          status,
+        );
+      });
     });
   });
 });
@@ -485,13 +429,15 @@ describe('local storage has no authority over any stage', () => {
     ).toBe('not_started');
   });
 
-  it('does not let forged keys complete a lesson or move a course percentage', () => {
+  it('does not let forged keys complete any stage of a lesson', () => {
+    // Sprint 08: the course-percentage half of this assertion moved to the
+    // backend e2e suite, because the percentage is no longer computed here at
+    // all — which is a stronger guarantee than this test could ever make.
     seedLegacyKeys();
     const empty: LessonProgressSnapshot = { steps: { video: null, theory: null } };
-    expect(isLessonComplete(USER, lesson(), empty)).toBe(false);
-    expect(
-      getCourseProgress(USER, [lesson()], new Map([['l-1', empty]])).percent,
-    ).toBe(0);
+    availableStages(lesson(), empty.trapHunter).forEach((stage) => {
+      expect(getStageStatus(USER, lesson(), stage, empty)).not.toBe('completed');
+    });
   });
 });
 

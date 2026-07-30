@@ -35,6 +35,15 @@ export interface Course {
   // Sprint 05 — PUBLISHED lessons only (CourseService.PUBLIC_SELECT filters
   // the relation count). Not the same number as ManagedCourse's below.
   _count: { lessons: number };
+  // Sprint 08 — summed estimatedStudyMinutes over PUBLISHED lessons, the
+  // sibling of _count.lessons.
+  //
+  // It exists so a course card can show a duration without fetching every
+  // lesson of every course to add them up, which is exactly what
+  // GrammarRoadmapPage did — one lessons request per course, on top of one
+  // progress request per course. Optional because admin-managed responses do
+  // not carry it.
+  totalEstimatedMinutes?: number;
 }
 
 export interface ManagedCourse extends Course {

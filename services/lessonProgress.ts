@@ -273,68 +273,41 @@ const stepStatus = (step: StepProgress | null | undefined): StageStatus => {
   return 'not_started';
 };
 
-// --- Lesson and course completion ------------------------------------------
-
-// THE seam. A lesson is complete when EVERY stage it offers is complete — not
-// when its video ended. A lesson with notes stays incomplete until the theory
-// is marked read, which is exactly the case a "watched" model gets wrong.
+// --- Lesson and course completion: MOVED TO THE SERVER (Sprint 08) ----------
 //
-// INVARIANT A: this body is `stages.every(...)` and stays that way.
-export const isLessonComplete = (
-  userId: string | undefined,
-  lesson: LessonShape,
-  progress?: LessonProgressSnapshot,
-): boolean => {
-  if (!userId) return false;
-  const stages = availableStages(lesson, progress?.trapHunter);
-  if (stages.length === 0) return false;
-  return stages.every(
-    (stage) => getStageStatus(userId, lesson, stage, progress) === 'completed',
-  );
-};
-
-// A lesson is "in progress" once any stage has been touched but not all are
-// done — drives the neutral middle badge in lesson lists.
-export const isLessonStarted = (
-  userId: string | undefined,
-  lesson: LessonShape,
-  progress?: LessonProgressSnapshot,
-): boolean => {
-  if (!userId) return false;
-  return availableStages(lesson, progress?.trapHunter).some((stage) => {
-    const status = getStageStatus(userId, lesson, stage, progress);
-    return status === 'in_progress' || status === 'completed';
-  });
-};
-
-export interface CourseProgress {
-  completed: number;
-  total: number;
-  percent: number;
-}
-
-// Denominator is every published lesson handed in — safe because the backend
-// refuses to publish a lesson with neither videoUrl nor audioUrl, so a
-// published lesson always has completable content and 100% stays reachable.
-export const getCourseProgress = (
-  userId: string | undefined,
-  lessons: LessonShape[],
-  // Sprint 07 — ONE map keyed by lessonId, from
-  // practiceService.getCourseStageProgress. It replaced three parallel maps
-  // (quiz, trap, practice) that every caller had to build and pass in the
-  // right order, and it now also carries the video/theory steps those callers
-  // previously read from localStorage.
-  progressByLessonId?: Map<string, LessonProgressSnapshot>,
-): CourseProgress => {
-  const total = lessons.length;
-  if (total === 0) return { completed: 0, total: 0, percent: 0 };
-  const completed = lessons.filter((lesson) =>
-    isLessonComplete(userId, lesson, progressByLessonId?.get(lesson.id)),
-  ).length;
-  // floor, matching the Learning Engine's percentages (ADR 007 §5) — a single
-  // finished lesson out of 20 must not round up to look like more.
-  return { completed, total, percent: Math.floor((completed / total) * 100) };
-};
+// `isLessonComplete`, `isLessonStarted`, `getCourseProgress` and the
+// `CourseProgress` type used to live here. They are gone, and nothing in this
+// module replaces them — asking whether a LESSON or a COURSE is finished is no
+// longer the client's question to answer.
+//
+//   lesson status  -> GET /lessons/:id/progress feeds the stepper below;
+//                     lesson-level status comes from the course aggregate
+//   course status  -> GET /progress/courses, via services/courseProgressService
+//   the rule       -> engmasterai-backend/src/lesson/progress/lesson-status.ts
+//
+// INVARIANT A WENT WITH IT. `deriveLessonStatus` over there is still
+// `stages.every(...)` over a computed list, for the same reason it was here:
+// each stage is one more entry, and Sprint 06D and Sprint 07 both widened
+// completion without touching that body.
+//
+// Two things the server's version fixes that this one could not:
+//
+//   1. It is the SAME answer everywhere. The course page and the lesson page
+//      each used to compute completion from their own copy of the inputs.
+//   2. It handles a lesson with NO completable stage. The old comment here
+//      claimed "the backend refuses to publish a lesson with neither videoUrl
+//      nor audioUrl, so a published lesson always has completable content" —
+//      that was WRONG. An audio-only lesson has no stage at all (there is no
+//      audio stage), so it could never complete, and its course could never
+//      reach 100%. The server reports those as NO_CONTENT and leaves them out
+//      of the totals.
+//
+// What REMAINS here is per-stage status for the lesson stepper —
+// getStageStatus and availableStages. That is a genuine duplicate of the
+// server's stage rules and is pinned by an identical fixture table in
+// lessonProgress.test.ts and lesson-status.spec.ts. Retiring it means having
+// the lesson aggregate return per-stage statuses too, which is scheduled, not
+// forgotten.
 
 // --- Legacy cleanup (Sprint 07, temporary) ----------------------------------
 

@@ -91,60 +91,16 @@ export const completeTheory = async (lessonId: string): Promise<StepProgress> =>
   return response.json();
 };
 
-// One row per lesson in the course that has any progress-bearing content.
-interface CourseStageProgressRow {
-  lessonId: string;
-  quiz: { passed: boolean; bestScorePercent: number | null; attemptsCount: number } | null;
-  trapHunter: { hasSource: boolean; total: number; cleared: number } | null;
-  practice: { passed: boolean; bestScorePercent: number | null; attemptsCount: number } | null;
-  steps: LessonStepsProgress;
-}
-
-// GET /courses/:courseId/stage-progress, mapped to the same snapshot shape the
-// lesson page uses.
+// Sprint 08 — `getCourseProgressMap` was DELETED from here.
 //
-// Sprint 07 — this MOVED here from practiceService, where Sprint 06D first
-// added it. It stopped being a practice concern the moment it carried quiz,
-// trap, practice AND step progress; leaving it under `practiceService` meant
-// three course pages importing a practice module to render a percentage.
+// It fetched GET /courses/:courseId/stage-progress and handed three course
+// pages a bag of raw stage rows, which each of them then rolled up into a
+// percentage with services/lessonProgress. That roll-up was the last place a
+// course percentage was decided in the browser.
 //
-// It also replaced three separate calls per page (quiz-progress,
-// trap-hunter-progress, stage-progress). Those two per-stage endpoints are
-// deprecated server-side and deleted in the cleanup sprint.
-//
-// Returning a Map rather than an array is deliberate: every caller immediately
-// keyed by lessonId, and three pages each building the same map three times was
-// how the shapes drifted in the first place.
-export const getCourseProgressMap = async (
-  courseId: string,
-): Promise<Map<string, LessonProgressSnapshot>> => {
-  const response = await apiFetch(
-    `${API_BASE_URL}/courses/${courseId}/stage-progress`,
-  );
-  if (!response.ok) return throwApiError(response, 'Failed to load course progress');
-  const rows: CourseStageProgressRow[] = await response.json();
-
-  return new Map(
-    rows.map((row) => [
-      row.lessonId,
-      {
-        steps: row.steps,
-        quiz: row.quiz
-          ? { passed: row.quiz.passed, attemptsCount: row.quiz.attemptsCount }
-          : undefined,
-        trapHunter: row.trapHunter ?? undefined,
-        // No `availability` here. The course aggregate deliberately does not
-        // carry it: this page renders a percentage, and for that 'blocked' and
-        // 'not_started' are the same thing — neither is 'completed'.
-        practice: row.practice
-          ? {
-              passed: row.practice.passed,
-              attemptsCount: row.practice.attemptsCount,
-            }
-          : undefined,
-      } satisfies LessonProgressSnapshot,
-    ]),
-  );
-};
+// Its replacement is services/courseProgressService.ts, which asks the server
+// for the ANSWER rather than the ingredients — one batch request for every
+// course on a page, instead of one request per course. The endpoint it called
+// is deprecated server-side and goes in the cleanup sprint.
 
 export type { LessonProgressSnapshot, LessonStepsProgress, StepProgress };
