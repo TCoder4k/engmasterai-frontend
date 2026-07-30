@@ -184,7 +184,13 @@ const QuizSummary: React.FC<QuizSummaryProps> = ({
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 mt-6">
-        {!result.passed && (
+        {/* Sprint 07 — shown regardless of `passed`. It used to render only
+            after a failure, so a student who passed with 8/10 had no way back
+            in from this screen. Reopening the stage silently restarted the
+            quiz instead, which made the missing button invisible rather than
+            harmless. Retrying now preserves the earlier result: completion,
+            best score and attempt count all survive a worse attempt. */}
+        {(
           <button
             type="button"
             onClick={onRetake}

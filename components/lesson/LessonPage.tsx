@@ -19,21 +19,20 @@ import { handleAuthError } from '../../services/apiError';
 import { recordRecentActivity } from '../../services/recentActivity';
 import {
   LessonStageId,
+  LessonProgressSnapshot,
   StageStatus,
-  QuizStageProgress,
-  PracticeStageProgress,
-  TrapHunterStageProgress,
   getStageStatus,
-  markTheoryComplete,
-  lessonHasPractice,
   lessonHasQuiz,
 } from '../../services/lessonProgress';
-import { getTrapHunter } from '../../services/trapHunterService';
+import {
+  completeTheory,
+  getLessonProgress,
+  startTheory,
+} from '../../services/progressService';
 import { parseGrammarNotes, ParsedGrammarNotes } from './grammar/parseGrammarNotes';
 import QuizStage from './quiz/QuizStage';
 import TrapHunterStage from './traphunter/TrapHunterStage';
 import AdvancedPracticeStage from './practice/AdvancedPracticeStage';
-import { getPractice } from '../../services/practiceService';
 import { Course, Lesson } from '../../types';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -75,37 +74,99 @@ const LessonPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [player, setPlayer] = useState<any | null>(null);
-  // Bumped whenever local stage state changes, so the stepper re-reads it.
-  const [progressToken, setProgressToken] = useState(0);
-  // Sprint 06B — server-side quiz progress for the stage stepper's 'quiz'
-  // tile. Undefined until QuizStage has actually loaded/submitted once
-  // (getStageStatus treats that as "not started", never a fabricated
-  // "completed").
-  const [quizProgress, setQuizProgress] = useState<QuizStageProgress | undefined>(undefined);
-  // Sprint 06C — same contract as quizProgress: undefined until the server
-  // has actually said something, which getStageStatus reports as 'blocked'
-  // rather than guessing.
-  const [trapProgress, setTrapProgress] = useState<TrapHunterStageProgress | undefined>(undefined);
-  const [practiceProgress, setPracticeProgress] = useState<PracticeStageProgress | undefined>(
-    undefined,
-  );
+  // Sprint 07 — ONE server-side snapshot covering every stage, replacing the
+  // three separate progress states and the localStorage reads that used to
+  // stand in for video and theory.
+  //
+  // Undefined means "not fetched yet", which getStageStatus reports as the
+  // honest not-started/blocked rather than a fabricated completion.
+  const [progress, setProgress] = useState<LessonProgressSnapshot | undefined>(undefined);
+  // Sprint 07 — held separately from `isLoading` so the STEPPER can wait for
+  // real progress while the video and title render immediately. Without this
+  // the stepper painted once with everything unfetched and then snapped, and
+  // LessonStageStepper springs on `status`, so the correction was a visible
+  // pop rather than a quiet fill-in.
+  const [isProgressLoading, setIsProgressLoading] = useState(true);
 
   const userId = authService.getUser()?.id;
 
   useEffect(() => {
     if (!courseId || !lessonId) return;
+    // Sprint 07 — every effect on this page now guards its own writes.
+    // Without this, navigating lesson-to-lesson (same route, new params) let a
+    // slow response for lesson A land after lesson B had mounted and overwrite
+    // B's state with A's. UserHome and GrammarRoadmapPage already did this.
+    let cancelled = false;
     setIsLoading(true);
     setError(null);
     Promise.all([getLesson(lessonId), getPublishedCourse(courseId), getCourseLessons(courseId)])
       .then(([lessonRes, courseRes, lessonsRes]) => {
+        if (cancelled) return;
         setLesson(lessonRes);
         setCourse(courseRes);
         setSiblingLessons(lessonsRes.data);
       })
-      .catch((err) => setError(handleAuthError(err, navigate) || t.common.loadFailed))
-      .finally(() => setIsLoading(false));
+      .catch((err) => {
+        if (cancelled) return;
+        setError(handleAuthError(err, navigate) || t.common.loadFailed);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, lessonId]);
+
+  // Sprint 07 — the ONE progress request.
+  //
+  // This replaces three page-level calls (trap hunter, practice, and a quiz
+  // call that was never actually made) plus two localStorage reads. The
+  // missing quiz call was the H1 bug: `quizProgress` only ever arrived through
+  // QuizStage's callback, and QuizStage mounts only when the quiz tab is open
+  // — so a passed quiz read "Chưa học" in the stepper, and Advanced Practice
+  // read "Hoàn thành Quiz trước", until the student happened to open the quiz.
+  // The same lesson simultaneously read "Đã hoàn thành" on the course page.
+  //
+  // Safe to call on every visit precisely because it is read-only.
+  const refreshProgress = useCallback(async () => {
+    if (!lessonId || !userId) {
+      setIsProgressLoading(false);
+      return;
+    }
+    try {
+      setProgress(await getLessonProgress(lessonId));
+    } catch {
+      // Left undefined, which every stage reports as not-started/blocked —
+      // never a fabricated completion.
+      setProgress(undefined);
+    } finally {
+      setIsProgressLoading(false);
+    }
+  }, [lessonId, userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!lessonId || !userId) {
+      setIsProgressLoading(false);
+      return;
+    }
+    setIsProgressLoading(true);
+    getLessonProgress(lessonId)
+      .then((res) => {
+        if (!cancelled) setProgress(res);
+      })
+      .catch(() => {
+        if (!cancelled) setProgress(undefined);
+      })
+      .finally(() => {
+        if (!cancelled) setIsProgressLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lessonId, userId]);
 
   useEffect(() => {
     if (!lesson || !courseId) return;
@@ -122,45 +183,6 @@ const LessonPage: React.FC = () => {
       courseType: course?.type,
     });
   }, [lesson, courseId, course]);
-
-  // Sprint 06C — the stepper's Trap Hunter tile must be right from the
-  // moment the page loads, not only once the student opens that stage, so
-  // this is fetched here rather than inside TrapHunterStage.
-  //
-  // `quizProgress` is a deliberate dependency: finishing an attempt is
-  // exactly what turns 'blocked' into a real status, and re-running on that
-  // change is what makes the tile visibly unlock without a reload.
-  useEffect(() => {
-    if (!lesson || !userId || !lessonHasQuiz(lesson)) return;
-    getTrapHunter(lesson.id)
-      .then((res) => setTrapProgress(res.progress))
-      // Left undefined on failure, which getStageStatus reports as
-      // 'blocked' — the honest "can't open this yet", never a fabricated
-      // completion.
-      .catch(() => setTrapProgress(undefined));
-  }, [lesson, userId, quizProgress]);
-
-  // Sprint 06D — same arrangement for Advanced Practice, and safe to call on
-  // page load precisely because this GET is read-only: it creates no progress
-  // row, stamps no attempt clock and mints no shuffle seed, so merely opening
-  // the lesson can never record an attempt the student did not take.
-  //
-  // `trapProgress` joins the dependencies because clearing the last trap is
-  // exactly what turns Practice from 'blocked' into an open stage.
-  useEffect(() => {
-    if (!lesson || !userId || !lessonHasPractice(lesson)) return;
-    getPractice(lesson.id)
-      .then((res) =>
-        setPracticeProgress({
-          hasTask: res.availability.state !== 'unavailable',
-          passed: res.progress.passed,
-          attemptsCount: res.progress.attemptsCount,
-        }),
-      )
-      // Left undefined on failure, which getStageStatus reports as
-      // 'not_started' once prerequisites are met — never a fabricated pass.
-      .catch(() => setPracticeProgress(undefined));
-  }, [lesson, userId, quizProgress, trapProgress]);
 
   const isGrammar = course?.type === 'GRAMMAR';
   const parsedNotes = useMemo(
@@ -191,30 +213,20 @@ const LessonPage: React.FC = () => {
     [searchParams, setSearchParams],
   );
 
+  // Sprint 07 — every tile derives from the one server snapshot. No
+  // progressToken, because there is no longer any local state for React to
+  // fail to observe: a stage completes by calling the server, and the page
+  // re-reads the result.
   const stageStatuses = useMemo((): Record<LessonStageId, StageStatus> => {
     const target = lesson ?? { id: '', videoUrl: null, notes: null, publishedTaskTypes: [] };
-    // progressToken is a deliberate dependency: local stage state lives in
-    // localStorage, which React cannot observe on its own.
-    void progressToken;
     return {
-      video: getStageStatus(userId, target, 'video'),
-      theory: getStageStatus(userId, target, 'theory'),
-      quiz: getStageStatus(userId, target, 'quiz', quizProgress),
-      traphunter: getStageStatus(userId, target, 'traphunter', quizProgress, trapProgress),
-      // Sprint 06D — a real, server-backed stage at last. Its prerequisites
-      // are DERIVED from quizProgress/trapProgress here rather than fetched
-      // as a fourth value, so the tile can never disagree with the two
-      // stages it depends on.
-      practice: getStageStatus(
-        userId,
-        target,
-        'practice',
-        quizProgress,
-        trapProgress,
-        practiceProgress,
-      ),
+      video: getStageStatus(userId, target, 'video', progress),
+      theory: getStageStatus(userId, target, 'theory', progress),
+      quiz: getStageStatus(userId, target, 'quiz', progress),
+      traphunter: getStageStatus(userId, target, 'traphunter', progress),
+      practice: getStageStatus(userId, target, 'practice', progress),
     };
-  }, [lesson, userId, progressToken, quizProgress, trapProgress, practiceProgress]);
+  }, [lesson, userId, progress]);
 
   // A bookmarked/typed ?stage=quiz on a lesson with no quiz falls back to
   // Video rather than rendering nothing — the same thing an unrecognised
@@ -240,15 +252,43 @@ const LessonPage: React.FC = () => {
       ? 'video'
       : requestedStage;
 
-  const handleMarkTheoryRead = () => {
-    if (!userId || !lesson) return;
-    markTheoryComplete(userId, lesson.id);
-    setProgressToken((token) => token + 1);
+  // Sprint 07 — the explicit "Tôi đã đọc xong" action, now a real server
+  // write. PESSIMISTIC on purpose: the tile flips only after the server has
+  // recorded it, because a completion that silently failed is exactly the
+  // class of lie this sprint exists to remove.
+  const [isMarkingTheory, setIsMarkingTheory] = useState(false);
+  const [theoryError, setTheoryError] = useState<string | null>(null);
+
+  const handleMarkTheoryRead = async () => {
+    if (!userId || !lesson || isMarkingTheory) return;
+    setIsMarkingTheory(true);
+    setTheoryError(null);
+    try {
+      await completeTheory(lesson.id);
+      await refreshProgress();
+    } catch (err) {
+      setTheoryError(handleAuthError(err, navigate) || t.common.loadFailed);
+    } finally {
+      setIsMarkingTheory(false);
+    }
   };
+
+  // Opening the theory pane marks it IN_PROGRESS — never completed. An
+  // accidental visit must not claim a student has read something.
+  // Fire-and-forget: this is a hint for the stepper, not a gate on anything.
+  useEffect(() => {
+    if (currentStage !== 'theory' || !lesson || !userId || !hasNotesContent) return;
+    if (progress?.steps?.theory?.startedAt) return;
+    void startTheory(lesson.id)
+      .then(() => refreshProgress())
+      .catch(() => {
+        // Silent by design — failing to record that a pane was opened is not
+        // worth interrupting the student to report.
+      });
+  }, [currentStage, lesson, userId, hasNotesContent, progress, refreshProgress]);
 
   const goToTheory = () => {
     selectStage('theory');
-    setProgressToken((token) => token + 1);
   };
 
   return (
@@ -299,10 +339,9 @@ const LessonPage: React.FC = () => {
 
             <div className="mb-6">
               <LessonVideoPlayer
-                courseId={course.id}
                 lessonId={lesson.id}
-                resolvedLessonPath={`/courses/${course.id}/lessons/${lesson.id}`}
                 videoUrl={lesson.videoUrl}
+                savedProgress={progress?.steps?.video}
               />
             </div>
 
@@ -339,11 +378,23 @@ const LessonPage: React.FC = () => {
               )}
             </div>
 
-            <LessonStageStepper
-              currentStage={currentStage}
-              statuses={stageStatuses}
-              onSelectStage={selectStage}
-            />
+            {/* Sprint 07 — held back until real progress arrives. The tiles
+                used to paint once with everything unfetched (every stage
+                "Chưa học", Practice "Hoàn thành Quiz trước") and then snap to
+                the truth, and the stepper springs on `status`, so the
+                correction read as a visible pop rather than a quiet fill-in.
+                A skeleton says "loading" honestly instead. */}
+            {isProgressLoading ? (
+              <div className="mb-6" aria-hidden="true">
+                <Skeleton className="h-20 w-full rounded-2xl" />
+              </div>
+            ) : (
+              <LessonStageStepper
+                currentStage={currentStage}
+                statuses={stageStatuses}
+                onSelectStage={selectStage}
+              />
+            )}
 
             {/*
               Sprint 06B.5 — the three stages were sibling short-circuits
@@ -360,12 +411,14 @@ const LessonPage: React.FC = () => {
               <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-5 mb-8">
                 <div className="space-y-5">
                   <LessonVideoPlayer
-                    courseId={course.id}
                     lessonId={lesson.id}
-                    resolvedLessonPath={`/courses/${course.id}/lessons/${lesson.id}`}
                     videoUrl={lesson.videoUrl}
+                    savedProgress={progress?.steps?.video}
                     onPlayerReady={setPlayer}
-                    onEnded={() => setProgressToken((token) => token + 1)}
+                    // Sprint 07 — the player flushes the final position to the
+                    // server BEFORE calling this, so the re-read sees the
+                    // completed step rather than racing the write.
+                    onEnded={() => void refreshProgress()}
                   />
 
                   {(lesson.description || lesson.learningObjectives.length > 0) && (
@@ -414,6 +467,8 @@ const LessonPage: React.FC = () => {
                   <TheoryCompletionBar
                     isComplete={stageStatuses.theory === 'completed'}
                     onMarkRead={handleMarkTheoryRead}
+                    isPending={isMarkingTheory}
+                    error={theoryError}
                     hasQuiz={lessonHasQuiz(lesson)}
                     onGoToQuiz={() => selectStage('quiz')}
                   />
@@ -436,7 +491,7 @@ const LessonPage: React.FC = () => {
                   currentLesson={lesson}
                   allLessons={siblingLessons}
                   userId={userId}
-                  onProgressChange={setQuizProgress}
+                  onProgressChange={() => void refreshProgress()}
                   onGoToTrapHunter={() => selectStage('traphunter')}
                 />
               </div>
@@ -452,7 +507,7 @@ const LessonPage: React.FC = () => {
               <div className="mb-8">
                 <TrapHunterStage
                   lessonId={lesson.id}
-                  onProgressChange={setTrapProgress}
+                  onProgressChange={() => void refreshProgress()}
                   onGoToQuiz={() => selectStage('quiz')}
                 />
               </div>
@@ -466,7 +521,7 @@ const LessonPage: React.FC = () => {
               <div className="mb-8">
                 <AdvancedPracticeStage
                   lessonId={lesson.id}
-                  onCompleted={() => setProgressToken((token) => token + 1)}
+                  onCompleted={() => void refreshProgress()}
                 />
               </div>
             )}

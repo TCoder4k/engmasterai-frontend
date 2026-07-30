@@ -46,8 +46,13 @@ export const clearQuizDraft = (userId: string, lessonId: string): void => {
   }
 };
 
-// Called on logout, beside clearLessonStages/clearAllVideoProgress — a
-// shared device must never resume a draft attempt under the next account.
+// Called on logout — a shared device must never resume a draft attempt under
+// the next account.
+//
+// Sprint 07: this is now the ONLY device-local learning state that needs
+// clearing. Video and theory completion used to be cleared alongside it; both
+// moved to the server, so the next account sees its own progress by
+// construction rather than by anyone remembering to wipe the previous one.
 export const clearAllQuizDrafts = (userId: string): void => {
   const prefix = `quizAttempt:${userId}:`;
   try {

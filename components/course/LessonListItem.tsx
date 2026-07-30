@@ -6,9 +6,7 @@ import { authService } from '../../services/authService';
 import {
   isLessonComplete,
   isLessonStarted,
-  PracticeStageProgress,
-  QuizStageProgress,
-  TrapHunterStageProgress,
+  LessonProgressSnapshot,
 } from '../../services/lessonProgress';
 import { useTranslation } from '../../i18n/useTranslation';
 
@@ -16,44 +14,35 @@ interface LessonListItemProps {
   courseId: string;
   lesson: Lesson;
   orderNumber: number;
-  // Sprint 06B — server-side quiz progress for THIS lesson, fetched once by
-  // CourseDetailPage via quizService.getCourseQuizProgress and passed down.
-  // Undefined for a lesson with no quiz, or while quiz progress hasn't
-  // loaded yet — isLessonComplete already treats that as "not complete"
-  // rather than fabricating a status.
-  quizProgress?: QuizStageProgress;
-  // Sprint 06C — same contract, same source shape: fetched once by
-  // CourseDetailPage and passed down. Undefined drops 'traphunter' out of
-  // this lesson's available stages entirely, so an un-updated caller sees
-  // exactly the pre-06C badge rather than a wrong one.
-  trapProgress?: TrapHunterStageProgress;
-  // Sprint 06D — same contract. Omitted, a lesson with a published practice
-  // task reports 'not_started', so it stays open rather than falsely complete.
-  practiceProgress?: PracticeStageProgress;
+  // Sprint 07 — this lesson's server-side progress across every stage,
+  // fetched once by CourseDetailPage and passed down. It replaced three
+  // separate props (quiz, trap, practice) plus two localStorage reads this
+  // component's callee used to make for video and theory.
+  //
+  // Undefined while it loads, which isLessonComplete already treats as "not
+  // complete" rather than fabricating a status.
+  progress?: LessonProgressSnapshot;
 }
 
 // Row anatomy follows the design reference's lesson stack (status badge ->
 // meta line -> title -> right-hand action).
 //
 // The reference's per-lesson accuracy badge ("Đã hoàn thành — 95% chính
-// xác") is NOT reproduced: accuracy needs LessonTask/Question, which has no
-// API. The completion badge here is real but device-local, and it means
-// every stage the lesson offers is finished — not merely that the video
-// played to the end.
+// xác") is NOT reproduced: it would need a per-lesson accuracy figure the
+// course aggregate does not carry. The completion badge here is real, and as
+// of Sprint 07 fully server-backed: it means every stage the lesson offers is
+// finished — not merely that the video played to the end.
 const LessonListItem: React.FC<LessonListItemProps> = ({
   courseId,
   lesson,
   orderNumber,
-  quizProgress,
-  trapProgress,
-  practiceProgress,
+  progress,
 }) => {
   const { t } = useTranslation();
   const userId = authService.getUser()?.id;
 
-  const completed = isLessonComplete(userId, lesson, quizProgress, trapProgress, practiceProgress);
-  const started =
-    !completed && isLessonStarted(userId, lesson, quizProgress, trapProgress, practiceProgress);
+  const completed = isLessonComplete(userId, lesson, progress);
+  const started = !completed && isLessonStarted(userId, lesson, progress);
 
   const badgeClass = completed
     ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/40'

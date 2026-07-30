@@ -13,13 +13,9 @@ import { authService } from '../../services/authService';
 import {
   getCourseProgress,
   CourseProgress,
-  PracticeStageProgress,
-  QuizStageProgress,
-  TrapHunterStageProgress,
+  LessonProgressSnapshot,
 } from '../../services/lessonProgress';
-import { getCourseQuizProgress } from '../../services/quizService';
-import { getCourseStageProgress } from '../../services/practiceService';
-import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
+import { getCourseProgressMap } from '../../services/progressService';
 import { handleAuthError } from '../../services/apiError';
 import { Course, Lesson } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -47,23 +43,12 @@ const GrammarRoadmapPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<GrammarCategory | null>(null);
   const [lessonsByCourse, setLessonsByCourse] = useState<Map<string, Lesson[]>>(new Map());
-  // Sprint 06B — flat map keyed by lessonId (ids are unique across courses),
-  // merged from one getCourseQuizProgress call per course alongside the
-  // existing per-course lessons fetch below. Same silent-degrade rule: a
-  // failure here just leaves quiz-bearing lessons looking not-yet-passed.
-  const [quizProgressByLessonId, setQuizProgressByLessonId] = useState<Map<string, QuizStageProgress>>(
-    new Map(),
-  );
-  // Sprint 06C — merged the same way, from the same shape of per-course
-  // batch endpoint, under the same silent-degrade rule.
-  // Sprint 06D — without this a lesson whose Advanced Practice is finished
-  // would still count as incomplete in the roadmap percentage, because
-  // 'practice' now joins availableStages() whenever a published task exists.
-  const [practiceProgressByLessonId, setPracticeProgressByLessonId] = useState<
-    Map<string, PracticeStageProgress>
-  >(new Map());
-  const [trapProgressByLessonId, setTrapProgressByLessonId] = useState<
-    Map<string, TrapHunterStageProgress>
+  // Sprint 07 — one flat map keyed by lessonId (ids are unique across
+  // courses), merged from one aggregated call per course. It replaced three
+  // parallel maps built from three requests per course. Same silent-degrade
+  // rule as before: a failure just leaves lessons looking not-yet-finished.
+  const [progressByLessonId, setProgressByLessonId] = useState<
+    Map<string, LessonProgressSnapshot>
   >(new Map());
 
   useEffect(() => {
@@ -110,80 +95,33 @@ const GrammarRoadmapPage: React.FC = () => {
     };
   }, [courses]);
 
+  // Sprint 07 — ONE aggregated request per course, covering every stage
+  // including the video and theory steps.
+  //
+  // Fetching the steps is what keeps this page CORRECT rather than merely
+  // richer: both gate isLessonComplete(), so without them every lesson would
+  // read as incomplete here no matter how much had been watched, while the
+  // lesson page showed it finished.
+  //
+  // Failure leaves the map empty, which reports every stage not-started — a
+  // stale percentage, never an inflated one.
   useEffect(() => {
     if (courses.length === 0 || !userId) return;
     let cancelled = false;
 
     Promise.all(
       courses.map((course) =>
-        getCourseQuizProgress(course.id)
-          .then((res) => res.data)
-          .catch(() => []),
+        getCourseProgressMap(course.id).catch(
+          () => new Map<string, LessonProgressSnapshot>(),
+        ),
       ),
     ).then((results) => {
       if (cancelled) return;
-      const map = new Map<string, QuizStageProgress>();
-      results.flat().forEach((row) => {
-        map.set(row.lessonId, { passed: row.passed, attemptsCount: row.attemptsCount });
+      const map = new Map<string, LessonProgressSnapshot>();
+      results.forEach((courseMap) => {
+        courseMap.forEach((snapshot, lessonId) => map.set(lessonId, snapshot));
       });
-      setQuizProgressByLessonId(map);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [courses, userId]);
-
-  // Sprint 06D — one aggregated request per course. Failure leaves the map
-  // empty, which reports practice 'not_started': a stale, never inflated,
-  // percentage.
-  useEffect(() => {
-    if (courses.length === 0 || !userId) return;
-    let cancelled = false;
-
-    Promise.all(
-      courses.map((course) => getCourseStageProgress(course.id).catch(() => [])),
-    ).then((results) => {
-      if (cancelled) return;
-      const map = new Map<string, PracticeStageProgress>();
-      results.flat().forEach((row) => {
-        if (row.practice) {
-          map.set(row.lessonId, {
-            hasTask: true,
-            passed: row.practice.passed,
-            attemptsCount: row.practice.attemptsCount,
-          });
-        }
-      });
-      setPracticeProgressByLessonId(map);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [courses, userId]);
-
-  useEffect(() => {
-    if (courses.length === 0 || !userId) return;
-    let cancelled = false;
-
-    Promise.all(
-      courses.map((course) =>
-        getCourseTrapHunterProgress(course.id)
-          .then((res) => res.data)
-          .catch(() => []),
-      ),
-    ).then((results) => {
-      if (cancelled) return;
-      const map = new Map<string, TrapHunterStageProgress>();
-      results.flat().forEach((row) => {
-        map.set(row.lessonId, {
-          hasSource: row.hasSource,
-          total: row.total,
-          cleared: row.cleared,
-        });
-      });
-      setTrapProgressByLessonId(map);
+      setProgressByLessonId(map);
     });
 
     return () => {
@@ -208,23 +146,11 @@ const GrammarRoadmapPage: React.FC = () => {
     lessonsByCourse.forEach((lessons, courseId) => {
       map.set(
         courseId,
-        getCourseProgress(
-          userId,
-          lessons,
-          quizProgressByLessonId,
-          trapProgressByLessonId,
-          practiceProgressByLessonId,
-        ),
+        getCourseProgress(userId, lessons, progressByLessonId),
       );
     });
     return map;
-  }, [
-    lessonsByCourse,
-    userId,
-    quizProgressByLessonId,
-    trapProgressByLessonId,
-    practiceProgressByLessonId,
-  ]);
+  }, [lessonsByCourse, userId, progressByLessonId]);
 
   // Roadmap-wide totals. Rendered only once every course's lessons are in,
   // so a partial figure never briefly claims a lower total than the truth.
@@ -327,7 +253,7 @@ const GrammarRoadmapPage: React.FC = () => {
                       />
                     </div>
                     <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                      {t.grammar.onThisDevice}
+                      {t.grammar.progressSynced}
                     </p>
                   </div>
                 )}

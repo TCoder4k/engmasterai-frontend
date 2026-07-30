@@ -79,6 +79,19 @@ export interface StudentQuizProgress {
 export interface GetQuizResponse {
   quiz: StudentQuiz;
   progress: StudentQuizProgress;
+  /**
+   * Sprint 07 — the stored summary of the last FINISHED attempt, or null when
+   * there is none or an attempt is currently in flight.
+   *
+   * Non-null means "you have finished this before; here is what you scored".
+   * Before this existed, QuizStage fetched `progress`, had nothing to render
+   * from it, and reset every visit to a blank question 1 — so reopening a quiz
+   * you had already passed silently threw the result away and started again.
+   *
+   * The server withholds it while an attempt is in flight: this body carries
+   * correctAnswer for every question.
+   */
+  lastResult: SubmitQuizResponse | null;
 }
 
 export interface SubmitAnswerInput {
@@ -150,9 +163,25 @@ export const isQuizIdempotencyConflict = (error: unknown): boolean =>
 
 // --- Student -----------------------------------------------------------------
 
+// READ-ONLY as of Sprint 07. This used to start an attempt as a side effect,
+// which meant merely opening a finished quiz began a new one behind the
+// student's back. Starting is now POST /quiz/start, below.
 export const getLessonQuiz = async (lessonId: string): Promise<GetQuizResponse> => {
   const response = await apiFetch(`${API_BASE_URL}/lessons/${lessonId}/quiz`);
   if (!response.ok) return throwApiError(response, 'Failed to load quiz');
+  return response.json();
+};
+
+// Sprint 07 — the explicit start, mirroring POST /practice/start.
+//
+// Idempotent server-side: an attempt already in flight is returned untouched,
+// so a double-click or a mid-quiz refresh never restarts the clock or
+// reshuffles a question the student is already looking at.
+export const startLessonQuiz = async (lessonId: string): Promise<GetQuizResponse> => {
+  const response = await apiFetch(`${API_BASE_URL}/lessons/${lessonId}/quiz/start`, {
+    method: 'POST',
+  });
+  if (!response.ok) return throwApiError(response, 'Failed to start quiz');
   return response.json();
 };
 

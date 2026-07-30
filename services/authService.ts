@@ -1,6 +1,4 @@
 import { clearRecentActivity } from './recentActivity';
-import { clearAllVideoProgress } from './videoProgress';
-import { clearLessonStages } from './lessonProgress';
 import { clearAllQuizDrafts } from './quizDraft';
 import { fetchWithTimeout } from './fetchTimeout';
 // Deliberate circular import (refreshCoordinator.ts imports authService for
@@ -372,13 +370,15 @@ export const authService = {
     // The per-user theme preference is deliberately NOT cleared — it stays
     // under its own scoped key so the same student keeps their choice on a
     // later login.
+    // Sprint 07 — video and theory completion are NO LONGER cleared here,
+    // because they are no longer stored here. Both moved to the server
+    // (LessonStepProgress), which means a shared device shows the next account
+    // its OWN progress by construction rather than by remembering to wipe the
+    // previous one. The old clearAllVideoProgress/clearLessonStages calls went
+    // with the stores they cleared.
     if (user) {
       clearRecentActivity(user.id);
-      clearAllVideoProgress(user.id);
-      // Sprint 06 — lesson stage completion is device-local too, so it falls
-      // under the same shared-device rule as the two above.
-      clearLessonStages(user.id);
-      // Sprint 06B — an in-progress quiz draft is also per-user session
+      // Sprint 06B — an in-progress quiz draft is still per-user session
       // state; a shared device must never resume it under the next account.
       clearAllQuizDrafts(user.id);
     }

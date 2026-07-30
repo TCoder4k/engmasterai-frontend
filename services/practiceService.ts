@@ -64,13 +64,6 @@ export interface StartPracticeResponse {
   attempt: StudentQuiz;
 }
 
-export interface CourseStageProgressRow {
-  lessonId: string;
-  quiz: { passed: boolean; bestScorePercent: number | null; attemptsCount: number } | null;
-  trapHunter: { hasSource: boolean; total: number; cleared: number } | null;
-  practice: { passed: boolean; bestScorePercent: number | null; attemptsCount: number } | null;
-}
-
 // GET is safe to call from anywhere — it writes nothing on the server.
 export const getPractice = async (lessonId: string): Promise<GetPracticeResponse> => {
   const response = await apiFetch(`${API_BASE_URL}/lessons/${lessonId}/practice`);
@@ -114,15 +107,12 @@ export const submitPractice = async (
   return response.json();
 };
 
-// One request per course covering every stage that has a backend, replacing
-// the need to call quiz-progress and trap-hunter-progress separately.
-export const getCourseStageProgress = async (
-  courseId: string,
-): Promise<CourseStageProgressRow[]> => {
-  const response = await apiFetch(`${API_BASE_URL}/courses/${courseId}/stage-progress`);
-  if (!response.ok) return throwApiError(response, 'Failed to load stage progress');
-  return response.json();
-};
+// Sprint 07 — getCourseStageProgress MOVED to services/progressService.ts as
+// getCourseProgressMap. It stopped being a practice concern the moment it
+// carried quiz, trap, practice AND step progress; leaving it here meant three
+// course pages importing a practice module to render a percentage. Removed
+// rather than re-exported: two functions calling one endpoint is exactly the
+// duplication that lets two mappings of the same payload drift apart.
 
 // --- Admin authoring --------------------------------------------------------
 //

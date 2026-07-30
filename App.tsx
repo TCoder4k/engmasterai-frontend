@@ -39,6 +39,16 @@ import ProtectedRoute from './components/shared/ProtectedRoute';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { LanguageProvider } from './i18n/LanguageProvider';
 import { SoundProvider } from './components/shared/SoundProvider';
+import { purgeLegacyLocalProgress } from './services/lessonProgress';
+
+// Sprint 07 — video and theory completion moved to the server, and the old
+// device-local records are DISCARDED rather than imported: they were always
+// client-writable, so importing them would have turned forged keys into real
+// database rows. Run once at module load, before anything can read them.
+//
+// Nothing writes these keys any more, so there is no race and no version
+// marker is needed. DELETE THIS (and the function) in the cleanup sprint.
+purgeLegacyLocalProgress();
 
 const App: React.FC = () => {
   return (

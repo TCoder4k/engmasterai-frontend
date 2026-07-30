@@ -12,15 +12,11 @@ import { authService } from '../../services/authService';
 import { getPublishedCourses } from '../../services/courseService';
 import { getCourseLessons } from '../../services/lessonService';
 import { getLibrariesProgress } from '../../services/learningService';
-import { getCourseQuizProgress } from '../../services/quizService';
-import { getCourseTrapHunterProgress } from '../../services/trapHunterService';
-import { getCourseStageProgress } from '../../services/practiceService';
 import {
   getCourseProgress,
-  PracticeStageProgress,
-  QuizStageProgress,
-  TrapHunterStageProgress,
+  LessonProgressSnapshot,
 } from '../../services/lessonProgress';
+import { getCourseProgressMap } from '../../services/progressService';
 import { getMostRecentActivityOfType } from '../../services/recentActivity';
 import { getLessonSummaries } from '../practice/listening/listeningContent';
 import { handleAuthError } from '../../services/apiError';
@@ -104,50 +100,18 @@ const UserHome: React.FC = () => {
     let cancelled = false;
     Promise.all([
       getCourseLessons(courseId),
-      // Quiz progress is server-side; without it a quiz-bearing lesson counts
-      // as not-yet-passed, which understates rather than inflates.
-      getCourseQuizProgress(courseId).catch(() => ({ data: [] })),
-      // Sprint 06C — same reasoning: without it a lesson with uncorrected
-      // traps would count as finished here while the lesson page shows the
-      // stage still open.
-      getCourseTrapHunterProgress(courseId).catch(() => ({ data: [] })),
-      // Sprint 06D — same reasoning again: 'practice' now joins
-      // availableStages() whenever a published task exists, so without this a
-      // finished lesson would read incomplete here.
-      getCourseStageProgress(courseId).catch(() => []),
+      // Sprint 07 — ONE aggregated request replacing three. It also carries
+      // the video and theory steps, without which every lesson would count as
+      // unfinished here now that those two live on the server rather than in
+      // this browser's localStorage.
+      getCourseProgressMap(courseId).catch(
+        () => new Map<string, LessonProgressSnapshot>(),
+      ),
     ])
-      .then(([lessonsRes, quizRes, trapRes, stageRows]) => {
+      .then(([lessonsRes, progressByLesson]) => {
         if (cancelled) return;
-        const quizByLesson = new Map<string, QuizStageProgress>(
-          quizRes.data.map((row): [string, QuizStageProgress] => [
-            row.lessonId,
-            { passed: row.passed, attemptsCount: row.attemptsCount },
-          ]),
-        );
-        const trapByLesson = new Map<string, TrapHunterStageProgress>(
-          trapRes.data.map((row): [string, TrapHunterStageProgress] => [
-            row.lessonId,
-            { hasSource: row.hasSource, total: row.total, cleared: row.cleared },
-          ]),
-        );
-        const practiceByLesson = new Map<string, PracticeStageProgress>();
-        stageRows.forEach((row) => {
-          if (row.practice) {
-            practiceByLesson.set(row.lessonId, {
-              hasTask: true,
-              passed: row.practice.passed,
-              attemptsCount: row.practice.attemptsCount,
-            });
-          }
-        });
         setContinuePercent(
-          getCourseProgress(
-            user.id,
-            lessonsRes.data,
-            quizByLesson,
-            trapByLesson,
-            practiceByLesson,
-          ).percent,
+          getCourseProgress(user.id, lessonsRes.data, progressByLesson).percent,
         );
       })
       .catch(() => {

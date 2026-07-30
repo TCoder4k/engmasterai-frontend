@@ -26,6 +26,8 @@ vi.mock('../../../services/quizService', async () => {
   return {
     ...actual,
     getLessonQuiz: vi.fn(),
+    // Sprint 07 — the GET is read-only now; starting an attempt is explicit.
+    startLessonQuiz: vi.fn(),
     submitLessonQuiz: vi.fn(),
     answerQuizQuestion: vi.fn(),
   };
@@ -161,10 +163,22 @@ beforeEach(() => {
   // mockReset (not mockResolvedValue alone) so each test starts with a
   // clean call count — vi.restoreAllMocks() below does not clear plain
   // vi.fn() call history, only spy implementations.
-  vi.mocked(quizService.getLessonQuiz).mockReset().mockResolvedValue({
+  // Sprint 07 — `lastResult: null` is "never finished this before", which is
+  // what every test in this file assumes. The dedicated block at the bottom
+  // covers the non-null case.
+  const freshQuiz = {
     quiz: immediateQuiz(),
     progress: { attemptsCount: 0, bestScorePercent: null, passed: false, lastDurationSeconds: null },
-  });
+    lastResult: null,
+  };
+  vi.mocked(quizService.getLessonQuiz).mockReset().mockResolvedValue(freshQuiz);
+  // A first attempt auto-starts, so the student lands on question 1 with no
+  // extra click. The mock returns the same payload the GET did.
+  vi.mocked(quizService.startLessonQuiz)
+    .mockReset()
+    .mockImplementation(async () => vi.mocked(quizService.getLessonQuiz).mock.results[0]
+      ? await vi.mocked(quizService.getLessonQuiz)('l-1')
+      : freshQuiz);
   vi.mocked(quizService.submitLessonQuiz).mockReset().mockResolvedValue(SUBMIT_RESULT);
   vi.mocked(quizService.answerQuizQuestion).mockReset();
   vi.mocked(feedbackSounds.playSelect).mockReset();
@@ -299,6 +313,7 @@ describe('QuizStage — immediate feedback', () => {
     vi.mocked(quizService.getLessonQuiz).mockResolvedValue({
       quiz: resumed,
       progress: { attemptsCount: 0, bestScorePercent: null, passed: false, lastDurationSeconds: null },
+      lastResult: null,
     });
 
     renderStage();
@@ -362,6 +377,7 @@ describe('QuizStage — ON_SUBMIT mode still works (Sprint 06B flow)', () => {
     vi.mocked(quizService.getLessonQuiz).mockResolvedValue({
       quiz: { ...immediateQuiz(), feedbackMode: 'ON_SUBMIT' },
       progress: { attemptsCount: 0, bestScorePercent: null, passed: false, lastDurationSeconds: null },
+      lastResult: null,
     });
   });
 
@@ -417,5 +433,86 @@ describe('QuizStage — keyboard', () => {
 
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('Correct!')).toBeInTheDocument();
+  });
+});
+
+// SPRINT 07 — the reported bug: "a completed quiz does not reliably restore
+// its previous result in another browser session."
+//
+// The cause was entirely client-side. loadQuiz ended unconditionally with
+// `setSubmitResult(null); setPhase('answering')`, so reopening a finished quiz
+// always dropped the student into a blank question 1 — and because the GET
+// also started an attempt as a side effect, that reset was silently recorded
+// server-side too. The stored result arrived in the response and was never
+// rendered.
+describe('QuizStage — a finished quiz restores its stored summary', () => {
+  const passedResult = {
+    ...SUBMIT_RESULT,
+    correctCount: 3,
+    accuracyPercent: 100,
+    passed: true,
+    bestScorePercent: 100,
+    results: SUBMIT_RESULT.results.map((r) => ({ ...r, isCorrect: true })),
+  };
+
+  const mockFinishedQuiz = () => {
+    vi.mocked(quizService.getLessonQuiz).mockResolvedValue({
+      // currentAttemptId null == no attempt in flight.
+      quiz: { ...immediateQuiz(), currentAttemptId: null },
+      progress: {
+        attemptsCount: 1,
+        bestScorePercent: 100,
+        passed: true,
+        lastDurationSeconds: 42,
+      },
+      lastResult: passedResult,
+    });
+  };
+
+  it('shows the stored result instead of a blank first question', async () => {
+    mockFinishedQuiz();
+    renderStage();
+
+    // The summary, with the REAL stored numbers.
+    expect(await screen.findByText('3/3')).toBeInTheDocument();
+    // Not dropped back into the quiz.
+    expect(screen.queryByText('She ___ to work every day.')).not.toBeInTheDocument();
+  });
+
+  it('starts NOTHING when a finished quiz is merely reopened', async () => {
+    mockFinishedQuiz();
+    renderStage();
+    await screen.findByText('3/3');
+
+    // The whole point: revisiting must not consume an attempt. Before Sprint
+    // 07 this was unavoidable, because the GET itself did the starting.
+    expect(quizService.startLessonQuiz).not.toHaveBeenCalled();
+  });
+
+  it('offers a retry even after PASSING, and only that begins a new attempt', async () => {
+    // Previously the retry button rendered only when `!result.passed`, so a
+    // student who passed had no way back in from this screen.
+    mockFinishedQuiz();
+    renderStage();
+    await screen.findByText('3/3');
+
+    const retry = screen.getByRole('button', { name: /try again/i });
+    expect(retry).toBeInTheDocument();
+
+    vi.mocked(quizService.startLessonQuiz).mockResolvedValue({
+      quiz: immediateQuiz(),
+      progress: {
+        attemptsCount: 1,
+        bestScorePercent: 100,
+        passed: true,
+        lastDurationSeconds: 42,
+      },
+      lastResult: null,
+    });
+
+    await userEvent.click(retry);
+
+    expect(quizService.startLessonQuiz).toHaveBeenCalledWith('l-1');
+    expect(await screen.findByText('She ___ to work every day.')).toBeInTheDocument();
   });
 });

@@ -6,7 +6,8 @@ import VideoUnavailableState from './VideoUnavailableState';
 import VideoResumePrompt from './VideoResumePrompt';
 import { parseYouTubeVideoId } from './youtubeUrlParser';
 import { authService } from '../../../services/authService';
-import { getVideoProgress, saveVideoProgress } from '../../../services/videoProgress';
+import { recordVideoProgress } from '../../../services/progressService';
+import { StepProgress } from '../../../services/lessonProgress';
 
 // YT.PlayerState values (stable, documented by the IFrame Player API) —
 // not depending on the global YT type existing at module-eval time.
@@ -16,11 +17,32 @@ const SAVE_INTERVAL_MS = 7000;
 const NEAR_END_RATIO = 0.97;
 const NEAR_END_MARGIN_SECONDS = 5;
 
+// Sprint 07 — skip a scheduled save when the student has not actually moved.
+// The interval fires on a timer, not on playback, so without this a paused or
+// buffering tab still posts every 7 seconds. Forced flushes (pause, end,
+// unload) ignore it.
+const MIN_REPORT_DELTA_SECONDS = 5;
+
+// How far the live video's length may differ from the one recorded on the
+// student's first watch before the stored position is treated as belonging to
+// a DIFFERENT video.
+//
+// This replaces the old youtubeVideoId equality check, which was exact but
+// depended on a field only the localStorage record carried. Two different
+// videos almost never share a runtime to within 5%, so an admin swapping a
+// lesson's video still will not seek a returning student into unrelated
+// content. Storing the video id server-side would restore exactness and is
+// worth doing when something else needs a schema change here.
+const DURATION_DRIFT_TOLERANCE = 0.05;
+
 interface LessonVideoPlayerProps {
-  courseId: string;
   lessonId: string;
-  resolvedLessonPath: string;
   videoUrl: string | null;
+  // Sprint 07 — the student's stored position, from the lesson-progress
+  // request the page already makes. Previously read from localStorage by this
+  // component; now passed in, so the player owns playback and not persistence
+  // policy.
+  savedProgress?: StepProgress | null;
   // Sprint 06 — hands the live YT instance to the caller so lesson chrome
   // (e.g. the playback-speed controls) can drive it without this component
   // growing UI of its own. Called with null when the video is unavailable.
@@ -37,10 +59,9 @@ interface LessonVideoPlayerProps {
 // thinner presentational pieces around it so business logic isn't spread
 // across all of them.
 const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
-  courseId,
   lessonId,
-  resolvedLessonPath,
   videoUrl,
+  savedProgress,
   onPlayerReady,
   onEnded,
 }) => {
@@ -54,6 +75,8 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   const playerInstanceRef = useRef<any>(null);
   const saveTimerRef = useRef<number | null>(null);
   const pendingResumeRef = useRef<number | null>(null);
+  // The last position actually sent, so an idle timer tick can be skipped.
+  const lastSentPositionRef = useRef<number | null>(null);
 
   // Held in refs so the YT callbacks below can stay identity-stable (they
   // are registered once with the embed) while still calling the latest
@@ -61,26 +84,26 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   // every parent render.
   const onPlayerReadyRef = useRef(onPlayerReady);
   const onEndedRef = useRef(onEnded);
+  const savedProgressRef = useRef(savedProgress);
   onPlayerReadyRef.current = onPlayerReady;
   onEndedRef.current = onEnded;
+  savedProgressRef.current = savedProgress;
 
   const user = authService.getUser();
   const userId = user?.id;
 
-  // Read any saved position once per lesson mount, before the player
-  // exists, so onReady can decide whether to seek or offer a "watch
-  // again?" prompt. Discarded if the saved youtubeVideoId doesn't match
-  // the id parsed from the *current* videoUrl (design doc §7.4.3's
-  // staleness rule — an admin replacing the lesson's video must not seek
-  // a returning student into unrelated content).
+  // The student's stored position, staged before the player exists so
+  // onReady can decide whether to seek or offer a "watch again?" prompt.
+  // Staleness is checked against the recorded duration in handleReady, where
+  // the live duration is finally known.
   useEffect(() => {
     if (!videoId || !userId) {
       pendingResumeRef.current = null;
       return;
     }
-    const saved = getVideoProgress(userId, lessonId);
-    pendingResumeRef.current = saved && saved.youtubeVideoId === videoId ? saved.positionSeconds : null;
-  }, [lessonId, videoId, userId]);
+    pendingResumeRef.current = savedProgress?.highestPositionSeconds ?? null;
+    lastSentPositionRef.current = null;
+  }, [lessonId, videoId, userId, savedProgress]);
 
   const stopSaveTimer = () => {
     if (saveTimerRef.current !== null) {
@@ -89,23 +112,49 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     }
   };
 
+  // Sprint 07 — posts to the server instead of writing localStorage.
+  //
+  // Deliberately fire-and-forget: a dropped heartbeat costs a few seconds of
+  // resume accuracy and must never surface an error over a video the student
+  // is watching. Completion is NOT decided here — the server applies the 90%
+  // rule and the page re-reads it.
   const persistProgress = useCallback(
-    (ended: boolean) => {
+    async (
+      options: { force?: boolean; keepalive?: boolean } = {},
+    ): Promise<void> => {
       const player = playerInstanceRef.current;
       if (!player || !videoId || !userId) return;
-      const positionSeconds = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : 0;
-      const durationSeconds = typeof player.getDuration === 'function' ? player.getDuration() : 0;
-      saveVideoProgress(userId, lessonId, {
-        courseId,
-        resolvedLessonPath,
-        youtubeVideoId: videoId,
-        positionSeconds,
-        durationSeconds,
-        lastUpdatedAt: new Date().toISOString(),
-        ended,
-      });
+      const positionSeconds =
+        typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : 0;
+      const durationSeconds =
+        typeof player.getDuration === 'function' ? player.getDuration() : 0;
+      if (durationSeconds <= 0) return;
+
+      // A timer tick with no real movement (paused, buffering, backgrounded
+      // tab) is not worth a write.
+      const last = lastSentPositionRef.current;
+      if (
+        !options.force &&
+        last !== null &&
+        Math.abs(positionSeconds - last) < MIN_REPORT_DELTA_SECONDS
+      ) {
+        return;
+      }
+      lastSentPositionRef.current = positionSeconds;
+
+      try {
+        await recordVideoProgress(lessonId, positionSeconds, durationSeconds, {
+          keepalive: options.keepalive,
+        });
+      } catch {
+        // Swallowed on purpose: a dropped heartbeat costs a few seconds of
+        // resume accuracy and must never surface an error over a video the
+        // student is watching. Rewound so the next tick retries this position
+        // instead of treating it as already reported.
+        lastSentPositionRef.current = last;
+      }
     },
-    [courseId, lessonId, resolvedLessonPath, videoId, userId],
+    [lessonId, videoId, userId],
   );
 
   const handleReady = useCallback((player: any) => {
@@ -116,6 +165,20 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     const saved = pendingResumeRef.current;
     if (saved && saved > 0) {
       const duration = typeof player.getDuration === 'function' ? player.getDuration() : 0;
+
+      // Sprint 07 — staleness rule (design doc §7.4.3). If the runtime the
+      // position was recorded against differs materially from what is playing
+      // now, an admin has replaced the lesson's video and seeking would drop
+      // the student into unrelated content.
+      const recordedDuration = savedProgressRef.current?.videoDurationSeconds ?? null;
+      const swapped =
+        duration > 0 &&
+        recordedDuration != null &&
+        recordedDuration > 0 &&
+        Math.abs(duration - recordedDuration) / recordedDuration >
+          DURATION_DRIFT_TOLERANCE;
+      if (swapped) return;
+
       // Duration may briefly be 0/unavailable right at onReady — treat that
       // as "unknown" and just resume without the near-end check rather
       // than blocking the resume on metadata that hasn't loaded yet.
@@ -132,16 +195,21 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
     (state: number) => {
       if (state === PLAYER_STATE.PLAYING) {
         stopSaveTimer();
-        saveTimerRef.current = window.setInterval(() => persistProgress(false), SAVE_INTERVAL_MS);
+        saveTimerRef.current = window.setInterval(
+          () => persistProgress(),
+          SAVE_INTERVAL_MS,
+        );
       } else if (state === PLAYER_STATE.PAUSED) {
         stopSaveTimer();
-        persistProgress(false);
+        persistProgress({ force: true });
       } else if (state === PLAYER_STATE.ENDED) {
         stopSaveTimer();
-        persistProgress(true);
-        // Persisted first, so a listener that re-reads progress sees the
-        // completed state rather than racing it.
-        onEndedRef.current?.();
+        // Awaited, unlike every other flush: the page re-reads progress in
+        // onEnded, and firing that before the server has recorded the final
+        // position would race the write and show the stage still unfinished.
+        void persistProgress({ force: true }).finally(() => {
+          onEndedRef.current?.();
+        });
       }
     },
     [persistProgress],
@@ -156,12 +224,17 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   // Always-save on tab close / route change, plus final cleanup on unmount
   // — a student navigating away mid-video doesn't lose their place.
   useEffect(() => {
-    const onBeforeUnload = () => persistProgress(false);
+    // keepalive on this path only: an ordinary fetch is cancelled when the
+    // document goes away, so without it the last position is lost exactly
+    // when a student closes the tab mid-video.
+    const onBeforeUnload = () => {
+      void persistProgress({ force: true, keepalive: true });
+    };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', onBeforeUnload);
       stopSaveTimer();
-      persistProgress(false);
+      void persistProgress({ force: true });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persistProgress]);
