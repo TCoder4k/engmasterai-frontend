@@ -16,6 +16,10 @@ import {
   CourseProgressSummary,
   getCourseProgressSummaries,
 } from '../../services/courseProgressService';
+import {
+  DashboardAnalytics,
+  getDashboardAnalytics,
+} from '../../services/analyticsService';
 import { getMostRecentActivityOfType } from '../../services/recentActivity';
 import { getLessonSummaries } from '../practice/listening/listeningContent';
 import { handleAuthError } from '../../services/apiError';
@@ -43,9 +47,16 @@ const courseIdFromPath = (path: string): string | null =>
 // Every count on this page is real and comes from an API the corresponding
 // page already uses — Grammar lessons from GET /courses, Vocabulary decks
 // from the libraries-progress call this page already makes for the review
-// card, and Listening from the seeded catalogue. The four right-rail widgets
-// and the course star ratings are the exceptions, and they are marked as
-// sample data (see components/user/dashboardContent.ts).
+// card, and Listening from the seeded catalogue.
+//
+// Sprint 09 added the fourth request, GET /analytics/dashboard, which made two
+// of the four right-rail widgets real (today's counts and the seven-day
+// activity streak). Daily Goal and Achievements remain sample data, as do the
+// course star ratings — see components/user/dashboardContent.ts.
+//
+// The four requests are deliberately independent except for one: course
+// progress must wait for the course list, because it is keyed by course id.
+// Analytics does not, so it starts on mount rather than behind that waterfall.
 const UserHome: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -57,6 +68,10 @@ const UserHome: React.FC = () => {
   // null = not known (still loading, or the request failed). Every consumer
   // treats that as "say nothing", never as zero.
   const [dueTotal, setDueTotal] = useState<number | null>(null);
+  // The other half of the review queue. `dueTotal` counts words already learned
+  // and now due; the session is topped up with new words on top of that, which
+  // is why the card used to say 23 and the session 38.
+  const [newTotal, setNewTotal] = useState<number | null>(null);
   const [deckCount, setDeckCount] = useState<number | null>(null);
   // Sprint 08 — server-derived progress for every course on this page. `null`
   // until the one batch request resolves, so cards show no status rather than
@@ -65,6 +80,17 @@ const UserHome: React.FC = () => {
     string,
     CourseProgressSummary
   > | null>(null);
+
+  // Sprint 09 — the right-rail stat widgets. THREE states, deliberately:
+  // `undefined` while in flight, `null` when the request failed, a payload when
+  // it succeeded. UserSidebar renders a skeleton, an error with a retry, or the
+  // numbers — never a zero standing in for a failure, which on a student who
+  // studied all morning is a false statement rather than an empty state.
+  const [analytics, setAnalytics] = useState<DashboardAnalytics | null | undefined>(
+    undefined,
+  );
+  // Bumped by the widget's retry button to re-run the effect below.
+  const [analyticsAttempt, setAnalyticsAttempt] = useState(0);
 
   useEffect(() => {
     getPublishedCourses()
@@ -83,6 +109,7 @@ const UserHome: React.FC = () => {
       .then((res) => {
         if (cancelled) return;
         setDueTotal(res.data.reduce((sum, library) => sum + library.dueWords, 0));
+        setNewTotal(res.dailyNewWords.availableNow);
         setDeckCount(res.data.reduce((sum, library) => sum + library.deckCount, 0));
       })
       .catch(() => {
@@ -116,6 +143,24 @@ const UserHome: React.FC = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courses, user?.id]);
+
+  // Independent of the courses request, so it starts immediately rather than
+  // waiting behind the courses -> progress waterfall beside it.
+  useEffect(() => {
+    let cancelled = false;
+    setAnalytics(undefined);
+    getDashboardAnalytics()
+      .then((data) => {
+        if (!cancelled) setAnalytics(data);
+      })
+      .catch(() => {
+        // null, never a zeroed payload — see the state declaration above.
+        if (!cancelled) setAnalytics(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [analyticsAttempt]);
 
   // Which Grammar course Continue Learning features, and where it points.
   //
@@ -179,7 +224,7 @@ const UserHome: React.FC = () => {
             </div>
 
             {/* First actionable thing on the page — one click to reviewing. */}
-            <ReviewDueCard dueTotal={dueTotal} />
+            <ReviewDueCard dueTotal={dueTotal} newTotal={newTotal} />
           </div>
 
           <ContinueLearningCard
@@ -257,13 +302,21 @@ const UserHome: React.FC = () => {
           {/* On phones/tablets the widgets flow here, below the courses,
               as normal full-width sections (no narrow side column). */}
           <div className="lg:hidden">
-            <UserSidebar />
+            <UserSidebar
+              analytics={analytics}
+              onRetryAnalytics={() => setAnalyticsAttempt((n) => n + 1)}
+            />
           </div>
         </div>
 
         {/* ---- Desktop-only right widget column ---- */}
+        {/* Both instances share the ONE fetch above — only one is ever visible
+            at a time, and rendering the same payload twice costs no request. */}
         <div className="hidden lg:block w-80 flex-shrink-0">
-          <UserSidebar />
+          <UserSidebar
+            analytics={analytics}
+            onRetryAnalytics={() => setAnalyticsAttempt((n) => n + 1)}
+          />
         </div>
       </div>
     </StudentLayout>
