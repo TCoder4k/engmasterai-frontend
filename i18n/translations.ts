@@ -60,8 +60,12 @@ const en = {
     // Sprint 05 — due-review card. Every number here comes from
     // GET /learning/libraries/progress; nothing is fabricated.
     reviewDueTitle: 'Review',
-    wordsWaiting: 'words waiting',
-    oneWordWaiting: 'word waiting',
+    wordsWaiting: 'words to review',
+    // Named separately from the due count, never summed into it: a due word is
+    // fading from memory, a new word is optional progress. Folding them into
+    // one number is what made the card promise 23 and the session show 38.
+    newWordsInSession: 'new words in this session',
+    oneWordWaiting: 'word to review',
     reviewNow: 'Review now',
     nothingDueToday: 'Nothing due for review today.',
     // Continue Learning variants (see ContinueLearningCard's priority order)
@@ -103,6 +107,16 @@ const en = {
     days: 'days',
     onFire: 'On fire!',
     viewAll: 'View all',
+    // Sprint 09 — real, server-derived figures. `stagesDone` counts STAGES
+    // (video, theory, quiz, trap hunter, practice), not lessons: a lesson
+    // spans several days, so a lesson count would show 0 to a student who
+    // worked hard today. Deliberately distinct from `lessons` above, which
+    // CourseCard uses for a genuine lesson count.
+    stagesDone: 'Stages done',
+    attempts: 'Practice attempts',
+    wordsReviewed: 'Words reviewed',
+    statsUnavailable: 'Could not load your stats',
+    statsRetry: 'Try again',
     // Achievement names — see components/user/dashboardContent.ts: the
     // achievements system does not exist, these are placeholders.
     firstLesson: 'First Lesson',
@@ -537,6 +551,10 @@ const en = {
     reviewSessionComplete: 'Review session complete!',
     reviewedUnit: 'Reviewed',
     reviewRemainingLabel: 'Remaining',
+    // The queue's two kinds, named so this screen and the dashboard's review
+    // card can be reconciled by a student rather than looking contradictory.
+    reviewDueUnit: 'to review',
+    reviewNewUnit: 'new',
     reviewAgainAction: 'Review more',
     // Sprint 04D review-session repair. A word rated "Again" comes back
     // later in the same session as a RETRAIN card: extra practice only, no
@@ -679,8 +697,12 @@ const vi: TranslationDict = {
     recommendedForYou: 'Đề xuất cho bạn',
     noCoursesYet: 'Chưa có khóa học nào được xuất bản.',
     reviewDueTitle: 'Ôn tập',
-    wordsWaiting: 'từ đang chờ',
-    oneWordWaiting: 'từ đang chờ',
+    wordsWaiting: 'từ đến hạn ôn',
+    // Tách riêng khỏi số từ đến hạn, không bao giờ cộng gộp: từ đến hạn là từ
+    // đang phai trong trí nhớ, còn từ mới là tiến bộ tuỳ chọn. Gộp hai số vào
+    // làm một chính là thứ khiến card ghi 23 còn phiên ôn hiện 38.
+    newWordsInSession: 'từ mới trong phiên này',
+    oneWordWaiting: 'từ đến hạn ôn',
     reviewNow: 'Ôn ngay',
     nothingDueToday: 'Hôm nay không có từ nào đến hạn ôn tập.',
     continueReviewTitle: 'Ôn tập từ vựng',
@@ -721,6 +743,16 @@ const vi: TranslationDict = {
     days: 'ngày',
     onFire: 'Giữ phong độ!',
     viewAll: 'Xem tất cả',
+    // Sprint 09 — số liệu thật, do máy chủ tính. `stagesDone` đếm CHẶNG
+    // (video, lý thuyết, quiz, trap hunter, luyện tập), không đếm bài học:
+    // một bài học kéo dài nhiều ngày, nên đếm bài học sẽ hiện 0 cho học viên
+    // vừa học rất chăm hôm nay. Cố ý tách khỏi `lessons` ở trên — key đó
+    // dành cho CourseCard, nơi thật sự đếm bài học.
+    stagesDone: 'Chặng đã học',
+    attempts: 'Lượt luyện tập',
+    wordsReviewed: 'Từ đã ôn',
+    statsUnavailable: 'Không tải được số liệu',
+    statsRetry: 'Thử lại',
     // Tên thành tích — xem components/user/dashboardContent.ts: hệ thống
     // thành tích chưa tồn tại, đây là dữ liệu mẫu.
     firstLesson: 'Bài học đầu tiên',
@@ -1094,6 +1126,10 @@ const vi: TranslationDict = {
     reviewSessionComplete: 'Hoàn thành phiên ôn tập!',
     reviewedUnit: 'Đã ôn',
     reviewRemainingLabel: 'Còn lại',
+    // Hai loại thẻ trong hàng đợi, gọi tên rõ để học viên đối chiếu được màn
+    // này với card ôn tập ngoài dashboard, thay vì thấy hai số mâu thuẫn.
+    reviewDueUnit: 'ôn',
+    reviewNewUnit: 'mới',
     reviewAgainAction: 'Ôn tiếp',
     retrainBadge: 'Luyện thêm — lần này không tính điểm',
     retrainedLabel: 'Đã luyện lại',

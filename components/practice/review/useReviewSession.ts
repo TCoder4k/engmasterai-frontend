@@ -214,6 +214,21 @@ export const useReviewSession = ({ deckId, libraryId }: UseReviewSessionArgs) =>
     masteredCount,
     elapsedMs: (completedAt ?? Date.now()) - startedAt,
     remainingCount: Math.max(queue.length - currentIndex, 0),
+    // The remaining queue split by kind. The dashboard's review card reports
+    // these two separately, and the session must be able to say the same thing
+    // — a bare "Còn lại: 38" beside a card promising 23 is what made the two
+    // screens look like they disagreed.
+    //
+    // Derived from the queue itself, not a second request: every entry already
+    // carries `item.isNew` from GET /learning/reviews/due. A RETRAIN entry is a
+    // resurfaced AGAIN card and counts as review work, which `isNew: false`
+    // already gives us.
+    remainingDueCount: queue
+      .slice(currentIndex)
+      .filter((entry) => !entry.item.isNew).length,
+    remainingNewCount: queue
+      .slice(currentIndex)
+      .filter((entry) => entry.item.isNew).length,
     rate,
     continueRetrain,
     restart,

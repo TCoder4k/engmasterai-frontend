@@ -62,6 +62,8 @@ const ReviewSessionPage: React.FC = () => {
     masteredCount,
     elapsedMs,
     remainingCount,
+    remainingDueCount,
+    remainingNewCount,
     rate,
     continueRetrain,
     restart,
@@ -182,6 +184,16 @@ const ReviewSessionPage: React.FC = () => {
               </span>
               <span>
                 {t.practice.reviewRemainingLabel}: {remainingCount}
+                {/* Named breakdown, so this number can be reconciled with the
+                    dashboard's review card. Shown only in the mixed case —
+                    "38 (38 ôn)" would be noise. */}
+                {remainingNewCount > 0 && remainingDueCount > 0 && (
+                  <span className="font-semibold text-slate-400/80 dark:text-slate-500/80">
+                    {' '}
+                    ({remainingDueCount} {t.practice.reviewDueUnit} ·{' '}
+                    {remainingNewCount} {t.practice.reviewNewUnit})
+                  </span>
+                )}
               </span>
             </div>
 

@@ -197,8 +197,34 @@ export const getLibraryProgress = async (libraryId: string): Promise<LibraryProg
   return response.json();
 };
 
-export const getLibrariesProgress = async (): Promise<{ data: LibrarySummaryProgress[] }> => {
-  const response = await apiFetch(`${API_BASE_URL}/learning/libraries/progress`);
+// Sprint 09 follow-up — the daily NEW-word allowance, reported beside the
+// per-library rows because the quota is per user per day, not per library.
+//
+// This exists because the dashboard summed `dueWords` and promised "23 từ đang
+// chờ", then the session opened with "Còn lại: 38". Both numbers were correct:
+// `dueWords` counts only words already learned and now due, while the review
+// queue is topped up with new words. `availableNow` is the missing 15.
+export interface DailyNewWords {
+  dailyLimit: number;
+  introducedToday: number;
+  /** Add to `dueWords` to predict the session size. */
+  availableNow: number;
+}
+
+export interface LibrariesProgressResponse {
+  data: LibrarySummaryProgress[];
+  dailyNewWords: DailyNewWords;
+}
+
+export const getLibrariesProgress = async (): Promise<LibrariesProgressResponse> => {
+  // Same timezone the review session sends, so both agree on what "today"
+  // means when spending the daily quota.
+  const params = new URLSearchParams({
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+  const response = await apiFetch(
+    `${API_BASE_URL}/learning/libraries/progress?${params}`,
+  );
 
   if (!response.ok) return throwApiError(response, 'Failed to load library progress');
   return response.json();

@@ -3,31 +3,27 @@
 // ⚠️ PLACEHOLDER NUMBERS — NOT THIS STUDENT'S DATA. ⚠️
 //
 // The dashboard was rebuilt to match `ai-studio-dashboard-reference/`'s
-// DashboardView at the product owner's request. Most of that design's
-// numbers are now real (lesson/deck/segment counts, the Continue Learning
-// progress bar, due-word counts — see UserHome), but four widgets and the
-// course star ratings have nothing behind them: there is no time-tracking,
-// no streak record, no per-day activity log, no achievements system and no
-// course-rating feature anywhere in this product.
+// DashboardView at the product owner's request. Most of that design's numbers
+// are real, and SPRINT 09 converted two more widgets — Today's Progress and
+// the weekly streak — to server-derived figures from GET /analytics/dashboard.
 //
-// They live in one module so that, when any of those systems lands, the
-// wiring is a single obvious file to delete from — and so nobody mistakes
-// these for values the app computed. Everything here is identical for every
-// user on every day, which is the tell.
+// What is left here has genuinely nothing behind it: there is no time-tracking
+// and no goal system (Daily Goal), no achievements system, and no course-rating
+// feature anywhere in this product.
+//
+// They live in one module so that, when any of those systems lands, the wiring
+// is a single obvious file to delete from — and so nobody mistakes these for
+// values the app computed. Everything here is identical for every user on every
+// day, which is the tell.
+//
+// SPRINT 09 REMOVED `MOCK_TODAY_PROGRESS` and `MOCK_STREAK_DAYS`. Do not
+// reintroduce a placeholder beside the real widget: a fabricated number sitting
+// next to a true one is worse than an empty state, because nothing on screen
+// distinguishes them.
 
 export interface DailyGoal {
   targetMinutes: number;
   learnedMinutes: number;
-}
-
-export interface TodayProgressRow {
-  /** Translation key under `t.widgets`. */
-  labelKey: 'lessons' | 'practice' | 'newWords';
-  done: number;
-  target: number;
-  /** Tailwind text + bar colours, matching the reference's three rows. */
-  textClass: string;
-  barClass: string;
 }
 
 export interface Achievement {
@@ -37,34 +33,12 @@ export interface Achievement {
   tileClass: string;
 }
 
+// Still placeholder: study TIME is not tracked anywhere. Quiz and practice
+// attempts carry a durationSeconds, but theory, video and listening contribute
+// nothing, so a "minutes studied" figure would be missing most of its input —
+// a wrong number rather than an approximate one. Sprint 09 deliberately shipped
+// no minutes metric rather than a misleading one.
 export const MOCK_DAILY_GOAL: DailyGoal = { targetMinutes: 30, learnedMinutes: 18 };
-
-/** Monday-first, matching `t.widgets.weekDays`. */
-export const MOCK_STREAK_DAYS: boolean[] = [true, true, true, true, true, true, false];
-
-export const MOCK_TODAY_PROGRESS: TodayProgressRow[] = [
-  {
-    labelKey: 'lessons',
-    done: 2,
-    target: 5,
-    textClass: 'text-blue-500 dark:text-blue-400',
-    barClass: 'bg-blue-500',
-  },
-  {
-    labelKey: 'practice',
-    done: 1,
-    target: 3,
-    textClass: 'text-cyan-500 dark:text-cyan-400',
-    barClass: 'bg-cyan-500',
-  },
-  {
-    labelKey: 'newWords',
-    done: 15,
-    target: 20,
-    textClass: 'text-emerald-500 dark:text-emerald-400',
-    barClass: 'bg-emerald-500',
-  },
-];
 
 export const MOCK_ACHIEVEMENTS: Achievement[] = [
   {
