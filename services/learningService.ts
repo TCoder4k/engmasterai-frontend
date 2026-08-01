@@ -1,5 +1,9 @@
 import { throwApiError, ApiError } from './apiError';
 import { apiFetch } from './apiFetch';
+import {
+  GamificationResult,
+  publishGamificationResult,
+} from './gamificationService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -48,7 +52,14 @@ export interface SubmitReviewDto {
 // The authoritative post-review progress — never computed client-side
 // (backend owns scheduling). Identical shape whether this is a fresh
 // submission or an idempotent replay of an already-recorded one.
-export type ReviewResponse = WordProgress & { version: number };
+// Sprint 10 — `gamification` is a sibling, and this DTO is DERIVED from
+// WordReviewLog on every call rather than stored as a blob, so a replayed
+// review honestly reports `xpAwarded: 0` instead of re-announcing its original
+// award.
+export type ReviewResponse = WordProgress & {
+  version: number;
+  gamification?: GamificationResult;
+};
 
 // A word's current progress + what each of the four ratings would produce
 // right now, computed server-side with zero persistence. Outside the due
@@ -69,7 +80,9 @@ export const submitReview = async (wordId: string, dto: SubmitReviewDto): Promis
   });
 
   if (!response.ok) return throwApiError(response, 'Failed to submit review');
-  return response.json();
+  const body: ReviewResponse = await response.json();
+  publishGamificationResult(body.gamification);
+  return body;
 };
 
 export const isIdempotencyKeyReused = (error: unknown): boolean =>

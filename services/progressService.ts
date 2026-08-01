@@ -5,6 +5,21 @@ import {
   LessonStepsProgress,
   StepProgress,
 } from './lessonProgress';
+import {
+  publishGamificationResult,
+  WithGamification,
+} from './gamificationService';
+
+// Sprint 10 — the three step WRITE endpoints return StepProgress plus an
+// ephemeral `gamification` sibling. Unwrapped here, at the service boundary:
+// every caller of these functions wants the step, and none of them should have
+// to remember to forward an award to the level widget.
+const publishStepAward = (
+  body: WithGamification<StepProgress>,
+): StepProgress => {
+  publishGamificationResult(body.gamification);
+  return body;
+};
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -61,7 +76,7 @@ export const recordVideoProgress = async (
     },
   );
   if (!response.ok) return throwApiError(response, 'Failed to save video progress');
-  return response.json();
+  return publishStepAward(await response.json());
 };
 
 // POST /lessons/:lessonId/steps/theory/start
@@ -74,7 +89,7 @@ export const startTheory = async (lessonId: string): Promise<StepProgress> => {
     { method: 'POST' },
   );
   if (!response.ok) return throwApiError(response, 'Failed to open theory');
-  return response.json();
+  return publishStepAward(await response.json());
 };
 
 // POST /lessons/:lessonId/steps/theory/complete
@@ -88,7 +103,7 @@ export const completeTheory = async (lessonId: string): Promise<StepProgress> =>
     { method: 'POST' },
   );
   if (!response.ok) return throwApiError(response, 'Failed to mark theory as read');
-  return response.json();
+  return publishStepAward(await response.json());
 };
 
 // Sprint 08 — `getCourseProgressMap` was DELETED from here.

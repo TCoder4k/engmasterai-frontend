@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
+import BackButton from '../shared/BackButton';
 import LessonListItem from './LessonListItem';
 import EmptyState from '../shared/EmptyState';
 import ErrorState from '../shared/ErrorState';
@@ -16,7 +17,7 @@ import {
 } from '../../services/courseProgressService';
 import { resolveLessonRowState } from '../../services/courseStatus';
 import { Course, Lesson } from '../../types';
-import { AlertCircle, ArrowLeft, BookOpen, Clock, Layers } from 'lucide-react';
+import { AlertCircle, BookOpen, Clock, Layers } from 'lucide-react';
 import {
   GrammarCategory,
   deriveCourseLevel,
@@ -152,13 +153,7 @@ const CourseDetailPage: React.FC = () => {
   return (
     <StudentLayout>
       <div className="max-w-5xl mx-auto">
-        <Link
-          to={backTo}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          <span>{backLabel}</span>
-        </Link>
+        <BackButton to={backTo} label={backLabel} className="mb-8" />
 
         {isLoading && (
           <div className="space-y-4">

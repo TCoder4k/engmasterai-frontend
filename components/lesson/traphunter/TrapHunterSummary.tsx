@@ -11,10 +11,22 @@ type SummaryKind = 'all-cleared' | 'no-traps' | 'blocked';
 interface TrapHunterSummaryProps {
   kind: SummaryKind;
   total: number;
-  // Only 'blocked' gets an action. The other two need none: LessonPage
-  // already renders NextLessonCard directly below this stage, so a
-  // "Continue" button here would either duplicate it or lead nowhere.
+  // THE ACTION IS WHATEVER THIS STATE ACTUALLY UNBLOCKS. A blocked stage sends
+  // the student to the quiz that would open it; a fully cleared one sends them
+  // on to Advanced Practice, because clearing every trap is literally what
+  // removes the `traps_outstanding` prerequisite.
+  //
+  // Sprint 06C originally gave the cleared state no action at all, reasoning
+  // that NextLessonCard below already offered somewhere to go. QA found that
+  // wrong: NextLessonCard goes to the next LESSON, so a student who had just
+  // finished the correction round had no way forward within the lesson they
+  // were still in, and had to scroll back up to the stage stepper.
+  //
+  // Both are optional. LessonPage passes onGoToPractice only when this lesson
+  // has a practice task at all — a CTA into a stage that redirects straight
+  // back to the video would be worse than no CTA.
   onGoToQuiz?: () => void;
+  onGoToPractice?: () => void;
 }
 
 // Sprint 06C — the three states in which Trap Hunter has no trap on screen.
@@ -33,6 +45,7 @@ const TrapHunterSummary: React.FC<TrapHunterSummaryProps> = ({
   kind,
   total,
   onGoToQuiz,
+  onGoToPractice,
 }) => {
   const { t } = useTranslation();
   const cleared = kind === 'all-cleared';
@@ -68,6 +81,22 @@ const TrapHunterSummary: React.FC<TrapHunterSummaryProps> = ({
           tone: 'slate' as const,
         };
     }
+  })();
+
+  // ONE action, resolved here rather than two copies of the same button in two
+  // branches of the JSX — the pill below is easy to change in one place and
+  // easy to let drift in two.
+  const action = (() => {
+    if (kind === 'blocked' && onGoToQuiz) {
+      return { label: t.trapHunter.goToQuizAction, onClick: onGoToQuiz };
+    }
+    if (cleared && onGoToPractice) {
+      return {
+        label: t.trapHunter.goToPracticeAction,
+        onClick: onGoToPractice,
+      };
+    }
+    return null;
   })();
 
   return (
@@ -115,14 +144,14 @@ const TrapHunterSummary: React.FC<TrapHunterSummaryProps> = ({
         </motion.p>
       )}
 
-      {kind === 'blocked' && onGoToQuiz && (
+      {action && (
         <div className="relative mt-6 flex justify-center">
           <button
             type="button"
-            onClick={onGoToQuiz}
+            onClick={action.onClick}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:from-blue-500 hover:to-indigo-500 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
-            {t.trapHunter.goToQuizAction}
+            {action.label}
             <ArrowRight size={15} aria-hidden="true" />
           </button>
         </div>

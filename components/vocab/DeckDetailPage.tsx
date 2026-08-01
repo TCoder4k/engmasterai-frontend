@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
+import BackButton from '../shared/BackButton';
 import { getPublishedDeck, getPublishedDeckWords } from '../../services/vocabDeckService';
 import { getDeckProgress, DeckProgress } from '../../services/learningService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabDeck, VocabWordListItem } from '../../types';
-import { ArrowLeft, Layers, Volume2 } from 'lucide-react';
+import { Layers, Volume2 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // /vocab/decks/:id — dictionary-mode browsing for a single deck.
@@ -86,13 +87,11 @@ const DeckDetailPage: React.FC = () => {
   return (
     <StudentLayout>
       <div className="max-w-5xl mx-auto">
-        <Link
+        <BackButton
           to={backHref}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          <span>{t.vocab.backToLibrary}</span>
-        </Link>
+          label={t.vocab.backToLibrary}
+          className="mb-8"
+        />
 
         {isLoading && (
           <p className="text-sm font-medium text-slate-400 dark:text-slate-500">{t.common.loading}</p>

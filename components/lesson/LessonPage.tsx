@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { SlideUp } from '../shared/motion';
 import StudentLayout from '../user/StudentLayout';
+import BackButton from '../shared/BackButton';
 import LessonVideoPlayer from './video/LessonVideoPlayer';
 import GrammarTheoryCards from './grammar/GrammarTheoryCards';
 import LessonOutline from './grammar/LessonOutline';
@@ -34,7 +35,7 @@ import QuizStage from './quiz/QuizStage';
 import TrapHunterStage from './traphunter/TrapHunterStage';
 import AdvancedPracticeStage from './practice/AdvancedPracticeStage';
 import { Course, Lesson } from '../../types';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 const EMPTY_PARSED: ParsedGrammarNotes = { sections: [], fallbackText: null };
@@ -294,13 +295,11 @@ const LessonPage: React.FC = () => {
   return (
     <StudentLayout>
       <div className="max-w-6xl mx-auto">
-        <Link
+        <BackButton
           to={courseId ? `/courses/${courseId}` : '/courses'}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          <span>{t.lesson.backToCourse}</span>
-        </Link>
+          label={t.lesson.backToCourse}
+          className="mb-8"
+        />
 
         {isLoading && (
           <div className="space-y-4">
@@ -509,6 +508,18 @@ const LessonPage: React.FC = () => {
                   lessonId={lesson.id}
                   onProgressChange={() => void refreshProgress()}
                   onGoToQuiz={() => selectStage('quiz')}
+                  // Sprint 10 QA — the way on once every trap is corrected.
+                  // Omitted when this lesson has no published practice task:
+                  // `currentStage` above already redirects ?stage=practice back
+                  // to the video in that case, so the CTA would bounce the
+                  // student somewhere they never asked to go. 'blocked' keeps
+                  // it — clearing the traps is what removes one of the two
+                  // prerequisites, and PracticeIntro names any that remain.
+                  onGoToPractice={
+                    stageStatuses.practice === 'unavailable'
+                      ? undefined
+                      : () => selectStage('practice')
+                  }
                 />
               </div>
             )}

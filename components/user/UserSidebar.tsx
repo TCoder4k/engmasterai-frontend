@@ -1,19 +1,24 @@
 import React from 'react';
-import { Flame, Target, TrendingUp, Trophy } from 'lucide-react';
+import { Flame, Target, TrendingUp } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DashboardAnalytics } from '../../services/analyticsService';
-import { MOCK_ACHIEVEMENTS, MOCK_DAILY_GOAL } from './dashboardContent';
+import { MOCK_DAILY_GOAL } from './dashboardContent';
+import AchievementsWidget from './AchievementsWidget';
 import { DEFAULT_DAILY_TARGETS, targetPercent } from './dailyTargets';
 
 // Dashboard stat widgets, restyled to `ai-studio-dashboard-reference`'s
 // DashboardView.
 //
-// SPRINT 09 — two of these four are now REAL. Today's Progress and the weekly
-// streak come from GET /analytics/dashboard, server-derived from the same rows
-// the learning engines write. Daily Goal and Achievements are still placeholder
-// (no time tracking, no goal system, no achievements system) and keep their
-// "sample data" markers — the markers were removed from the two that became
-// real, because a "sample data" label on a true figure is its own kind of lie.
+// SPRINT 09 made Today's Progress and the weekly streak REAL, from
+// GET /analytics/dashboard. SPRINT 10 made Achievements real too, from
+// GET /gamification/profile — and its "sample data" marker went with the mock,
+// because a placeholder label on a true figure is its own kind of lie.
+//
+// DAILY GOAL IS THE LAST PLACEHOLDER HERE, and it stays one on purpose: there
+// is no time-on-task signal anywhere in the product. Quiz and practice attempts
+// carry a durationSeconds; theory, video and listening carry nothing, so a
+// "minutes studied" figure would be missing most of its input — a wrong number
+// rather than an approximate one.
 //
 // LOADING AND ERROR ARE STATES, NOT ZEROS. This follows the rule Sprint 08
 // established for course progress: a failed request must never render as "you
@@ -318,39 +323,12 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
         )}
       </WidgetCard>
 
-      <WidgetCard
-        icon={<Trophy className="w-4 h-4 text-amber-500 dark:text-amber-400" aria-hidden="true" />}
-        title={t.widgets.achievements}
-        trailing={
-          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-            {t.widgets.sampleData}
-          </span>
-        }
-      >
-        <ul className="space-y-3">
-          {MOCK_ACHIEVEMENTS.map((achievement) => (
-            <li
-              key={achievement.titleKey}
-              className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-ink-950 border border-slate-200 dark:border-ink-700 rounded-2xl"
-            >
-              <span
-                className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 font-black text-xs ${achievement.tileClass}`}
-                aria-hidden="true"
-              >
-                {achievement.glyph}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-bold text-slate-900 dark:text-white">
-                  {t.widgets[achievement.titleKey]}
-                </span>
-                <span className="block text-[10px] text-slate-500 dark:text-slate-400">
-                  {t.widgets[`${achievement.titleKey}Hint` as const]}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </WidgetCard>
+      {/* ---- REAL (Sprint 10): the six-badge catalog from the XP ledger ----
+          MOCK_ACHIEVEMENTS is deleted, and the "sample data" marker went with
+          it. Its own card, fed by GamificationProvider rather than by props,
+          because UserHome renders this sidebar TWICE (mobile and desktop
+          placements) and a prop-drilled fetch would issue two requests. */}
+      <AchievementsWidget />
     </aside>
   );
 };

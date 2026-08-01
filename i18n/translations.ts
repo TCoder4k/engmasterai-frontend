@@ -18,6 +18,7 @@ const en = {
     previous: 'Previous',
     next: 'Next',
     loadFailed: 'Failed to load data',
+    close: 'Dismiss',
   },
   roles: {
     admin: 'Administrator',
@@ -117,15 +118,32 @@ const en = {
     wordsReviewed: 'Words reviewed',
     statsUnavailable: 'Could not load your stats',
     statsRetry: 'Try again',
-    // Achievement names — see components/user/dashboardContent.ts: the
-    // achievements system does not exist, these are placeholders.
-    firstLesson: 'First Lesson',
-    firstLessonHint: 'Complete your first lesson',
-    weekStreak: '7 Day Streak',
-    weekStreakHint: 'Study 7 days in a row',
-    hundredWords: '100 Words',
-    hundredWordsHint: 'Learn 100 new words',
+    // Sprint 10 — the level widget. `{level}` and `{xp}` are substituted at
+    // render time; the achievement NAMES moved to their own `achievements`
+    // block below, keyed by the server's AchievementKey.
+    levelNumber: 'Level {level}',
+    levelUp: 'Level {level} reached!',
+    xpToNextLevel: '{xp} XP to next level',
+    achievementUnlocked: 'unlocked',
+    achievementLocked: 'locked',
     sampleData: 'Sample data',
+  },
+  // Sprint 10 — keyed by the backend's AchievementKey so a badge cannot be
+  // added server-side without a name here (the vi dict is type-checked against
+  // this one, so a missing key is a compile error in either language).
+  achievements: {
+    FIRST_STAGE: 'First Stage',
+    FIRST_STAGE_HINT: 'Finish any lesson stage',
+    FIRST_QUIZ_PASS: 'First Quiz Passed',
+    FIRST_QUIZ_PASS_HINT: 'Pass a lesson quiz',
+    FIRST_MASTERED_WORD: 'First Mastered Word',
+    FIRST_MASTERED_WORD_HINT: 'Master a vocabulary word',
+    STREAK_3: '3 Day Streak',
+    STREAK_3_HINT: 'Study 3 days in a row',
+    STREAK_7: '7 Day Streak',
+    STREAK_7_HINT: 'Study 7 days in a row',
+    XP_500: '500 XP',
+    XP_500_HINT: 'Earn 500 XP in total',
   },
   premium: {
     goPremium: 'Go Premium',
@@ -314,7 +332,7 @@ const en = {
     retryProgress: 'Retry',
   },
   lesson: {
-    backToCourse: 'Back to course',
+    backToCourse: 'Back to course details',
     minutesUnit: 'min',
     notesFallbackTitle: 'Lesson notes',
     videoUnavailable: "This lesson's video couldn't be shown right now.",
@@ -511,6 +529,7 @@ const en = {
     blockedTitle: 'Finish the quiz first',
     blockedBody: 'Trap Hunter works from the questions you get wrong, so it opens once you finish an attempt.',
     goToQuizAction: 'Go to the quiz',
+    goToPracticeAction: 'Continue: Advanced Practice',
     loadFailed: 'Failed to load Trap Hunter',
     checkFailed: 'Could not check that correction — please try again',
     keyboardHint: 'Enter to check and continue. 1–4 pick an option directly.',
@@ -662,6 +681,7 @@ const vi: TranslationDict = {
     previous: 'Trước',
     next: 'Sau',
     loadFailed: 'Không tải được dữ liệu',
+    close: 'Đóng',
   },
   roles: {
     admin: 'Quản trị viên',
@@ -753,15 +773,26 @@ const vi: TranslationDict = {
     wordsReviewed: 'Từ đã ôn',
     statsUnavailable: 'Không tải được số liệu',
     statsRetry: 'Thử lại',
-    // Tên thành tích — xem components/user/dashboardContent.ts: hệ thống
-    // thành tích chưa tồn tại, đây là dữ liệu mẫu.
-    firstLesson: 'Bài học đầu tiên',
-    firstLessonHint: 'Hoàn thành bài học đầu tiên',
-    weekStreak: 'Chuỗi 7 ngày',
-    weekStreakHint: 'Học liên tục 7 ngày',
-    hundredWords: '100 từ vựng',
-    hundredWordsHint: 'Học được 100 từ mới',
+    levelNumber: 'Cấp {level}',
+    levelUp: 'Đã lên cấp {level}!',
+    xpToNextLevel: 'Còn {xp} XP để lên cấp',
+    achievementUnlocked: 'đã mở khoá',
+    achievementLocked: 'chưa mở khoá',
     sampleData: 'Dữ liệu mẫu',
+  },
+  achievements: {
+    FIRST_STAGE: 'Chặng đầu tiên',
+    FIRST_STAGE_HINT: 'Hoàn thành một chặng bất kỳ',
+    FIRST_QUIZ_PASS: 'Đạt quiz đầu tiên',
+    FIRST_QUIZ_PASS_HINT: 'Vượt qua một bài quiz',
+    FIRST_MASTERED_WORD: 'Từ thành thạo đầu tiên',
+    FIRST_MASTERED_WORD_HINT: 'Thành thạo một từ vựng',
+    STREAK_3: 'Chuỗi 3 ngày',
+    STREAK_3_HINT: 'Học liên tục 3 ngày',
+    STREAK_7: 'Chuỗi 7 ngày',
+    STREAK_7_HINT: 'Học liên tục 7 ngày',
+    XP_500: '500 XP',
+    XP_500_HINT: 'Tích luỹ tổng cộng 500 XP',
   },
   premium: {
     goPremium: 'Nâng cấp Premium',
@@ -918,7 +949,7 @@ const vi: TranslationDict = {
     retryProgress: 'Thử lại',
   },
   lesson: {
-    backToCourse: 'Quay lại khóa học',
+    backToCourse: 'Quay lại Trang Chi Tiết Khóa Học',
     minutesUnit: 'phút',
     notesFallbackTitle: 'Ghi chú bài học',
     videoUnavailable: 'Video của bài học này hiện không thể hiển thị.',
@@ -1086,6 +1117,7 @@ const vi: TranslationDict = {
     blockedTitle: 'Hoàn thành Quiz trước',
     blockedBody: 'Trap Hunter lấy từ những câu bạn làm sai, nên nó mở ra sau khi bạn hoàn thành một lượt Quiz.',
     goToQuizAction: 'Vào Quiz',
+    goToPracticeAction: 'Tiếp tục: Luyện nâng cao',
     loadFailed: 'Không tải được Trap Hunter',
     checkFailed: 'Không kiểm tra được — vui lòng thử lại',
     keyboardHint: 'Nhấn Enter để kiểm tra và tiếp tục. Phím 1–4 chọn nhanh đáp án.',

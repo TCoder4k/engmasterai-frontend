@@ -238,10 +238,19 @@ describe('UserSidebar — the widgets that are still placeholder', () => {
   // If someone wires Daily Goal or Achievements to real data, these fail and
   // remind them to drop the marker. The reverse matters more: the marker must
   // never reappear on the two widgets that became real.
-  it('keeps the sample-data marker on Daily Goal and Achievements only', () => {
+  it('keeps the sample-data marker on Daily Goal ALONE', () => {
+    // Was two markers (Daily Goal + Achievements). Sprint 10 made Achievements
+    // real from the XP ledger and removed its marker along with the mock, so
+    // exactly ONE placeholder is left on this rail.
+    //
+    // Daily Goal keeps its marker because it still has nothing behind it:
+    // there is no time-on-task signal anywhere in the product. This count is
+    // asserted rather than left implicit so that shipping a real Daily Goal
+    // without removing its label — or adding a new placeholder quietly — turns
+    // this red.
     renderSidebar({ analytics: analytics() });
 
-    expect(screen.getAllByText(/sample data/i)).toHaveLength(2);
+    expect(screen.getAllByText(/sample data/i)).toHaveLength(1);
   });
 
   it('does not label the real widgets as sample data', () => {

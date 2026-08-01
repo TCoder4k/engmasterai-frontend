@@ -1,5 +1,6 @@
 import { throwApiError } from './apiError';
 import { apiFetch } from './apiFetch';
+import { publishGamificationResult } from './gamificationService';
 import {
   AnswerQuestionResponse,
   ManageQuiz,
@@ -104,7 +105,19 @@ export const submitPractice = async (
     body: JSON.stringify(dto),
   });
   if (!response.ok) return throwApiError(response, 'Failed to submit Advanced Practice');
-  return response.json();
+  // Sprint 10 QA — announce the award, exactly as submitLessonQuiz does.
+  //
+  // This line was the whole of "Advanced Practice gives no XP": the server had
+  // been writing the 40-XP ledger row and returning the envelope all along, but
+  // this was the ONE award-bearing wrapper that parsed the body and dropped
+  // `gamification` on the floor. Nothing downstream could notice — the stage
+  // component relies on the service boundary to publish, the same way the quiz
+  // and trap stages do, so the failure was silent by construction.
+  //
+  // A replay reports xpAwarded: 0 and is filtered inside the publisher.
+  const body: SubmitQuizResponse = await response.json();
+  publishGamificationResult(body.gamification);
+  return body;
 };
 
 // Sprint 07 — getCourseStageProgress MOVED to services/progressService.ts as

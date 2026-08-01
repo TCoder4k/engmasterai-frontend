@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
+import BackButton from '../shared/BackButton';
 import EmptyState from '../shared/EmptyState';
 import ErrorState from '../shared/ErrorState';
 import Skeleton from '../shared/Skeleton';
@@ -9,7 +10,7 @@ import { getPublishedDecksByLibrary } from '../../services/vocabDeckService';
 import { getLibraryProgress, LibraryProgress, DeckProgress } from '../../services/learningService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary, VocabDeck } from '../../types';
-import { ArrowLeft, Library as LibraryIcon, Layers, Clock3 } from 'lucide-react';
+import { Library as LibraryIcon, Layers, Clock3 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // /vocab/libraries/:id — the vocabulary library learning overview (Sprint
@@ -121,13 +122,7 @@ const LibraryDetailPage: React.FC = () => {
   return (
     <StudentLayout>
       <div className="max-w-4xl mx-auto space-y-6">
-        <Link
-          to="/vocab"
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors min-h-[44px]"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          <span>{t.vocab.backToLibraries}</span>
-        </Link>
+        <BackButton to="/vocab" label={t.vocab.backToLibraries} />
 
         {isLoading && (
           <div className="space-y-6" aria-busy="true">

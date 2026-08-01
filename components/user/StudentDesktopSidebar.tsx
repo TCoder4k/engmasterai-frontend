@@ -12,6 +12,7 @@ import {
   Gem,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
+import LevelWidget from './LevelWidget';
 
 const HEXAGON_CLIP = 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)';
 
@@ -86,25 +87,12 @@ const StudentDesktopSidebar: React.FC = () => {
       </nav>
 
       <div className="p-4 space-y-4">
-        {/* Level/XP preview — totalPoints/level exist on the User model but no
-            API returns them yet, so no numbers are shown (static-data honesty). */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center space-x-3 mb-4">
-            <div
-              className="w-12 h-12 bg-blue-600 flex items-center justify-center text-white flex-shrink-0"
-              style={{ clipPath: HEXAGON_CLIP }}
-              aria-hidden="true"
-            >
-              <Gem size={20} />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500">{t.widgets.level}</p>
-              <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{t.common.comingSoon}</p>
-            </div>
-          </div>
-          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full" />
-          <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mt-2">{t.common.noDataYet}</p>
-        </div>
+        {/* Sprint 10 — REAL. This was a "Coming soon" placeholder whose comment
+            claimed no API returned totalPoints/level; that was wrong (GET
+            /users/me always has), and the real gap was that nothing awarded
+            them. The XP ledger closes it. Data comes from GamificationProvider,
+            mounted once per session as a layout route — see App.tsx. */}
+        <LevelWidget />
 
         <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5">
           <div className="flex items-center space-x-2 mb-1.5">

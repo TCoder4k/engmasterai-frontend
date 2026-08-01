@@ -1,5 +1,9 @@
 import { throwApiError, ApiError } from './apiError';
 import { apiFetch } from './apiFetch';
+import {
+  GamificationResult,
+  publishGamificationResult,
+} from './gamificationService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -148,6 +152,12 @@ export interface SubmitQuizResponse {
   bestScorePercent: number;
   durationSeconds: number | null;
   results: QuestionResult[];
+  // Sprint 10 — EPHEMERAL, and a sibling of the recorded result rather than
+  // part of it. The server never stores this alongside the attempt, so a
+  // replayed submit reports `xpAwarded: 0` instead of re-announcing an award
+  // that already happened. Optional so a response from an older backend still
+  // type-checks.
+  gamification?: GamificationResult;
 }
 
 export interface CourseQuizProgressRow {
@@ -211,7 +221,12 @@ export const submitLessonQuiz = async (
     body: JSON.stringify(dto),
   });
   if (!response.ok) return throwApiError(response, 'Failed to submit quiz');
-  return response.json();
+  // Sprint 10 — announce whatever this submit earned, so the level widget
+  // updates wherever the student happens to be. A replay reports 0 and is
+  // filtered inside the publisher. See gamificationService.
+  const body: SubmitQuizResponse = await response.json();
+  publishGamificationResult(body.gamification);
+  return body;
 };
 
 export const getCourseQuizProgress = async (

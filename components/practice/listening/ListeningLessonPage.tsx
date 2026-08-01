@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Headphones } from 'lucide-react';
 import StudentLayout from '../../user/StudentLayout';
+import BackButton from '../../shared/BackButton';
 import EmptyState from '../../shared/EmptyState';
 import SegmentPlayer from './SegmentPlayer';
 import DictationWorkspace, { SegmentSolvedResult, WorkspaceFontSize } from './DictationWorkspace';
@@ -118,13 +119,10 @@ const ListeningLessonPage: React.FC = () => {
     return (
       <StudentLayout>
         <div className="max-w-3xl mx-auto space-y-4">
-          <Link
+          <BackButton
             to="/practice/listening"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors min-h-[44px]"
-          >
-            <ArrowLeft size={14} aria-hidden="true" />
-            <span>{t.practice.backToListening}</span>
-          </Link>
+            label={t.practice.backToListening}
+          />
           <EmptyState icon={<Headphones size={32} />} message={t.practice.lessonNotFound} />
         </div>
       </StudentLayout>
