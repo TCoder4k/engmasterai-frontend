@@ -36,6 +36,7 @@ import ListeningLessonPage from './components/practice/listening/ListeningLesson
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
+import GamificationBoundary from './components/shared/GamificationProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { LanguageProvider } from './i18n/LanguageProvider';
 import { SoundProvider } from './components/shared/SoundProvider';
@@ -92,6 +93,15 @@ const App: React.FC = () => {
             this wrapper now does that job (and does it before the page's
             own JSX ever renders, not one tick after). */}
         <Route element={<ProtectedRoute />}>
+          {/* Sprint 10 — GamificationBoundary wraps the STUDENT routes only, so
+              the XP profile is fetched once per session and survives every
+              navigation inside this group. It is nested here rather than folded
+              into ProtectedRoute (which stays a pure navigation gate) and
+              rather than placed in StudentLayout (which each page renders for
+              itself, so it would remount and refetch on every page change).
+              The admin group below sits outside it by structure and therefore
+              issues no gamification request at all. */}
+          <Route element={<GamificationBoundary />}>
           <Route path="/home" element={<UserHome />} />
           <Route path="/vocab" element={<VocabLibraryPage />} />
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
@@ -127,6 +137,7 @@ const App: React.FC = () => {
           <Route path="/practice/listening/:lessonId" element={<ListeningLessonPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
+          </Route>
         </Route>
 
         {/* /admin* requires an authenticated ADMIN; ProtectedRoute redirects

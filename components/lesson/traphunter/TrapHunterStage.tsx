@@ -29,6 +29,10 @@ interface TrapHunterStageProps {
   // stepper exists.
   onProgressChange?: (progress: TrapHunterProgress) => void;
   onGoToQuiz?: () => void;
+  // Passed straight through to the summary. This stage decides nothing about
+  // whether Practice is reachable — LessonPage owns the stage statuses and
+  // simply omits the handler when there is no practice task to go to.
+  onGoToPractice?: () => void;
 }
 
 type Phase = 'loading' | 'error' | 'hunting' | 'done';
@@ -53,6 +57,7 @@ const TrapHunterStage: React.FC<TrapHunterStageProps> = ({
   lessonId,
   onProgressChange,
   onGoToQuiz,
+  onGoToPractice,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -124,7 +129,13 @@ const TrapHunterStage: React.FC<TrapHunterStageProps> = ({
     return <TrapHunterSummary kind="no-traps" total={0} />;
   }
   if (queue.length === 0) {
-    return <TrapHunterSummary kind="all-cleared" total={progress.total} />;
+    return (
+      <TrapHunterSummary
+        kind="all-cleared"
+        total={progress.total}
+        onGoToPractice={onGoToPractice}
+      />
+    );
   }
 
   const currentId = queue[0];

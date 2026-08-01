@@ -1,5 +1,9 @@
 import { throwApiError } from './apiError';
 import { apiFetch } from './apiFetch';
+import {
+  GamificationResult,
+  publishGamificationResult,
+} from './gamificationService';
 import { QuestionDifficulty, QuestionType, QuizQuestionOption, SubmittedAnswer } from './quizService';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -90,6 +94,11 @@ export interface AnswerTrapResponse {
   // Consecutive traps cleared first try, counted server-side.
   currentStreak: number;
   allCleared: boolean;
+  // Sprint 10. Clearing a trap earns XP but does NOT create an activity day —
+  // Trap Hunter is invisible to the dashboard's streak scan and Sprint 10
+  // deliberately kept it that way rather than silently lighting up calendar
+  // tiles that never lit up before.
+  gamification?: GamificationResult;
 }
 
 export interface RequestTrapHintInput {
@@ -130,7 +139,9 @@ export const answerTrap = async (
     body: JSON.stringify(dto),
   });
   if (!response.ok) return throwApiError(response, 'Failed to check that correction');
-  return response.json();
+  const body: AnswerTrapResponse = await response.json();
+  publishGamificationResult(body.gamification);
+  return body;
 };
 
 export const requestTrapHint = async (

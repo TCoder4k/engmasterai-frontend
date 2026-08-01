@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
+import BackButton from '../shared/BackButton';
 import { getWord } from '../../services/vocabWordService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabWordDetail } from '../../types';
-import { ArrowLeft, Volume2 } from 'lucide-react';
+import { Volume2 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 const ChipGroup: React.FC<{ label: string; items: string[] }> = ({ label, items }) => {
@@ -62,13 +63,7 @@ const WordDetailPage: React.FC = () => {
   return (
     <StudentLayout>
       <div className="max-w-3xl mx-auto">
-        <Link
-          to={backHref}
-          className="inline-flex items-center space-x-1.5 text-xs font-bold text-slate-400 hover:text-blue-500 dark:text-slate-500 dark:hover:text-blue-400 transition-colors mb-8 min-h-[44px]"
-        >
-          <ArrowLeft size={14} aria-hidden="true" />
-          <span>{backLabel}</span>
-        </Link>
+        <BackButton to={backHref} label={backLabel} className="mb-8" />
 
         {isLoading && (
           <p className="text-sm font-medium text-slate-400 dark:text-slate-500">{t.common.loading}</p>

@@ -26,13 +26,6 @@ export interface DailyGoal {
   learnedMinutes: number;
 }
 
-export interface Achievement {
-  /** Rendered inside the badge tile — an emoji or a short number. */
-  glyph: string;
-  titleKey: 'firstLesson' | 'weekStreak' | 'hundredWords';
-  tileClass: string;
-}
-
 // Still placeholder: study TIME is not tracked anywhere. Quiz and practice
 // attempts carry a durationSeconds, but theory, video and listening contribute
 // nothing, so a "minutes studied" figure would be missing most of its input —
@@ -40,26 +33,10 @@ export interface Achievement {
 // no minutes metric rather than a misleading one.
 export const MOCK_DAILY_GOAL: DailyGoal = { targetMinutes: 30, learnedMinutes: 18 };
 
-export const MOCK_ACHIEVEMENTS: Achievement[] = [
-  {
-    glyph: '⭐',
-    titleKey: 'firstLesson',
-    tileClass:
-      'bg-violet-100 text-violet-600 border-violet-200 dark:bg-violet-500/20 dark:text-violet-300 dark:border-violet-500/30',
-  },
-  {
-    glyph: '7',
-    titleKey: 'weekStreak',
-    tileClass:
-      'bg-emerald-100 text-emerald-600 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/30',
-  },
-  {
-    glyph: '100',
-    titleKey: 'hundredWords',
-    tileClass:
-      'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30',
-  },
-];
+// SPRINT 10 REMOVED `MOCK_ACHIEVEMENTS`. Achievements are real now — six
+// server-defined badges from GET /gamification/profile, rendered by
+// components/user/AchievementsWidget.tsx. Do not reintroduce a placeholder
+// beside a real widget.
 
 // Star ratings for the "Recommended for You" cards. Derived from the course
 // id so a given course always shows the same figure — a rating that changed

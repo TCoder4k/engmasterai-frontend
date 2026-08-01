@@ -95,11 +95,18 @@ const answer = (
   ...over,
 });
 
-const renderStage = (onProgressChange?: (p: trapHunterService.TrapHunterProgress) => void) =>
+const renderStage = (
+  onProgressChange?: (p: trapHunterService.TrapHunterProgress) => void,
+  handlers: { onGoToQuiz?: () => void; onGoToPractice?: () => void } = {},
+) =>
   render(
     <MemoryRouter>
       <LanguageProvider>
-        <TrapHunterStage lessonId="l-1" onProgressChange={onProgressChange} />
+        <TrapHunterStage
+          lessonId="l-1"
+          onProgressChange={onProgressChange}
+          {...handlers}
+        />
       </LanguageProvider>
     </MemoryRouter>,
   );
@@ -433,5 +440,85 @@ describe('refresh and resume', () => {
     renderStage();
 
     expect(await screen.findByText('Every trap cleared')).toBeInTheDocument();
+  });
+});
+
+// Sprint 10 QA — the way ON from the all-clear panel.
+//
+// Before this, finishing the correction round produced a title, a body and a
+// count with no action at all. The next stage of the SAME lesson is Advanced
+// Practice, and clearing every trap is literally what removes one of its two
+// prerequisites — but the student had to scroll back up to the stage stepper
+// to discover that. NextLessonCard below the stage does not help: it goes to
+// the next LESSON.
+describe('the all-clear CTA', () => {
+  const allCleared = () =>
+    response(
+      [
+        trap({
+          questionId: 't1',
+          cleared: {
+            clearedAt: '2026-07-29T00:00:00.000Z',
+            correctAnswer: { optionId: 'b' },
+            explanation: null,
+          },
+        }),
+      ],
+      { cleared: 1, completed: true },
+    );
+
+  it('offers Advanced Practice once every trap is cleared', async () => {
+    vi.mocked(trapHunterService.getTrapHunter).mockResolvedValue(allCleared());
+    const onGoToPractice = vi.fn();
+    renderStage(undefined, { onGoToPractice });
+
+    const cta = await screen.findByRole('button', {
+      name: /Continue: Advanced Practice/i,
+    });
+    await userEvent.click(cta);
+
+    expect(onGoToPractice).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers NOTHING when the lesson has no practice task', async () => {
+    // LessonPage omits the handler when the practice stage is 'unavailable',
+    // because ?stage=practice would redirect straight back to the video — a
+    // CTA that bounces the student is worse than no CTA.
+    vi.mocked(trapHunterService.getTrapHunter).mockResolvedValue(allCleared());
+    renderStage();
+
+    expect(await screen.findByText('Every trap cleared')).toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('does not appear on the perfect-quiz panel', async () => {
+    // 'No traps to hunt' is a different state and is deliberately left alone
+    // in this pass.
+    vi.mocked(trapHunterService.getTrapHunter).mockResolvedValue(
+      response([], { hasSource: true, total: 0 }),
+    );
+    renderStage(undefined, { onGoToPractice: vi.fn() });
+
+    expect(await screen.findByText('No traps to hunt')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Advanced Practice/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('still shows "Go to the quiz" — and only that — on the blocked panel', async () => {
+    // The two CTAs share one button now. This is what catches them being
+    // swapped by that refactor.
+    vi.mocked(trapHunterService.getTrapHunter).mockResolvedValue(
+      response([], { hasSource: false, total: 0 }),
+    );
+    const onGoToQuiz = vi.fn();
+    renderStage(undefined, { onGoToQuiz, onGoToPractice: vi.fn() });
+
+    expect(await screen.findByText('Finish the quiz first')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Go to the quiz/i }));
+    expect(onGoToQuiz).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole('button', { name: /Advanced Practice/i }),
+    ).not.toBeInTheDocument();
   });
 });

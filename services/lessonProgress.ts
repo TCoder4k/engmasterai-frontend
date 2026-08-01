@@ -77,6 +77,12 @@ export const LESSON_STAGE_IDS: LessonStageId[] = ['video', 'theory', 'quiz', 'tr
 // DERIVED from the two timestamps. A stored status beside the timestamps it is
 // computed from is a second representation of one fact, which is precisely how
 // the backend's LessonTaskProgress.status came to disagree with completedAt.
+// Sprint 10 — the WRITE endpoints return this shape plus a `gamification`
+// sibling. It is deliberately NOT part of StepProgress: this interface also
+// describes what the lesson and course progress READS return, and XP has no
+// meaning there — hanging it off the shared shape would make those pure reads
+// look like they were awarding something on every page load. See
+// progressService for where the award is picked off.
 export interface StepProgress {
   startedAt: string | null;
   completedAt: string | null;
