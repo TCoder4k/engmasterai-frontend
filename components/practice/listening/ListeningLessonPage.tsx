@@ -9,6 +9,7 @@ import DictationWorkspace, { SegmentSolvedResult, WorkspaceFontSize } from './Di
 import SubtitlesSidebar from './SubtitlesSidebar';
 import ListeningSessionSummary from './ListeningSessionSummary';
 import SoundToggle from '../../shared/SoundToggle';
+import { useStudyActivity } from '../../shared/StudyTimeBoundary';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { isTtsSupported, speakText, cancelSpeech } from '../../../services/tts';
 import { getLessonById, LISTENING_CONTENT_VERSION } from './listeningContent';
@@ -59,6 +60,22 @@ const ListeningLessonPage: React.FC = () => {
   // link) reuses this mounted component with a new lessonId param before
   // the reset effect below has run, so segmentIndex could momentarily be
   // out of bounds for the new lesson's segment count.
+  // Sprint 10.5 — the first figure Listening has ever contributed to.
+  //
+  // It persists nothing (listeningSessionStore is in-memory by design), so it
+  // is invisible to Sprint 09's counts, the streak and XP. Study time is
+  // wall-clock and needs no persistence, so it counts here on equal terms.
+  //
+  // `mediaPlaying` carries the TTS playback state, which is what lets a student
+  // listen to a long segment without touching anything and still be credited.
+  // Note the id is a SLUG, not a UUID — see the DTO's activityId comment.
+  useStudyActivity({
+    type: 'LISTENING',
+    activityId: lessonId,
+    active: Boolean(lesson) && !listeningResult,
+    mediaPlaying: isPlaying || replayingSegmentIndex !== null,
+  });
+
   const segmentIndexClamped = lesson ? Math.min(segmentIndex, lesson.segments.length - 1) : 0;
   const segment = lesson?.segments[segmentIndexClamped];
   const ttsSupported = isTtsSupported();

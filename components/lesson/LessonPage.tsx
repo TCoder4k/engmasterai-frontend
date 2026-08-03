@@ -13,6 +13,7 @@ import { VideoStageSidePanel, TheoryCompletionBar } from './LessonStageChrome';
 import NextLessonCard from './NextLessonCard';
 import ErrorState from '../shared/ErrorState';
 import Skeleton from '../shared/Skeleton';
+import { useStudyActivity } from '../shared/StudyTimeBoundary';
 import { getLesson, getCourseLessons } from '../../services/lessonService';
 import { getPublishedCourse } from '../../services/courseService';
 import { authService } from '../../services/authService';
@@ -252,6 +253,25 @@ const LessonPage: React.FC = () => {
     (requestedStage === 'practice' && stageStatuses.practice === 'unavailable')
       ? 'video'
       : requestedStage;
+
+  // Sprint 10.5 — study time for the non-video stages. The video stage is
+  // registered by LessonVideoPlayer itself, because only that component knows
+  // whether playback is actually running (the one idle bypass). Registering it
+  // here too would put two entries in play for the same second — harmless for
+  // the total, since the boundary credits one second per real second, but it
+  // would make the reported activityType depend on mount order.
+  useStudyActivity({
+    type:
+      currentStage === 'theory'
+        ? 'THEORY'
+        : currentStage === 'quiz'
+          ? 'QUIZ'
+          : currentStage === 'traphunter'
+            ? 'TRAP_HUNTER'
+            : 'PRACTICE',
+    activityId: lesson?.id,
+    active: Boolean(lesson) && currentStage !== 'video',
+  });
 
   // Sprint 07 — the explicit "Tôi đã đọc xong" action, now a real server
   // write. PESSIMISTIC on purpose: the tile flips only after the server has

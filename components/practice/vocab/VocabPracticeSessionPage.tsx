@@ -4,6 +4,7 @@ import StudentLayout from '../../user/StudentLayout';
 import EmptyState from '../../shared/EmptyState';
 import ErrorState from '../../shared/ErrorState';
 import Skeleton from '../../shared/Skeleton';
+import { useStudyActivity } from '../../shared/StudyTimeBoundary';
 import ModeSelectorBar from '../ModeSelectorBar';
 import SessionHeader from './SessionHeader';
 import FlashcardSession from './FlashcardSession';
@@ -51,6 +52,18 @@ const VocabPracticeSessionPage: React.FC = () => {
   const mode: VocabPracticeMode = VALID_PRACTICE_MODES.includes(requestedMode as VocabPracticeMode)
     ? (requestedMode as VocabPracticeMode)
     : 'flashcard';
+
+  // Sprint 10.5 — flashcard, dictation and games are all intentional learning
+  // and all count. They share one activity type and are told apart by deckId;
+  // the mode is not a dimension the dashboard asks about.
+  //
+  // Inactive once the summary is showing: reading your own score is not study,
+  // and the session screen can sit there indefinitely.
+  useStudyActivity({
+    type: 'VOCAB_PRACTICE',
+    activityId: deckId,
+    active: Boolean(deckId) && !result,
+  });
 
   useEffect(() => {
     if (!deckId) return;

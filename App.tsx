@@ -37,6 +37,7 @@ import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import GamificationBoundary from './components/shared/GamificationProvider';
+import StudyTimeBoundary from './components/shared/StudyTimeBoundary';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { LanguageProvider } from './i18n/LanguageProvider';
 import { SoundProvider } from './components/shared/SoundProvider';
@@ -102,6 +103,15 @@ const App: React.FC = () => {
               The admin group below sits outside it by structure and therefore
               issues no gamification request at all. */}
           <Route element={<GamificationBoundary />}>
+          {/* Sprint 10.5 — StudyTimeBoundary owns the ONE interval that measures
+              active study seconds, for the same structural reasons as the
+              boundary above it: mounted once per session, survives every
+              navigation inside the student group, and excluded from the admin
+              group by structure rather than by a check. Pages contribute a
+              useStudyActivity registration and nothing else — no page owns a
+              timer. Nesting order between the two boundaries is arbitrary;
+              neither reads the other. */}
+          <Route element={<StudyTimeBoundary />}>
           <Route path="/home" element={<UserHome />} />
           <Route path="/vocab" element={<VocabLibraryPage />} />
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
@@ -137,6 +147,7 @@ const App: React.FC = () => {
           <Route path="/practice/listening/:lessonId" element={<ListeningLessonPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
+          </Route>
           </Route>
         </Route>
 
