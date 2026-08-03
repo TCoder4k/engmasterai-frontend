@@ -8,6 +8,7 @@ import { parseYouTubeVideoId } from './youtubeUrlParser';
 import { authService } from '../../../services/authService';
 import { recordVideoProgress } from '../../../services/progressService';
 import { StepProgress } from '../../../services/lessonProgress';
+import { useStudyActivity } from '../../shared/StudyTimeBoundary';
 
 // YT.PlayerState values (stable, documented by the IFrame Player API) —
 // not depending on the global YT type existing at module-eval time.
@@ -71,6 +72,18 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   );
   const [retryKey, setRetryKey] = useState(0);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
+  // Sprint 10.5 — the ONLY idle bypass in the app. A student watching a video
+  // for ten minutes touches nothing, and without this the study-time tracker
+  // would stop crediting them after 60 seconds of "inactivity".
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Registration only — no timer, no request. StudyTimeBoundary owns both.
+  useStudyActivity({
+    type: 'VIDEO',
+    activityId: lessonId,
+    active: true,
+    mediaPlaying: isPlaying,
+  });
 
   const playerInstanceRef = useRef<any>(null);
   const saveTimerRef = useRef<number | null>(null);
@@ -193,6 +206,7 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
 
   const handleStateChange = useCallback(
     (state: number) => {
+      setIsPlaying(state === PLAYER_STATE.PLAYING);
       if (state === PLAYER_STATE.PLAYING) {
         stopSaveTimer();
         saveTimerRef.current = window.setInterval(
@@ -216,6 +230,7 @@ const LessonVideoPlayer: React.FC<LessonVideoPlayerProps> = ({
   );
 
   const handleError = useCallback(() => {
+    setIsPlaying(false);
     stopSaveTimer();
     setStatus('unavailable');
     onPlayerReadyRef.current?.(null);

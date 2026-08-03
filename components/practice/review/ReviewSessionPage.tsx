@@ -5,6 +5,7 @@ import StudentLayout from '../../user/StudentLayout';
 import EmptyState from '../../shared/EmptyState';
 import ErrorState from '../../shared/ErrorState';
 import Skeleton from '../../shared/Skeleton';
+import { useStudyActivity } from '../../shared/StudyTimeBoundary';
 import CelebrationBurst from '../../shared/CelebrationBurst';
 import RatingButtons from '../vocab/RatingButtons';
 import ReviewSessionSummary from './ReviewSessionSummary';
@@ -72,6 +73,15 @@ const ReviewSessionPage: React.FC = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [example, setExample] = useState<VocabWordExample | null>(null);
   const [burstKey, setBurstKey] = useState(0);
+
+  // Sprint 10.5 — the SRS queue counts while it is being worked through.
+  // Inactive on the loading, empty and summary screens: an exhausted queue left
+  // open on the summary is not study time.
+  useStudyActivity({
+    type: 'SRS_REVIEW',
+    activityId: deckId,
+    active: !isLoading && !isComplete && !isEmpty,
+  });
 
   const backHref = libraryId ? `/vocab/libraries/${libraryId}` : deckId ? `/practice/vocab/${deckId}` : '/vocab';
 
