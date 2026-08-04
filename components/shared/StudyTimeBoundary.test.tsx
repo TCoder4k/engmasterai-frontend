@@ -37,11 +37,36 @@ const Activity: React.FC<{
   return null;
 };
 
-/** Advance the boundary's interval by `seconds` whole ticks. */
+/** Advance the boundary's interval by `seconds` whole ticks, in one jump. */
 const tick = async (seconds: number) => {
   await act(async () => {
     vi.advanceTimersByTime(seconds * 1000);
   });
+};
+
+// TWO REASONS THESE LOOP ONE SECOND AT A TIME rather than jumping.
+//
+// 1. IDLE_TIMEOUT_MS is 60s and so is the flush threshold, so a 60-second jump
+//    with no interaction hits idle on the very tick that would have crossed the
+//    threshold. That is correct behaviour, not a bug — but it means "study for
+//    a minute" has to look like studying.
+// 2. flush() is async and guards against re-entry. A synchronous 180-second
+//    jump runs 180 ticks before a single microtask resolves, so only the first
+//    flush can complete. Awaiting each second lets them settle.
+
+/** Study actively: one tick per second, interacting each time. */
+const studyFor = async (seconds: number) => {
+  for (let second = 0; second < seconds; second += 1) {
+    await tick(1);
+    window.dispatchEvent(new Event('keydown'));
+  }
+};
+
+/** Sit still: one tick per second, touching nothing. */
+const idleFor = async (seconds: number) => {
+  for (let second = 0; second < seconds; second += 1) {
+    await tick(1);
+  }
 };
 
 let postSpy: ReturnType<typeof vi.spyOn>;
@@ -115,24 +140,27 @@ describe('StudyTimeBoundary — what does NOT count', () => {
 
   // Reading a page for a minute without touching anything is the boundary
   // between "studying" and "left the tab open".
+  // Sitting still credits at most one idle window and then nothing, however
+  // long the tab stays open. Measured through the pagehide beacon, because a
+  // buffer that never reaches the flush threshold is otherwise invisible.
   it('stops crediting after the idle timeout', async () => {
     renderBoundary(<Activity />);
 
-    // Idle from the start: the first IDLE_TIMEOUT_MS worth of seconds are
-    // credited, then nothing more, so the flush threshold is never crossed
-    // twice however long we wait.
-    await tick(IDLE_TIMEOUT_MS / 1000 + 300);
+    await idleFor(IDLE_TIMEOUT_MS / 1000 + 600);
+    window.dispatchEvent(new Event('pagehide'));
 
-    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(postSpy).not.toHaveBeenCalled();
+    expect(beaconSpy).toHaveBeenCalledTimes(1);
+    // Ten more minutes of sitting there added nothing to the first minute.
+    expect(
+      (beaconSpy.mock.calls[0][0] as { activeSeconds: number }).activeSeconds,
+    ).toBeLessThanOrEqual(IDLE_TIMEOUT_MS / 1000);
   });
 
   it('keeps crediting while the student interacts', async () => {
     renderBoundary(<Activity />);
 
-    for (let second = 0; second < 180; second += 1) {
-      await tick(1);
-      window.dispatchEvent(new Event('keydown'));
-    }
+    await studyFor(180);
 
     expect(postSpy).toHaveBeenCalledTimes(3);
   });
@@ -142,9 +170,30 @@ describe('StudyTimeBoundary — what does NOT count', () => {
   it('keeps crediting an idle tab while media is playing', async () => {
     renderBoundary(<Activity type="VIDEO" mediaPlaying />);
 
-    await tick(IDLE_TIMEOUT_MS / 1000 + 130);
+    await idleFor(180);
 
-    expect(postSpy.mock.calls.length).toBeGreaterThanOrEqual(3);
+    expect(postSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('stops crediting when that same media pauses', async () => {
+    const leader = createStudyTimeLeader('tab-a');
+    const { rerender } = render(
+      <StudyTimeProvider leader={leader}>
+        <Activity type="VIDEO" mediaPlaying />
+      </StudyTimeProvider>,
+    );
+    await idleFor(120);
+    expect(postSpy).toHaveBeenCalledTimes(2);
+
+    rerender(
+      <StudyTimeProvider leader={leader}>
+        <Activity type="VIDEO" mediaPlaying={false} />
+      </StudyTimeProvider>,
+    );
+    await idleFor(300);
+
+    // Paused and untouched is idle again — no further flush.
+    expect(postSpy).toHaveBeenCalledTimes(2);
   });
 
   it('stops crediting after logout', async () => {
@@ -180,10 +229,12 @@ describe('StudyTimeBoundary — the leader lock', () => {
       </StudyTimeProvider>,
     );
 
-    await tick(FLUSH_THRESHOLD_SECONDS + 1);
+    await studyFor(FLUSH_THRESHOLD_SECONDS);
 
     expect(homeTab.leader.isLeader()).toBe(false);
     expect(lessonLeader.isLeader()).toBe(true);
+    // And the learning tab actually got credited, rather than both tabs
+    // sitting deadlocked on a lock neither could use.
     expect(postSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -243,10 +294,7 @@ describe('StudyTimeBoundary — activity resolution', () => {
       </>,
     );
 
-    for (let second = 0; second < FLUSH_THRESHOLD_SECONDS; second += 1) {
-      await tick(1);
-      window.dispatchEvent(new Event('keydown'));
-    }
+    await studyFor(FLUSH_THRESHOLD_SECONDS);
 
     expect(postSpy).toHaveBeenCalledTimes(1);
     expect(postSpy.mock.calls[0][0]).toMatchObject({
@@ -263,10 +311,7 @@ describe('StudyTimeBoundary — activity resolution', () => {
       </>,
     );
 
-    for (let second = 0; second < FLUSH_THRESHOLD_SECONDS; second += 1) {
-      await tick(1);
-      window.dispatchEvent(new Event('keydown'));
-    }
+    await studyFor(FLUSH_THRESHOLD_SECONDS);
 
     // Two registrations, one flush of exactly 60 seconds — not two, and not 120.
     expect(postSpy).toHaveBeenCalledTimes(1);
@@ -278,7 +323,7 @@ describe('StudyTimeBoundary — flushing', () => {
   it('uses the apiFetch-backed service for the normal flush', async () => {
     renderBoundary(<Activity />);
 
-    await tick(FLUSH_THRESHOLD_SECONDS);
+    await studyFor(FLUSH_THRESHOLD_SECONDS);
 
     expect(postSpy).toHaveBeenCalledTimes(1);
     expect(beaconSpy).not.toHaveBeenCalled();
@@ -292,10 +337,7 @@ describe('StudyTimeBoundary — flushing', () => {
   it('advances the sequence across flushes within one session', async () => {
     renderBoundary(<Activity />);
 
-    for (let second = 0; second < FLUSH_THRESHOLD_SECONDS * 2; second += 1) {
-      await tick(1);
-      window.dispatchEvent(new Event('keydown'));
-    }
+    await studyFor(FLUSH_THRESHOLD_SECONDS * 2);
 
     expect(postSpy.mock.calls[0][0]).toMatchObject({ sequence: 0 });
     expect(postSpy.mock.calls[1][0]).toMatchObject({ sequence: 1 });
@@ -337,17 +379,11 @@ describe('StudyTimeBoundary — flushing', () => {
     postSpy.mockRejectedValueOnce(new Error('offline'));
     renderBoundary(<Activity />);
 
-    for (let second = 0; second < FLUSH_THRESHOLD_SECONDS; second += 1) {
-      await tick(1);
-      window.dispatchEvent(new Event('keydown'));
-    }
+    await studyFor(FLUSH_THRESHOLD_SECONDS);
     expect(postSpy).toHaveBeenCalledTimes(1);
 
-    // Backoff, then the buffered seconds go again.
-    for (let second = 0; second < 60; second += 1) {
-      await tick(1);
-      window.dispatchEvent(new Event('keydown'));
-    }
+    // Backoff (30s), then the re-buffered seconds go again.
+    await studyFor(60);
 
     expect(postSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
     expect(postSpy.mock.calls[1][0].activeSeconds).toBeGreaterThanOrEqual(60);
@@ -401,10 +437,7 @@ describe('StudyTimeBoundary — account changes', () => {
       window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
     });
 
-    for (let second = 0; second < 30; second += 1) {
-      await tick(1);
-      window.dispatchEvent(new Event('keydown'));
-    }
+    await studyFor(30);
 
     expect(postSpy).toHaveBeenCalledTimes(1);
     expect(postSpy.mock.calls[0][0]).toMatchObject({ activeSeconds: 60 });
