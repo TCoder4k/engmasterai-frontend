@@ -2,10 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 import { Language } from '../../i18n/translations';
 import { useTranslation } from '../../i18n/useTranslation';
+import LanguageFlag from './LanguageFlag';
 
 const LANGUAGES: Language[] = ['en', 'vi'];
 
-// Compact "EN ⌄" / "VI ⌄" dropdown. Follows AvatarMenu's accessibility
+// "🇻🇳 Tiếng Việt ⌄" dropdown (flags are inline SVG, not emoji — see
+// LanguageFlag for why that distinction matters on Windows).
+//
+// The flag is decorative: it sits beside the language NAME, never instead of
+// it, so the control still reads correctly to a screen reader and to anyone
+// who does not recognise a flag. Follows AvatarMenu's accessibility
 // pattern: click-outside + Escape close, visible focus rings, native buttons
 // for keyboard operability.
 const LanguageSwitcher: React.FC = () => {
@@ -51,9 +57,16 @@ const LanguageSwitcher: React.FC = () => {
         aria-expanded={isOpen}
         aria-label={t.header.changeLanguage}
         title={t.header.changeLanguage}
-        className="h-10 md:h-11 px-2.5 md:px-3 flex items-center space-x-1 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400 dark:hover:border-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        className="h-10 md:h-11 px-2.5 md:px-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-blue-600 hover:border-blue-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:text-blue-400 dark:hover:border-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
-        <span className="text-xs font-bold uppercase">{language}</span>
+        <LanguageFlag language={language} label={t.languages[language]} />
+        {/* The full name on wider viewports, the code on phones — "Tiếng Việt"
+            beside an avatar and a theme toggle is more than a narrow header
+            can hold. */}
+        <span className="hidden sm:inline text-sm font-semibold whitespace-nowrap">
+          {t.languages[language]}
+        </span>
+        <span className="sm:hidden text-xs font-bold uppercase">{language}</span>
         <ChevronDown
           size={14}
           aria-hidden="true"
@@ -78,7 +91,10 @@ const LanguageSwitcher: React.FC = () => {
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
-                <span>{t.languages[lang]}</span>
+                <span className="flex items-center gap-2.5">
+                  <LanguageFlag language={lang} label={t.languages[lang]} />
+                  {t.languages[lang]}
+                </span>
                 {language === lang && <Check size={14} aria-hidden="true" />}
               </button>
             </li>

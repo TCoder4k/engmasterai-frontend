@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AvatarMenu from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
-import SoundToggle from '../shared/SoundToggle';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
 import NotificationBell from '../shared/NotificationBell';
 import StudentDesktopSidebar from './StudentDesktopSidebar';
@@ -54,8 +53,11 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
         <header className="hidden lg:flex bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-8 py-4 items-center justify-between sticky top-0 z-40">
           <div className="flex-1" />
 
+          {/* No SoundToggle here. It was global chrome on every student page for
+              a setting that only affects quiz/practice feedback sounds; the
+              toggle that matters stays beside the listening session, where the
+              sound actually is. */}
           <div className="flex items-center space-x-2.5 ml-6">
-            <SoundToggle />
             <ThemeToggle />
             <LanguageSwitcher />
             <NotificationBell />

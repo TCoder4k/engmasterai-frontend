@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { GraduationCap } from 'lucide-react';
 import AvatarMenu, { AvatarMenuUser } from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
-import SoundToggle from '../shared/SoundToggle';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
 import NotificationBell from '../shared/NotificationBell';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -41,8 +40,8 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
           </span>
         </Link>
 
+        {/* No SoundToggle — see StudentLayout. */}
         <div className="flex items-center space-x-1 sm:space-x-1.5">
-          <SoundToggle />
           <ThemeToggle />
           <LanguageSwitcher />
           <NotificationBell />
