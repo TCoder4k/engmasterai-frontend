@@ -19,6 +19,8 @@ export interface DailyTargets {
   taskAttempts: number;
   newWordsLearned: number;
   wordsReviewed: number;
+  /** Sprint 10.5 — the Daily Goal widget's denominator. */
+  studyMinutes: number;
 }
 
 export const DEFAULT_DAILY_TARGETS: DailyTargets = {
@@ -30,6 +32,15 @@ export const DEFAULT_DAILY_TARGETS: DailyTargets = {
   // set a goal the review queue will not hand out.
   newWordsLearned: 20,
   wordsReviewed: 50,
+  // Sprint 10.5 — Daily Goal's target, and the number the widget showed as a
+  // placeholder for three sprints. It stays 30 because that is what the design
+  // has always promised; what changed is that the NUMERATOR beside it is now
+  // measured rather than invented.
+  //
+  // A product default, not a per-user goal. It must never become an XP
+  // multiplier: Sprint 09 flagged that a goal a student sets for themselves
+  // would otherwise let them scale their own rewards.
+  studyMinutes: 30,
 };
 
 /**

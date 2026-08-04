@@ -7,8 +7,7 @@
 // are real, and SPRINT 09 converted two more widgets — Today's Progress and
 // the weekly streak — to server-derived figures from GET /analytics/dashboard.
 //
-// What is left here has genuinely nothing behind it: there is no time-tracking
-// and no goal system (Daily Goal), no achievements system, and no course-rating
+// What is left here has genuinely nothing behind it: there is no course-rating
 // feature anywhere in this product.
 //
 // They live in one module so that, when any of those systems lands, the wiring
@@ -21,22 +20,21 @@
 // next to a true one is worse than an empty state, because nothing on screen
 // distinguishes them.
 
-export interface DailyGoal {
-  targetMinutes: number;
-  learnedMinutes: number;
-}
-
-// Still placeholder: study TIME is not tracked anywhere. Quiz and practice
-// attempts carry a durationSeconds, but theory, video and listening contribute
-// nothing, so a "minutes studied" figure would be missing most of its input —
-// a wrong number rather than an approximate one. Sprint 09 deliberately shipped
-// no minutes metric rather than a misleading one.
-export const MOCK_DAILY_GOAL: DailyGoal = { targetMinutes: 30, learnedMinutes: 18 };
-
 // SPRINT 10 REMOVED `MOCK_ACHIEVEMENTS`. Achievements are real now — six
 // server-defined badges from GET /gamification/profile, rendered by
 // components/user/AchievementsWidget.tsx. Do not reintroduce a placeholder
 // beside a real widget.
+//
+// SPRINT 10.5 REMOVED `MOCK_DAILY_GOAL` and its `DailyGoal` interface. Study
+// minutes are real now: `analytics.today.activeStudySeconds` from
+// GET /analytics/dashboard, counted server-side from heartbeats that only fire
+// while a student is demonstrably working. The target beside it lives in
+// dailyTargets.ts — configuration, not a measurement, and that is why it is not
+// here. The "sample data" marker went with the mock, for the reason Sprints 09
+// and 10 both recorded: a placeholder label on a true figure is its own kind of
+// lie.
+//
+// This file now holds ONE placeholder: course star ratings.
 
 // Star ratings for the "Recommended for You" cards. Derived from the course
 // id so a given course always shows the same figure — a rating that changed

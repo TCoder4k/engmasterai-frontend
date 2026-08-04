@@ -23,6 +23,9 @@ const analytics = (
     taskAttempts: { quiz: 2, practice: 1, total: 3 },
     newWordsLearned: 12,
     wordsReviewed: 40,
+    // 18 minutes against the 30-minute target — the exact figures the mock used
+    // to fabricate, now arriving from the server.
+    activeStudySeconds: 1_080,
   },
   activity: {
     windowDays: 7,
@@ -78,9 +81,13 @@ describe('UserSidebar — error state', () => {
   it('says the stats failed and NEVER renders a zero instead', () => {
     renderSidebar({ analytics: null });
 
-    expect(screen.getAllByText(/could not load your stats/i).length).toBe(2);
+    // THREE analytics-backed cards since Sprint 10.5: Daily Goal, Today's
+    // Progress and the weekly streak. All three fail together — they share one
+    // request — and none of them may fall back to a zero.
+    expect(screen.getAllByText(/could not load your stats/i).length).toBe(3);
     expect(screen.queryByText('0')).not.toBeInTheDocument();
     expect(screen.queryByText(/stages done/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/min learned/i)).not.toBeInTheDocument();
   });
 
   it('offers a retry that calls back', async () => {
@@ -88,7 +95,7 @@ describe('UserSidebar — error state', () => {
     renderSidebar({ analytics: null, onRetryAnalytics });
 
     const retries = screen.getAllByRole('button', { name: /try again/i });
-    expect(retries.length).toBe(2);
+    expect(retries.length).toBe(3);
 
     await userEvent.click(retries[0]);
     expect(onRetryAnalytics).toHaveBeenCalledTimes(1);
@@ -154,6 +161,7 @@ describe('UserSidebar — loaded state', () => {
           taskAttempts: { quiz: 0, practice: 0, total: 0 },
           newWordsLearned: 0,
           wordsReviewed: 0,
+          activeStudySeconds: 0,
         },
       }),
     });
@@ -175,6 +183,7 @@ describe('UserSidebar — loaded state', () => {
           taskAttempts: { quiz: 0, practice: 0, total: 0 },
           newWordsLearned: 0,
           wordsReviewed: 0,
+          activeStudySeconds: 0,
         },
       }),
     });
@@ -234,29 +243,106 @@ describe('UserSidebar — loaded state', () => {
   });
 });
 
-describe('UserSidebar — the widgets that are still placeholder', () => {
-  // If someone wires Daily Goal or Achievements to real data, these fail and
-  // remind them to drop the marker. The reverse matters more: the marker must
-  // never reappear on the two widgets that became real.
-  it('keeps the sample-data marker on Daily Goal ALONE', () => {
-    // Was two markers (Daily Goal + Achievements). Sprint 10 made Achievements
-    // real from the XP ledger and removed its marker along with the mock, so
-    // exactly ONE placeholder is left on this rail.
-    //
-    // Daily Goal keeps its marker because it still has nothing behind it:
-    // there is no time-on-task signal anywhere in the product. This count is
-    // asserted rather than left implicit so that shipping a real Daily Goal
-    // without removing its label — or adding a new placeholder quietly — turns
-    // this red.
+const goalCard = () =>
+  within(screen.getByRole('region', { name: /daily goal/i }));
+
+describe('UserSidebar — Daily Goal', () => {
+  it('renders the server minutes against the product target', () => {
+    // 1,080 seconds = 18 minutes, target 30 -> 60%. The very figures the mock
+    // used to invent, now measured.
     renderSidebar({ analytics: analytics() });
 
-    expect(screen.getAllByText(/sample data/i)).toHaveLength(1);
+    expect(goalCard().getByText('18 / 30 min learned')).toBeInTheDocument();
+    expect(goalCard().getAllByText('60%').length).toBeGreaterThan(0);
+    expect(goalCard().getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '60',
+    );
   });
 
-  it('does not label the real widgets as sample data', () => {
+  it('FLOORS partial minutes rather than rounding up', () => {
+    // 59 seconds is not a minute. Rounding up would let the widget claim a
+    // minute the student has not finished.
+    renderSidebar({
+      analytics: analytics({
+        today: { ...analytics().today, activeStudySeconds: 59 },
+      }),
+    });
+
+    expect(goalCard().getByText('0 / 30 min learned')).toBeInTheDocument();
+  });
+
+  // Beating the goal is good. The bar fills; the real number keeps showing.
+  it('clamps the bar at 100% while still showing an over-target figure', () => {
+    renderSidebar({
+      analytics: analytics({
+        today: { ...analytics().today, activeStudySeconds: 2_700 },
+      }),
+    });
+
+    expect(goalCard().getByText('45 / 30 min learned')).toBeInTheDocument();
+    expect(goalCard().getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '100',
+    );
+  });
+
+  it('renders an honest zero for a student who has not studied today', () => {
+    renderSidebar({
+      analytics: analytics({
+        today: { ...analytics().today, activeStudySeconds: 0 },
+      }),
+    });
+
+    expect(goalCard().getByText('0 / 30 min learned')).toBeInTheDocument();
+    expect(goalCard().getByRole('progressbar')).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    );
+  });
+
+  // The two states that must never look like "you studied nothing".
+  it('shows NO minutes and no 0/30 while loading', () => {
+    renderSidebar({ analytics: undefined });
+
+    expect(goalCard().queryByText(/min learned/i)).not.toBeInTheDocument();
+    expect(goalCard().queryByText('0 / 30 min learned')).not.toBeInTheDocument();
+    expect(goalCard().queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(goalCard().queryByText('0%')).not.toBeInTheDocument();
+  });
+
+  it('shows an error with a retry, never 0/30, when the request failed', async () => {
+    const onRetryAnalytics = vi.fn();
+    renderSidebar({ analytics: null, onRetryAnalytics });
+
+    expect(goalCard().getByText(/could not load your stats/i)).toBeInTheDocument();
+    expect(goalCard().queryByText('0 / 30 min learned')).not.toBeInTheDocument();
+    expect(goalCard().queryByText('0%')).not.toBeInTheDocument();
+
+    await userEvent.click(goalCard().getByRole('button', { name: /try again/i }));
+    expect(onRetryAnalytics).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('UserSidebar — the widgets that are still placeholder', () => {
+  // Sprint 09 made Today's Progress and the streak real and dropped their
+  // markers; Sprint 10 did the same for Achievements; Sprint 10.5 did it for
+  // Daily Goal, the last one. A placeholder label on a true figure is its own
+  // kind of lie, so this rail must now carry NONE.
+  //
+  // Asserted as a count rather than left implicit so that quietly adding a new
+  // placeholder here turns this red.
+  it('carries no sample-data marker anywhere on the rail', () => {
+    renderSidebar({ analytics: analytics() });
+
+    expect(screen.queryAllByText(/sample data/i)).toHaveLength(0);
+  });
+
+  it('does not label any individual widget as sample data', () => {
     renderSidebar({ analytics: analytics() });
 
     expect(todayCard().queryByText(/sample data/i)).not.toBeInTheDocument();
     expect(streakCard().queryByText(/sample data/i)).not.toBeInTheDocument();
+    expect(goalCard().queryByText(/sample data/i)).not.toBeInTheDocument();
   });
 });

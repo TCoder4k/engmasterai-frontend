@@ -2,7 +2,6 @@ import React from 'react';
 import { Flame, Target, TrendingUp } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DashboardAnalytics } from '../../services/analyticsService';
-import { MOCK_DAILY_GOAL } from './dashboardContent';
 import AchievementsWidget from './AchievementsWidget';
 import { DEFAULT_DAILY_TARGETS, targetPercent } from './dailyTargets';
 
@@ -14,11 +13,15 @@ import { DEFAULT_DAILY_TARGETS, targetPercent } from './dailyTargets';
 // GET /gamification/profile — and its "sample data" marker went with the mock,
 // because a placeholder label on a true figure is its own kind of lie.
 //
-// DAILY GOAL IS THE LAST PLACEHOLDER HERE, and it stays one on purpose: there
-// is no time-on-task signal anywhere in the product. Quiz and practice attempts
-// carry a durationSeconds; theory, video and listening carry nothing, so a
-// "minutes studied" figure would be missing most of its input — a wrong number
-// rather than an approximate one.
+// SPRINT 10.5 made Daily Goal real, and its marker went the same way. Every
+// widget in this file is now server-derived; MOCK_DAILY_GOAL is deleted.
+//
+// The numerator is `analytics.today.activeStudySeconds`, credited server-side
+// from heartbeats that only fire while a student is demonstrably working. The
+// denominator is a product default from dailyTargets.ts — a target is
+// configuration, a count is a measurement, and only the second kind can be a
+// lie. That distinction is why this widget could not simply be "made real" in
+// Sprint 09: the numerator did not exist.
 //
 // LOADING AND ERROR ARE STATES, NOT ZEROS. This follows the rule Sprint 08
 // established for course progress: a failed request must never render as "you
@@ -111,14 +114,24 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const { targetMinutes, learnedMinutes } = MOCK_DAILY_GOAL;
-  const dailyPercent = Math.round((learnedMinutes / targetMinutes) * 100);
-
   // Circumference of the r=26 ring the reference uses.
   const ringLength = 2 * Math.PI * 26;
 
   const isLoading = analytics === undefined;
   const hasFailed = analytics === null;
+
+  const targetMinutes = DEFAULT_DAILY_TARGETS.studyMinutes;
+  // FLOORED, never rounded. 59 seconds of study is not "1 minute" — rounding up
+  // would let the widget claim a minute the student has not finished, which is
+  // the same small dishonesty the mock was removed for.
+  const learnedMinutes = analytics
+    ? Math.floor(analytics.today.activeStudySeconds / 60)
+    : null;
+  // Clamped at 100 while learnedMinutes keeps showing the truth: `45 / 30`
+  // fills the track rather than overflowing it. Same helper, same rule as the
+  // four Today's Progress bars.
+  const dailyPercent =
+    learnedMinutes === null ? 0 : targetPercent(learnedMinutes, targetMinutes);
 
   // The VALUE of each row is server-derived; the TARGET is a product default
   // (see dailyTargets.ts for why that distinction makes the bar honest).
@@ -167,9 +180,17 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
         icon={<Target className="w-4 h-4 text-blue-500 dark:text-blue-400" aria-hidden="true" />}
         title={t.widgets.dailyGoal}
         trailing={
-          <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{dailyPercent}%</span>
+          // No percentage while loading or after a failure — a bare "0%" beside
+          // a skeleton reads as a real figure.
+          learnedMinutes !== null ? (
+            <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400">{dailyPercent}%</span>
+          ) : undefined
         }
       >
+        {isLoading && <StatSkeleton />}
+        {hasFailed && <StatsError onRetry={onRetryAnalytics} />}
+        {learnedMinutes !== null && (
+          <>
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
             <p className="text-3xl font-black text-slate-900 dark:text-white">
@@ -214,16 +235,26 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
           </div>
         </div>
 
-        <div className="w-full h-2 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-ink-700">
+        {/* Sprint 10.5 — the bar carries real ARIA now. It had none while it
+            was a mock, which was survivable then and would not be once a screen
+            reader can be told a true number. aria-valuenow is the CLAMPED
+            percent, matching what is drawn; the raw minutes stay in the caption
+            above, so nothing is hidden from anyone. */}
+        <div
+          className="w-full h-2 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-ink-700"
+          role="progressbar"
+          aria-valuenow={dailyPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={t.widgets.dailyGoal}
+        >
           <div
             style={{ width: `${dailyPercent}%` }}
             className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
           />
         </div>
-        {/* Still placeholder — there is no time tracking and no goal system. */}
-        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-          {t.widgets.sampleData}
-        </p>
+          </>
+        )}
       </WidgetCard>
 
       {/* ---- REAL: rolling seven-day activity and streak ---- */}

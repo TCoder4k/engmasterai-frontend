@@ -30,6 +30,18 @@ export interface TodayAnalytics {
   taskAttempts: TodayTaskAttempts;
   newWordsLearned: number;
   wordsReviewed: number;
+  /**
+   * Sprint 10.5 — server-credited ACTIVE study seconds today.
+   *
+   * Seconds, not minutes: the widget floors to whole minutes for display, and
+   * rounding server-side would make two consumers of this figure disagree.
+   *
+   * Counted only while the student was demonstrably working — visible tab, a
+   * registered learning activity, and either recent interaction or playing
+   * media — with a per-day ceiling that stops concurrent devices multiplying
+   * it. NOT page-open time, and it must never be presented as such.
+   */
+  activeStudySeconds: number;
 }
 
 export interface ActivityDay {
