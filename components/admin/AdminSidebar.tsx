@@ -7,6 +7,7 @@ import {
   BookOpen,
   Library,
   BookMarked,
+  Headphones,
   Gamepad2,
   LineChart,
   Wallet,
@@ -109,6 +110,14 @@ const AdminSidebar: React.FC = () => {
         <NavLink to="/admin/vocab/words" className={({ isActive }) => navLinkClass(isActive)}>
           <BookMarked size={20} />
           <span>Ngân hàng từ (Word Bank)</span>
+        </NavLink>
+
+        {/* Sprint 11 — no `end`, so it stays active on the categories page and
+            the per-content editor nested beneath it. A real nav item rather
+            than a "Sắp có" badge: the page, the API and the route all exist. */}
+        <NavLink to="/admin/listening" className={({ isActive }) => navLinkClass(isActive)}>
+          <Headphones size={20} />
+          <span>Listening (Nội dung)</span>
         </NavLink>
 
         {comingSoonItems.map((item, index) => (

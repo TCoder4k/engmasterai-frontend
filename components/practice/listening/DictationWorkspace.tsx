@@ -3,7 +3,7 @@ import { Eye, Type, Star, Flag } from 'lucide-react';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { playCorrect } from '../../../services/feedbackSounds';
 import CelebrationBurst from '../../shared/CelebrationBurst';
-import { DictationSegment } from './listeningContent';
+import type { ListeningSegment } from '../../../services/listeningService';
 
 export type WorkspaceFontSize = 'normal' | 'large' | 'xlarge';
 
@@ -19,7 +19,12 @@ export interface SegmentSolvedResult {
 }
 
 interface DictationWorkspaceProps {
-  segment: DictationSegment;
+  // Sprint 11 Phase 2 — the segment now arrives from the Listening backend
+  // (`/listening/contents/:id`) instead of the deleted client seed. Note what
+  // that shape does NOT carry: `normalizedText`. The server withholds it
+  // because it is the string a future attempt will be graded against, and this
+  // component never needed it — the word diff below normalises `text` itself.
+  segment: ListeningSegment;
   segmentNumber: number;
   totalSegments: number;
   fontSize: WorkspaceFontSize;
@@ -65,7 +70,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
   // without triggering re-renders.
   const ctrlCandidateRef = useRef(false);
 
-  const targetWords = segment.textEn.split(' ');
+  const targetWords = segment.text.split(' ');
   const cleanTargetWords = targetWords.map(cleanWord);
   const typedWords = typedText.trim().length > 0 ? typedText.trim().split(/\s+/) : [];
   const cleanTypedWords = typedWords.map(cleanWord);
@@ -136,7 +141,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
 
   const handleRevealAll = () => {
     setRevealedWordIndices(targetWords.map((_, i) => i));
-    setTypedText(segment.textEn);
+    setTypedText(segment.text);
   };
 
   useEffect(() => {
@@ -338,8 +343,12 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
         className={`w-full p-4 bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 focus:border-blue-400 dark:focus:border-blue-500 rounded-2xl text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium resize-none focus:outline-none ${answerTextClass}`}
       />
 
-      {solved && (
-        <p className="practice-fade-in text-xs text-slate-400 dark:text-slate-500 italic">{segment.textVi}</p>
+      {/* The translation is optional in the backend model, so it is rendered
+          only when the author actually wrote one — never an empty line. */}
+      {solved && segment.translationVi && (
+        <p className="practice-fade-in text-xs text-slate-400 dark:text-slate-500 italic">
+          {segment.translationVi}
+        </p>
       )}
 
       <div className="flex flex-wrap gap-2 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl min-h-[56px] items-center">

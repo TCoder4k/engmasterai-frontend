@@ -2,19 +2,30 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import DictationWorkspace from './DictationWorkspace';
-import { DictationSegment } from './listeningContent';
+import type { ListeningSegment } from '../../../services/listeningService';
 
 // Sprint 03F: translation gated on `solved` (not a hideTranslation prop,
 // which this component no longer accepts at all), a single renamed Next
 // action, compact Ctrl/Enter shortcut badges, and a bare-Ctrl replay
 // keydown/keyup design that must never intercept Ctrl+R or any other
 // Ctrl combo.
-const SEGMENT: DictationSegment = {
-  id: 1,
-  textEn: 'hi there',
-  textVi: 'xin chào bạn',
-  normalizedAnswer: 'hi there',
-  durationSeconds: 3,
+//
+// Sprint 11 Phase 2 — the fixture is now a BACKEND segment shape (string uuid,
+// `text`/`translationVi`, ms timings) rather than the deleted client seed's.
+// Every behavioural assertion below is unchanged: the grading rules, the
+// assisted-tracking rules and all seven Ctrl-shortcut guarantees survive the
+// port, which is the point of asserting them here rather than in the page.
+//
+// Note what the fixture CANNOT carry: `normalizedText`. The server never sends
+// it, and this component never needed it.
+const SEGMENT: ListeningSegment = {
+  id: 'a3f1c2d4-0000-4000-8000-000000000001',
+  orderIndex: 0,
+  text: 'hi there',
+  ipa: null,
+  translationVi: 'xin chào bạn',
+  startTimeMs: 0,
+  endTimeMs: 3000,
 };
 
 const renderWorkspace = (overrides: Partial<Parameters<typeof DictationWorkspace>[0]> = {}) => {

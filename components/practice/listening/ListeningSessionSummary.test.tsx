@@ -1,101 +1,107 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import ListeningSessionSummary from './ListeningSessionSummary';
-import { DICTATION_LESSONS } from './listeningContent';
-import { clearListeningSessions } from './listeningSessionStore';
 
-// Sprint 03G: accuracy is now word-based (wordsCorrect/wordsTotal), not
-// segment-based — a lesson where every segment reached "solved" can still
-// show less than 100% here if some words needed help. Suggested lessons are
-// derived from the real catalog (excluding the current lesson) plus the
-// real (session-scoped) listeningSessionStore.
-const LESSON = DICTATION_LESSONS[0]; // office-relocation-notice — has same-topic siblings in the seed catalog
+// Sprint 11 Phase 2 — rewritten for the backend-driven content model.
+//
+// The old fixture was a seed lesson and the old tests covered a "suggested
+// next lessons" list built by ranking that seed array. Both are gone: the
+// catalog is a paginated, permission-filtered API this component does not
+// query, so any suggestion it produced would be a guess that could link to a
+// recording the server would refuse. Its removal is asserted here so it cannot
+// creep back as fabricated data.
+//
+// What survives is the part that was always the point: every figure on this
+// card is a real count from the session that just happened, and the card says
+// out loud that none of it is saved.
+const baseProps = {
+  title: 'Otter Moms Wrap Their Babies',
+  level: 'B1',
+  categoryName: 'Animals',
+  totalSegments: 5,
+  assistedCount: 0,
+  wordsCorrect: 40,
+  wordsTotal: 40,
+  elapsedSeconds: 125,
+  onReplayMistakes: vi.fn(),
+  onReplayLesson: vi.fn(),
+  onBackToLessons: vi.fn(),
+};
 
-const renderSummary = (overrides: Partial<Parameters<typeof ListeningSessionSummary>[0]> = {}) => {
-  const props = {
-    lesson: LESSON,
-    totalSegments: 5,
-    assistedCount: 0,
-    wordsCorrect: 52,
-    wordsTotal: 52,
-    elapsedSeconds: 154,
-    onReplayMistakes: vi.fn(),
-    onReplayLesson: vi.fn(),
-    onBackToLessons: vi.fn(),
-    ...overrides,
-  };
+const renderSummary = (overrides: Partial<typeof baseProps> = {}) => {
+  const props = { ...baseProps, ...overrides };
   render(
-    <MemoryRouter>
-      <LanguageProvider>
+    <LanguageProvider>
+      <MemoryRouter>
         <ListeningSessionSummary {...props} />
-      </LanguageProvider>
-    </MemoryRouter>,
+      </MemoryRouter>
+    </LanguageProvider>,
   );
   return props;
 };
 
-beforeEach(() => clearListeningSessions());
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
-describe('ListeningSessionSummary — stats', () => {
-  it('computes Accuracy from real word counts, not segment counts', () => {
-    // Every segment is "solved" (5/5) but only 41 of 52 words were typed
-    // correctly — a segment-based formula would show 100% here; the
-    // word-based one must not.
-    renderSummary({ totalSegments: 5, assistedCount: 1, wordsCorrect: 41, wordsTotal: 52 });
-    expect(screen.getByText('79%')).toBeInTheDocument();
-    expect(screen.getByText('41/52')).toBeInTheDocument();
+describe('ListeningSessionSummary — real figures only', () => {
+  it('identifies the recording by its real title, category and level', () => {
+    renderSummary();
+    expect(screen.getByText('Otter Moms Wrap Their Babies')).toBeInTheDocument();
+    expect(screen.getByText('Animals')).toBeInTheDocument();
+    expect(screen.getByText('B1')).toBeInTheDocument();
   });
 
-  it('shows the real Segments and Time stats', () => {
-    renderSummary({ totalSegments: 5, elapsedSeconds: 154 });
-    expect(screen.getByText('5/5')).toBeInTheDocument();
-    expect(screen.getByText('02:34')).toBeInTheDocument();
+  it('derives accuracy from words, not from sentences reaching "solved"', () => {
+    // Every sentence was completed, but a quarter of the words were revealed.
+    renderSummary({ wordsCorrect: 30, wordsTotal: 40, assistedCount: 2 });
+    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('30/40')).toBeInTheDocument();
   });
 
-  it('a perfect run shows 100% accuracy and hides Replay mistakes (nothing to replay)', () => {
-    renderSummary({ assistedCount: 0, wordsCorrect: 52, wordsTotal: 52 });
-    expect(screen.getByText('100%')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Replay mistakes' })).not.toBeInTheDocument();
+  it('shows 0% rather than dividing by zero when no words were counted', () => {
+    renderSummary({ wordsCorrect: 0, wordsTotal: 0 });
+    expect(screen.getByText('0%')).toBeInTheDocument();
+  });
+
+  it('formats elapsed time instead of printing raw seconds', () => {
+    renderSummary({ elapsedSeconds: 125 });
+    expect(screen.getByText('02:05')).toBeInTheDocument();
+  });
+
+  it('states plainly that the result is not saved', () => {
+    renderSummary();
+    expect(screen.getByText(/kept for this session only/i)).toBeInTheDocument();
   });
 });
 
-describe('ListeningSessionSummary — primary CTAs', () => {
-  it('shows Replay mistakes when at least one segment needed assistance, and it calls back', () => {
-    const props = renderSummary({ assistedCount: 2, wordsCorrect: 40, wordsTotal: 52 });
+describe('ListeningSessionSummary — actions', () => {
+  it('offers Replay mistakes only when something needed help', () => {
+    renderSummary({ assistedCount: 0 });
+    expect(screen.queryByRole('button', { name: 'Replay mistakes' })).not.toBeInTheDocument();
+
+    cleanup();
+    const props = renderSummary({ assistedCount: 2 });
     fireEvent.click(screen.getByRole('button', { name: 'Replay mistakes' }));
     expect(props.onReplayMistakes).toHaveBeenCalledTimes(1);
   });
 
-  it('Replay lesson and Back to lessons call their respective callbacks', () => {
+  it('can restart the whole recording and return to the catalog', () => {
     const props = renderSummary();
+
     fireEvent.click(screen.getByRole('button', { name: 'Replay lesson' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Back to lessons' }));
     expect(props.onReplayLesson).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to lessons' }));
     expect(props.onBackToLessons).toHaveBeenCalledTimes(1);
   });
 
-  it('shows a Next Lesson link to a real suggested lesson when one exists', () => {
+  it('suggests no follow-up recordings — it has no honest source for them', () => {
     renderSummary();
-    const href = screen.getByRole('link', { name: 'Next Lesson' }).getAttribute('href');
-    expect(href).toMatch(/^\/practice\/listening\//);
-    expect(href).not.toBe(`/practice/listening/${LESSON.id}`);
-  });
-});
-
-describe('ListeningSessionSummary — suggested lessons', () => {
-  it('never suggests the current lesson itself', () => {
-    renderSummary();
-    const links = screen.getAllByRole('link').map((el) => el.getAttribute('href'));
-    expect(links).not.toContain(`/practice/listening/${LESSON.id}`);
-  });
-
-  it('shows each suggested card with its real segment count and estimated minutes', () => {
-    renderSummary();
-    const other = DICTATION_LESSONS.find((l) => l.id !== LESSON.id)!;
-    const card = screen.getByRole('link', { name: new RegExp(other.title) });
-    expect(card).toHaveTextContent(`${other.segments.length}`);
+    expect(screen.queryByText('Suggested next lessons')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });
 });

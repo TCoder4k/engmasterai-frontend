@@ -20,6 +20,9 @@ import AdminVocabDecks from './components/admin/AdminVocabDecks';
 import AdminVocabWords from './components/admin/AdminVocabWords';
 import AdminVocabWordEditor from './components/admin/AdminVocabWordEditor';
 import AdminVocabDeckWords from './components/admin/AdminVocabDeckWords';
+import AdminListeningContents from './components/admin/AdminListeningContents';
+import AdminListeningCategories from './components/admin/AdminListeningCategories';
+import AdminListeningEditor from './components/admin/AdminListeningEditor';
 import VocabLibraryPage from './components/vocab/VocabLibraryPage';
 import LibraryDetailPage from './components/vocab/LibraryDetailPage';
 import DeckDetailPage from './components/vocab/DeckDetailPage';
@@ -32,7 +35,9 @@ import PracticeHubPage from './components/practice/PracticeHubPage';
 import VocabPracticeSessionPage from './components/practice/vocab/VocabPracticeSessionPage';
 import ReviewSessionPage from './components/practice/review/ReviewSessionPage';
 import ListeningCatalogPage from './components/practice/listening/ListeningCatalogPage';
-import ListeningLessonPage from './components/practice/listening/ListeningLessonPage';
+import ListeningContentPage from './components/practice/listening/ListeningContentPage';
+import DictationModePanel from './components/practice/listening/DictationModePanel';
+import ShadowingModePanel from './components/practice/listening/ShadowingModePanel';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -140,11 +145,31 @@ const App: React.FC = () => {
           <Route path="/practice" element={<PracticeHubPage />} />
           <Route path="/practice/vocab/:deckId" element={<VocabPracticeSessionPage />} />
           <Route path="/practice/review" element={<ReviewSessionPage />} />
-          {/* Sprint 03E: /practice/listening is the lesson CATALOG; the
-              actual dictation exercise lives at :lessonId. Both survive a
-              direct refresh (registered routes, no client-only state). */}
+          {/* Sprint 03E / Sprint 11 Phase 2 — /practice/listening is the
+              CATALOG, now read from the Listening backend rather than a
+              client-side seed array.
+
+              /practice/listening/:contentId is a LAYOUT route: it owns the
+              media player and the selected sentence, and each practice mode
+              renders beneath it. That nesting is what will let a student switch
+              Dictation -> Shadowing without the YouTube iframe being destroyed
+              and rebuilt, which a self-contained page cannot promise.
+
+              The id is a UUID — Listening deliberately introduced no slug, so
+              the five old seed slugs resolve to nothing and render the same
+              not-found surface as any other unknown id (an accepted, approved
+              break: none of that content was ever published).
+
+              The index route redirects (replace) to the first mode the
+              recording actually enables; a mode it does not enable is a
+              not-found, never a redirect. Every path here survives a direct
+              refresh — they are registered routes, not client-only state. */}
           <Route path="/practice/listening" element={<ListeningCatalogPage />} />
-          <Route path="/practice/listening/:lessonId" element={<ListeningLessonPage />} />
+          <Route path="/practice/listening/:contentId" element={<ListeningContentPage />}>
+            <Route index element={<></>} />
+            <Route path="dictation" element={<DictationModePanel />} />
+            <Route path="shadowing" element={<ShadowingModePanel />} />
+          </Route>
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
           </Route>
@@ -168,6 +193,20 @@ const App: React.FC = () => {
           <Route
             path="/admin/lessons/:lessonId/practice"
             element={<AdminLessonQuiz taskKind="practice" />}
+          />
+          {/* Sprint 11 — Listening content authoring. `/categories` is declared
+              BEFORE `/:contentId` so it isn't swallowed by the dynamic route,
+              the same ordering GET /courses/manage needs on the backend.
+              The id is a UUID: Listening deliberately introduced no slug, so
+              these routes look like every other id-bearing route in the app. */}
+          <Route path="/admin/listening" element={<AdminListeningContents />} />
+          <Route
+            path="/admin/listening/categories"
+            element={<AdminListeningCategories />}
+          />
+          <Route
+            path="/admin/listening/:contentId"
+            element={<AdminListeningEditor />}
           />
           <Route path="/admin/vocab" element={<AdminVocabLibraries />} />
           <Route path="/admin/vocab/libraries/:libraryId/decks" element={<AdminVocabDecks />} />
