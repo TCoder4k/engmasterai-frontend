@@ -72,9 +72,9 @@ const Hero: React.FC = () => {
               transition={{ duration: DURATION.slow, ease: EASE, delay: 0.1 }}
               className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-[1.15] sm:leading-[1.12]"
             >
-              Vượt qua rào cản ngôn ngữ bằng{' '}
+              Bứt phá rào cản ngôn ngữ {' '}
               <span className="landing-text-gradient underline decoration-blue-200 dark:decoration-blue-500/40 underline-offset-8">
-                giao tiếp tự nhiên
+               Làm chủ giao tiếp tự nhiên
               </span>
             </motion.h1>
 

@@ -638,6 +638,26 @@ const en = {
     listeningTip3: 'Third listen: focus on small linking words (a, an, the, of).',
     listeningMatch: 'Match',
     listeningWordsUnit: 'words',
+    // Sprint 11 Phase 2 — the server-driven catalog and the shared content
+    // player. Kept flat inside `practice` with a `listening*`/`shadowing*`
+    // prefix, matching the ~25 keys already above rather than introducing a
+    // nested sub-namespace for one feature.
+    listeningLoop: 'Loop',
+    listeningStartAction: 'Start',
+    listeningModeDictation: 'Dictation',
+    listeningModeShadowing: 'Shadowing',
+    listeningModeTablist: 'Practice mode',
+    listeningSourceLabel: 'Source',
+    listeningPagination: 'Catalog pages',
+    listeningLoadError: 'Could not load listening content.',
+    listeningEmptyCatalog: 'No listening content is available yet.',
+    listeningNoSegments: 'This recording has no sentences yet.',
+    listeningNoModeAvailable: 'This recording has no practice mode enabled yet.',
+    listeningAudioUnsupported: 'Your browser cannot play this audio.',
+    listeningSessionOnlyNote:
+      'Your progress in this exercise is kept for this session only and is not saved to your account yet.',
+    shadowingComingSoon:
+      'Shadowing practice is not available yet. You can still listen to each sentence and read along.',
     muteSounds: 'Mute feedback sounds',
     unmuteSounds: 'Unmute feedback sounds',
     questionLabel: 'Question',
@@ -1222,6 +1242,23 @@ const vi: TranslationDict = {
     listeningTip3: 'Lần nghe 3: chú ý các từ nối nhỏ (a, an, the, of).',
     listeningMatch: 'Khớp',
     listeningWordsUnit: 'từ',
+    // Sprint 11 Phase 2 — xem chú thích ở bản tiếng Anh.
+    listeningLoop: 'Lặp lại',
+    listeningStartAction: 'Bắt đầu',
+    listeningModeDictation: 'Chép chính tả',
+    listeningModeShadowing: 'Nói nhại',
+    listeningModeTablist: 'Chế độ luyện tập',
+    listeningSourceLabel: 'Nguồn',
+    listeningPagination: 'Trang danh mục',
+    listeningLoadError: 'Không tải được nội dung luyện nghe.',
+    listeningEmptyCatalog: 'Chưa có bài nghe nào.',
+    listeningNoSegments: 'Bài nghe này chưa có câu nào.',
+    listeningNoModeAvailable: 'Bài nghe này chưa bật chế độ luyện tập nào.',
+    listeningAudioUnsupported: 'Trình duyệt của bạn không phát được audio này.',
+    listeningSessionOnlyNote:
+      'Kết quả trong bài tập này chỉ được giữ trong phiên hiện tại và chưa được lưu vào tài khoản của bạn.',
+    shadowingComingSoon:
+      'Chế độ Nói nhại chưa khả dụng. Bạn vẫn có thể nghe từng câu và đọc theo.',
     muteSounds: 'Tắt âm phản hồi',
     unmuteSounds: 'Bật âm phản hồi',
     questionLabel: 'Câu',

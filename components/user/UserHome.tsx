@@ -21,7 +21,7 @@ import {
   getDashboardAnalytics,
 } from '../../services/analyticsService';
 import { getMostRecentActivityOfType } from '../../services/recentActivity';
-import { getLessonSummaries } from '../practice/listening/listeningContent';
+import { getListeningCatalog } from '../../services/listeningService';
 import { handleAuthError } from '../../services/apiError';
 import { Course, CourseType } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -73,6 +73,8 @@ const UserHome: React.FC = () => {
   // is why the card used to say 23 and the session 38.
   const [newTotal, setNewTotal] = useState<number | null>(null);
   const [deckCount, setDeckCount] = useState<number | null>(null);
+  // Null until the catalog answers, and null forever if it fails — never 0.
+  const [listeningTotal, setListeningTotal] = useState<number | null>(null);
   // Sprint 08 — server-derived progress for every course on this page. `null`
   // until the one batch request resolves, so cards show no status rather than
   // an invented one.
@@ -114,6 +116,32 @@ const UserHome: React.FC = () => {
       })
       .catch(() => {
         // Intentionally silent — see the comment above.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Sprint 11 Phase 2 — the REAL number of listening recordings this student
+  // can open.
+  //
+  // This used to be `getLessonSummaries().length`, i.e. the length of a
+  // hardcoded seed array, which was already wrong and would have become
+  // conspicuously wrong: the dashboard would advertise five recordings while
+  // the catalog it links to showed only the published ones. `limit: 1` because
+  // only `meta.total` is wanted — the cards themselves are never rendered here.
+  //
+  // Failure leaves it null, and LearningTrackCard renders no count at all for
+  // null. A zero would be a claim ("there is nothing to listen to") that a
+  // failed request cannot support.
+  useEffect(() => {
+    let cancelled = false;
+    getListeningCatalog({ limit: 1 })
+      .then((res) => {
+        if (!cancelled) setListeningTotal(res.meta.total);
+      })
+      .catch(() => {
+        // Stays null — no honest number, so none is shown.
       });
     return () => {
       cancelled = true;
@@ -200,9 +228,9 @@ const UserHome: React.FC = () => {
         .filter((course) => course.type === 'GRAMMAR')
         .reduce((sum, course) => sum + (course._count?.lessons ?? 0), 0),
       VOCABULARY: deckCount,
-      LISTENING: getLessonSummaries().length,
+      LISTENING: listeningTotal,
     }),
-    [courses, deckCount],
+    [courses, deckCount, listeningTotal],
   );
 
   const firstName = user?.name?.split(' ').pop() || 'Learner';
