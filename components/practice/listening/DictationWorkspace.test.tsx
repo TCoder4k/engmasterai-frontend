@@ -84,21 +84,35 @@ describe('DictationWorkspace — Next action + translation gating', () => {
 });
 
 describe('DictationWorkspace — first-letter hint vs reveal (assisted tracking)', () => {
-  it('first-letter hint does not mark the segment as assisted', () => {
+  // Sprint 11 Phase 4A — this component no longer decides `assisted`,
+  // `wordsCorrect` or `wordsTotal`. It reports the two raw facts only it can
+  // know, and the SERVER derives the verdict from them. These tests therefore
+  // pin the reporting contract rather than a local grading rule.
+  it('reports a first-letter hint as zero revealed words', () => {
     const props = renderWorkspace();
     fireEvent.keyDown(window, { key: 'h', altKey: true });
     // Complete the rest by typing correctly (not via reveal).
     fireEvent.change(screen.getByPlaceholderText('Type what you hear'), { target: { value: 'hi there' } });
 
-    expect(props.onSegmentSolved).toHaveBeenCalledWith({ assisted: false, wordsCorrect: 2, wordsTotal: 2 });
+    // A first letter is a nudge, not a reveal — nothing was given away, so the
+    // server has no reason to discount the sentence.
+    expect(props.onSegmentSolved).toHaveBeenCalledWith({
+      typedText: 'hi there',
+      revealedWordCount: 0,
+    });
   });
 
-  it('Reveal Word marks the segment as assisted, and excludes revealed words from wordsCorrect', () => {
+  it('reports how many words Reveal Word gave away', () => {
     const props = renderWorkspace();
     fireEvent.keyDown(window, { key: 'r', altKey: true });
     fireEvent.keyDown(window, { key: 'r', altKey: true });
 
-    expect(props.onSegmentSolved).toHaveBeenCalledWith({ assisted: true, wordsCorrect: 0, wordsTotal: 2 });
+    // Both words revealed. The count is what the server subtracts from
+    // `wordsCorrect`; this component makes no claim about the score itself.
+    expect(props.onSegmentSolved).toHaveBeenCalledWith({
+      typedText: 'hi there',
+      revealedWordCount: 2,
+    });
   });
 });
 

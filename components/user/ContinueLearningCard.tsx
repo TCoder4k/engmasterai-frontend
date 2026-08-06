@@ -34,6 +34,16 @@ interface ContinueLearningCardProps {
    * has no ring buffer, and used to show nothing at all here.
    */
   grammarFallbackTitle?: string | null;
+  /**
+   * Sprint 11 Phase 4A — a real, SERVER-COMPUTED "3/5 sentences" for the last
+   * Listening recording this student opened.
+   *
+   * Null whenever there is no honest figure (no recent recording, request
+   * failed, or a recording with no sentences). The card then renders no detail
+   * line at all, which is what it did before Listening had any progress —
+   * never a 0 standing in for a number that could not be fetched.
+   */
+  listeningDetail?: string | null;
 }
 
 type Resolved = {
@@ -75,6 +85,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
   progressPercent = null,
   grammarContinuePath = null,
   grammarFallbackTitle = null,
+  listeningDetail = null,
 }) => {
   const { t } = useTranslation();
   const user = authService.getUser();
@@ -111,7 +122,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
       return {
         moduleLabel: t.tracks.listening.label,
         title: listening.title,
-        detail: null,
+        detail: listeningDetail ?? null,
         path: listening.path,
         icon: <Headphones className="w-8 h-8" aria-hidden="true" />,
       };

@@ -76,6 +76,56 @@ export interface ListeningSegment {
   endTimeMs: number;
 }
 
+/**
+ * Sprint 11 Phase 4A — one sentence's standing, as the SERVER computed it.
+ *
+ * Only sentences the student has attempted appear in the array this belongs
+ * to. Absence IS "not started"; there is no row of zeroes, so the client must
+ * never treat a missing entry as a failure to load.
+ */
+export interface DictationSegmentProgress {
+  segmentId: string;
+  completedAt: string | null;
+  bestAccuracyPercent: number | null;
+  attemptCount: number;
+  assisted: boolean;
+}
+
+/**
+ * A recording's Dictation standing, DERIVED server-side on every read.
+ *
+ * `completedSegments` is counted against the live sentence list at request
+ * time and is stored nowhere. That is what lets an admin add a sentence to a
+ * finished recording and have this correctly report in-progress again — so the
+ * client must render these numbers, never recompute or cache them.
+ */
+export interface ListeningDictationSummary {
+  totalSegments: number;
+  completedSegments: number;
+  completed: boolean;
+  lastActivityAt: string | null;
+}
+
+export interface ListeningDictationProgress extends ListeningDictationSummary {
+  segments: DictationSegmentProgress[];
+}
+
+export interface ListeningProgressSummary {
+  contentId: string;
+  /** Null when the recording does not enable DICTATION at all. */
+  dictation: ListeningDictationSummary | null;
+}
+
+export interface SubmitDictationAttemptResult {
+  accuracyPercent: number;
+  wordsCorrect: number;
+  wordsTotal: number;
+  solved: boolean;
+  assisted: boolean;
+  segment: DictationSegmentProgress;
+  content: ListeningDictationSummary;
+}
+
 export interface ListeningContentDetail {
   id: string;
   title: string;
@@ -92,6 +142,14 @@ export interface ListeningContentDetail {
   supportedModes: ListeningMode[];
   category: ListeningCategoryRef;
   segments: ListeningSegment[];
+  /**
+   * Sprint 11 Phase 4A. Null when the recording does not enable DICTATION.
+   *
+   * This is what makes a refresh mid-exercise lossless: the exercise rebuilds
+   * "which sentences are done" from here rather than from anything it kept in
+   * memory. Before Phase 4A there was nothing to rebuild from at all.
+   */
+  dictationProgress: ListeningDictationProgress | null;
 }
 
 export interface ListeningCatalogResponse {
@@ -155,6 +213,60 @@ export const getListeningContent = async (
   );
   if (!response.ok) {
     return throwApiError(response, 'Không tải được bài nghe');
+  }
+  return response.json();
+};
+
+/**
+ * Submit one dictation attempt. THE ONLY WRITE IN THIS MODULE.
+ *
+ * Note what the body does NOT carry: no accuracy, no word counts, no `solved`.
+ * The server grades from its own stored reference sentence and returns the
+ * verdict — a client that computed its own would be deciding whether a student
+ * passed, which is not a decision this app lets a browser make.
+ *
+ * `clientAttemptId` is the idempotency key, enforced by a unique constraint in
+ * the database. Retrying a submission that already landed replays the original
+ * result instead of creating a second attempt.
+ */
+export const submitDictationAttempt = async (
+  segmentId: string,
+  body: {
+    clientAttemptId: string;
+    typedText: string;
+    revealedWordCount: number;
+  },
+): Promise<SubmitDictationAttemptResult> => {
+  const response = await apiFetch(
+    `${API_BASE_URL}/listening/segments/${segmentId}/dictation/attempts`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!response.ok) {
+    return throwApiError(response, 'Không lưu được kết quả bài nghe');
+  }
+  return response.json();
+};
+
+/**
+ * Batch progress for a catalog page. Read-only, max 20 ids.
+ *
+ * Ids the student cannot see are ABSENT from the response rather than raising,
+ * so one stale id never fails a whole page. Callers must therefore key by
+ * `contentId` and treat a missing entry as "no progress", not as an error.
+ */
+export const getListeningProgress = async (
+  contentIds: string[],
+): Promise<ListeningProgressSummary[]> => {
+  if (contentIds.length === 0) return [];
+  const response = await apiFetch(
+    `${API_BASE_URL}/listening/progress?contentIds=${encodeURIComponent(contentIds.join(','))}`,
+  );
+  if (!response.ok) {
+    return throwApiError(response, 'Không tải được tiến độ bài nghe');
   }
   return response.json();
 };

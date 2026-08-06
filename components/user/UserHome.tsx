@@ -21,7 +21,10 @@ import {
   getDashboardAnalytics,
 } from '../../services/analyticsService';
 import { getMostRecentActivityOfType } from '../../services/recentActivity';
-import { getListeningCatalog } from '../../services/listeningService';
+import {
+  getListeningCatalog,
+  getListeningProgress,
+} from '../../services/listeningService';
 import { handleAuthError } from '../../services/apiError';
 import { Course, CourseType } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -75,6 +78,8 @@ const UserHome: React.FC = () => {
   const [deckCount, setDeckCount] = useState<number | null>(null);
   // Null until the catalog answers, and null forever if it fails — never 0.
   const [listeningTotal, setListeningTotal] = useState<number | null>(null);
+  // Sprint 11 Phase 4A. Null means "no honest figure" — never rendered as 0.
+  const [listeningDetail, setListeningDetail] = useState<string | null>(null);
   // Sprint 08 — server-derived progress for every course on this page. `null`
   // until the one batch request resolves, so cards show no status rather than
   // an invented one.
@@ -257,6 +262,7 @@ const UserHome: React.FC = () => {
 
           <ContinueLearningCard
             dueTotal={dueTotal}
+            listeningDetail={listeningDetail}
             progressPercent={featuredGrammar?.summary.progressPercent ?? null}
             grammarContinuePath={
               featuredGrammar ? continuePath(featuredGrammar.summary) : null

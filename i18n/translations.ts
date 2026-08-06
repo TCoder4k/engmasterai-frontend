@@ -654,10 +654,97 @@ const en = {
     listeningNoSegments: 'This recording has no sentences yet.',
     listeningNoModeAvailable: 'This recording has no practice mode enabled yet.',
     listeningAudioUnsupported: 'Your browser cannot play this audio.',
-    listeningSessionOnlyNote:
-      'Your progress in this exercise is kept for this session only and is not saved to your account yet.',
-    shadowingComingSoon:
-      'Shadowing practice is not available yet. You can still listen to each sentence and read along.',
+    // Sprint 11 Phase 4A — Dictation progress is persisted server-side now, so
+    // the "not saved yet" note it replaces would be a false statement.
+    listeningProgressSavedNote:
+      'Your progress is saved to your account as you complete each sentence.',
+    listeningSaving: 'Saving…',
+    listeningSaveError: 'Could not save your answer.',
+    listeningNotAcceptedError:
+      'That answer was not accepted. Check the sentence again.',
+    listeningProgressLabel: 'Dictation',
+    listeningCompletedLabel: 'Completed',
+    // Sprint 11 Phase 3 — the recording layer. `shadowingComingSoon` is gone
+    // because the panel it described no longer exists: Shadowing now records,
+    // plays back and transcribes. It still does not SCORE, and the strings
+    // below are worded to say that plainly rather than leave it to be inferred.
+    shadowingReferenceTitle: 'Read this sentence aloud',
+    shadowingListenAction: 'Listen first',
+    shadowingRecordAction: 'Record',
+    shadowingStopAction: 'Stop',
+    shadowingRetryAction: 'Record again',
+    shadowingReplayAction: 'Replay',
+    shadowingYourRecording: 'Your recording',
+    shadowingRecordingTimer: 'Recording time',
+    shadowingStateIdle: 'Ready to record',
+    shadowingStateRequesting: 'Waiting for microphone permission…',
+    shadowingStateRecording: 'Recording',
+    shadowingStateTranscribing: 'Finishing…',
+    shadowingStateResult: 'Recording ready',
+    shadowingStateError: 'Recording unavailable',
+    shadowingTranscriptTitle: 'What the browser heard',
+    shadowingTranscriptEmpty: 'No speech was recognised.',
+    shadowingTranscriptDisclaimer:
+      'This is the raw speech-recognition output. It is not compared with the sentence, and nothing is scored.',
+    shadowingSpeechUnsupported:
+      'This browser cannot transcribe speech. Recording and playback still work.',
+    shadowingRecognitionFailed:
+      'Speech recognition stopped unexpectedly. Your recording was kept.',
+    shadowingPermissionTitle: 'Microphone unavailable',
+    shadowingPermissionStep1: 'Open the site settings from the address bar.',
+    shadowingPermissionStep2: 'Set Microphone to Allow.',
+    shadowingPermissionStep3: 'Reload the page and try again.',
+    shadowingErrorPermissionDenied:
+      'Microphone access is blocked for this site.',
+    shadowingErrorPermissionRevoked:
+      'Microphone access was withdrawn while recording, so the recording was discarded.',
+    shadowingErrorDeviceNotFound:
+      'No microphone was found. Connect one and try again.',
+    shadowingErrorDeviceBusy:
+      'The microphone is in use by another app. Close it and try again.',
+    shadowingErrorInsecureContext:
+      'Recording needs a secure (https) connection to this site.',
+    shadowingErrorUnsupported: 'This browser cannot record audio.',
+    shadowingErrorRecorderFailed: 'The recording failed. Please try again.',
+    shadowingErrorDeviceGone:
+      'The microphone you selected is no longer available. Choose another one.',
+    shadowingErrorDeviceAborted:
+      'The microphone became unavailable before recording could start. Try again.',
+    shadowingMicrophoneLabel: 'Microphone',
+    shadowingMicrophoneChoose: 'Choose a microphone',
+    shadowingMicrophoneSystemDefault: 'System default',
+    shadowingMicrophoneRefresh: 'Refresh the microphone list',
+    shadowingMicrophoneInUse: 'Using',
+    shadowingMicrophoneSetUpAction: 'Set up microphone',
+    shadowingMicrophoneStale:
+      'The microphone you used before is no longer connected. Choose another one.',
+    shadowingMicrophoneNone:
+      'No microphone was found on this device.',
+    shadowingPreflightAction: 'Test microphone',
+    shadowingPreflightChecking: 'Listening… say something.',
+    shadowingPreflightWorking: 'Microphone is working.',
+    shadowingPreflightNoSignal: 'No sound was detected from this microphone.',
+    shadowingPreflightHintSpeak: 'Speak close to the microphone while it is checking.',
+    shadowingPreflightHintMute: 'Check that it is not muted by a switch or a key.',
+    shadowingPreflightHintOtherDevice:
+      'If you have more than one input, choose a different one — a virtual or "voice changer" device often produces no sound.',
+    shadowingPreflightHintOtherApp:
+      'Close any other app or tab that may be holding the microphone.',
+    shadowingPreflightHintPermission:
+      'Check the microphone permission in your browser and in Windows or macOS settings.',
+    shadowingPreflightRetry: 'Test again',
+    shadowingPreflightChooseAnother: 'Choose another microphone',
+    shadowingPreflightUnavailable:
+      'This browser cannot test the microphone in advance. Recording still works, and a silent recording will be reported.',
+    shadowingPreflightRequired: 'Test the microphone before recording.',
+    shadowingErrorSilentCapture:
+      'The microphone recorded silence. Check that it is not muted, that the right input device is selected, and that no other tab or app is holding it.',
+    shadowingSilenceWarning: 'No sound is reaching the microphone.',
+    shadowingTranscriptDisabled:
+      'Live speech recognition is off while recording: on some browsers it takes over the microphone and the recording comes out silent. Recording and playback are unaffected.',
+    shadowingLocalOnlyNote:
+      'Your recording stays in this browser. It is not uploaded, scored or saved to your account.',
+    shadowingMaxDurationNote: 'Recording stops automatically after 30 seconds.',
     muteSounds: 'Mute feedback sounds',
     unmuteSounds: 'Unmute feedback sounds',
     questionLabel: 'Question',
@@ -1255,10 +1342,91 @@ const vi: TranslationDict = {
     listeningNoSegments: 'Bài nghe này chưa có câu nào.',
     listeningNoModeAvailable: 'Bài nghe này chưa bật chế độ luyện tập nào.',
     listeningAudioUnsupported: 'Trình duyệt của bạn không phát được audio này.',
-    listeningSessionOnlyNote:
-      'Kết quả trong bài tập này chỉ được giữ trong phiên hiện tại và chưa được lưu vào tài khoản của bạn.',
-    shadowingComingSoon:
-      'Chế độ Nói nhại chưa khả dụng. Bạn vẫn có thể nghe từng câu và đọc theo.',
+    listeningProgressSavedNote:
+      'Tiến độ của bạn được lưu vào tài khoản sau mỗi câu hoàn thành.',
+    listeningSaving: 'Đang lưu…',
+    listeningSaveError: 'Không lưu được câu trả lời của bạn.',
+    listeningNotAcceptedError:
+      'Câu trả lời chưa được chấp nhận. Hãy kiểm tra lại câu.',
+    listeningProgressLabel: 'Chép chính tả',
+    listeningCompletedLabel: 'Đã hoàn thành',
+    shadowingReferenceTitle: 'Đọc to câu sau',
+    shadowingListenAction: 'Nghe trước',
+    shadowingRecordAction: 'Ghi âm',
+    shadowingStopAction: 'Dừng',
+    shadowingRetryAction: 'Ghi âm lại',
+    shadowingReplayAction: 'Nghe lại',
+    shadowingYourRecording: 'Bản ghi của bạn',
+    shadowingRecordingTimer: 'Thời gian ghi âm',
+    shadowingStateIdle: 'Sẵn sàng ghi âm',
+    shadowingStateRequesting: 'Đang chờ quyền truy cập micro…',
+    shadowingStateRecording: 'Đang ghi âm',
+    shadowingStateTranscribing: 'Đang hoàn tất…',
+    shadowingStateResult: 'Đã ghi âm xong',
+    shadowingStateError: 'Không ghi âm được',
+    shadowingTranscriptTitle: 'Trình duyệt nghe được',
+    shadowingTranscriptEmpty: 'Không nhận được lời nói nào.',
+    shadowingTranscriptDisclaimer:
+      'Đây là kết quả nhận dạng giọng nói thô. Nội dung này không được đối chiếu với câu mẫu và không được chấm điểm.',
+    shadowingSpeechUnsupported:
+      'Trình duyệt này không nhận dạng được giọng nói. Ghi âm và nghe lại vẫn hoạt động.',
+    shadowingRecognitionFailed:
+      'Nhận dạng giọng nói dừng đột ngột. Bản ghi âm của bạn vẫn được giữ lại.',
+    shadowingPermissionTitle: 'Không dùng được micro',
+    shadowingPermissionStep1: 'Mở phần cài đặt trang từ thanh địa chỉ.',
+    shadowingPermissionStep2: 'Đặt quyền Micro thành Cho phép.',
+    shadowingPermissionStep3: 'Tải lại trang rồi thử lại.',
+    shadowingErrorPermissionDenied:
+      'Quyền truy cập micro đang bị chặn cho trang này.',
+    shadowingErrorPermissionRevoked:
+      'Quyền truy cập micro bị thu hồi khi đang ghi, nên bản ghi đã bị huỷ.',
+    shadowingErrorDeviceNotFound:
+      'Không tìm thấy micro nào. Hãy kết nối micro rồi thử lại.',
+    shadowingErrorDeviceBusy:
+      'Micro đang được ứng dụng khác sử dụng. Hãy đóng ứng dụng đó rồi thử lại.',
+    shadowingErrorInsecureContext:
+      'Tính năng ghi âm cần kết nối bảo mật (https) tới trang này.',
+    shadowingErrorUnsupported: 'Trình duyệt này không ghi âm được.',
+    shadowingErrorRecorderFailed: 'Ghi âm thất bại. Vui lòng thử lại.',
+    shadowingErrorDeviceGone:
+      'Micro bạn đã chọn không còn khả dụng. Hãy chọn micro khác.',
+    shadowingErrorDeviceAborted:
+      'Micro trở nên không khả dụng trước khi kịp bắt đầu ghi. Hãy thử lại.',
+    shadowingMicrophoneLabel: 'Micro',
+    shadowingMicrophoneChoose: 'Chọn micro',
+    shadowingMicrophoneSystemDefault: 'Mặc định hệ thống',
+    shadowingMicrophoneRefresh: 'Làm mới danh sách micro',
+    shadowingMicrophoneInUse: 'Đang dùng',
+    shadowingMicrophoneSetUpAction: 'Thiết lập micro',
+    shadowingMicrophoneStale:
+      'Micro bạn dùng trước đó không còn kết nối. Hãy chọn micro khác.',
+    shadowingMicrophoneNone:
+      'Không tìm thấy micro nào trên thiết bị này.',
+    shadowingPreflightAction: 'Kiểm tra micro',
+    shadowingPreflightChecking: 'Đang nghe… hãy nói một câu.',
+    shadowingPreflightWorking: 'Micro hoạt động.',
+    shadowingPreflightNoSignal: 'Không phát hiện âm thanh từ micro này.',
+    shadowingPreflightHintSpeak: 'Hãy nói gần micro trong lúc kiểm tra.',
+    shadowingPreflightHintMute: 'Kiểm tra micro có bị tắt tiếng bằng công tắc hoặc phím không.',
+    shadowingPreflightHintOtherDevice:
+      'Nếu có nhiều thiết bị đầu vào, hãy chọn thiết bị khác — các thiết bị ảo hoặc "voice changer" thường không cho ra âm thanh nào.',
+    shadowingPreflightHintOtherApp:
+      'Hãy đóng ứng dụng hoặc tab khác có thể đang giữ micro.',
+    shadowingPreflightHintPermission:
+      'Kiểm tra quyền micro trong trình duyệt và trong cài đặt Windows hoặc macOS.',
+    shadowingPreflightRetry: 'Kiểm tra lại',
+    shadowingPreflightChooseAnother: 'Chọn micro khác',
+    shadowingPreflightUnavailable:
+      'Trình duyệt này không kiểm tra trước được micro. Việc ghi âm vẫn hoạt động, và bản ghi im lặng sẽ được báo lỗi.',
+    shadowingPreflightRequired: 'Hãy kiểm tra micro trước khi ghi âm.',
+    shadowingErrorSilentCapture:
+      'Micro chỉ ghi được sự im lặng. Hãy kiểm tra micro có đang bị tắt tiếng không, đã chọn đúng thiết bị đầu vào chưa, và không có tab hay ứng dụng nào khác đang giữ micro.',
+    shadowingSilenceWarning: 'Không có âm thanh nào vào micro.',
+    shadowingTranscriptDisabled:
+      'Nhận dạng giọng nói trực tiếp đang tắt trong lúc ghi âm: trên một số trình duyệt, nó chiếm micro và làm bản ghi không có tiếng. Ghi âm và nghe lại không bị ảnh hưởng.',
+    shadowingLocalOnlyNote:
+      'Bản ghi âm chỉ nằm trong trình duyệt của bạn. Nội dung này không được tải lên, không được chấm điểm và không lưu vào tài khoản.',
+    shadowingMaxDurationNote: 'Quá trình ghi âm tự dừng sau 30 giây.',
     muteSounds: 'Tắt âm phản hồi',
     unmuteSounds: 'Bật âm phản hồi',
     questionLabel: 'Câu',

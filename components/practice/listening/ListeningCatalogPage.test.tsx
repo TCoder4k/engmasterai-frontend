@@ -4,7 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
 import ListeningCatalogPage from './ListeningCatalogPage';
-import { getListeningCatalog } from '../../../services/listeningService';
+import {
+  getListeningCatalog,
+  getListeningProgress,
+} from '../../../services/listeningService';
 import type {
   ListeningCard,
   ListeningCatalogResponse,
@@ -13,9 +16,11 @@ import { ApiError } from '../../../services/apiError';
 
 vi.mock('../../../services/listeningService', () => ({
   getListeningCatalog: vi.fn(),
+  getListeningProgress: vi.fn(),
 }));
 
 const mockedGetCatalog = vi.mocked(getListeningCatalog);
+const mockedGetProgress = vi.mocked(getListeningProgress);
 
 // Sprint 11 Phase 2 — replaces the seed-era catalog test.
 //
@@ -256,5 +261,100 @@ describe('Listening catalog — localisation', () => {
 
     expect(await screen.findByText('Chưa có bài nghe nào.')).toBeInTheDocument();
     localStorage.removeItem('language');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sprint 11 Phase 4A — the catalog shows REAL progress, or none at all.
+// ---------------------------------------------------------------------------
+
+describe('ListeningCatalogPage — Dictation progress', () => {
+  const progressFor = (
+    contentId: string,
+    completedSegments: number,
+    totalSegments: number,
+  ) => ({
+    contentId,
+    dictation: {
+      totalSegments,
+      completedSegments,
+      completed: completedSegments === totalSegments && totalSegments > 0,
+      lastActivityAt: new Date().toISOString(),
+    },
+  });
+
+  it('renders the server-computed count on a started recording', async () => {
+    mockedGetCatalog.mockResolvedValue(catalogResponse([CARD_A, CARD_B]));
+    mockedGetProgress.mockResolvedValue([progressFor(CARD_A.id, 2, 3)] as never);
+
+    renderCatalog();
+    await screen.findByText(CARD_A.title);
+
+    expect(await screen.findByText('2/3')).toBeInTheDocument();
+    const bar = screen.getByRole('progressbar');
+    // The aria values must agree with the bar; a progressbar whose numbers
+    // disagree with its width is worse than no progressbar.
+    expect(bar).toHaveAttribute('aria-valuenow', '2');
+    expect(bar).toHaveAttribute('aria-valuemax', '3');
+  });
+
+  it('says Completed rather than showing a full bar with no words', async () => {
+    mockedGetCatalog.mockResolvedValue(catalogResponse([CARD_A]));
+    mockedGetProgress.mockResolvedValue([progressFor(CARD_A.id, 3, 3)] as never);
+
+    renderCatalog();
+
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
+  });
+
+  // A 0% bar on an untouched recording reads as failure rather than as "not
+  // started", so nothing is drawn at all.
+  it('draws no bar for a recording the student has never started', async () => {
+    mockedGetCatalog.mockResolvedValue(catalogResponse([CARD_A]));
+    mockedGetProgress.mockResolvedValue([progressFor(CARD_A.id, 0, 3)] as never);
+
+    renderCatalog();
+    await screen.findByText(CARD_A.title);
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+
+  it('draws no bar for an id the progress endpoint omitted', async () => {
+    mockedGetCatalog.mockResolvedValue(catalogResponse([CARD_A, CARD_B]));
+    // The batch read omits ids it cannot resolve rather than erroring, so a
+    // missing entry is ordinary and means "not started" — never "failed".
+    mockedGetProgress.mockResolvedValue([progressFor(CARD_A.id, 1, 3)] as never);
+
+    renderCatalog();
+    await screen.findByText(CARD_B.title);
+
+    expect(screen.getAllByRole('progressbar')).toHaveLength(1);
+  });
+
+  // The inverse of Sprint 08's bug: a failed progress request must never
+  // become a fabricated 0%, and must not take the catalog down with it.
+  it('still renders the catalog when progress fails, with no bar', async () => {
+    mockedGetCatalog.mockResolvedValue(catalogResponse([CARD_A]));
+    mockedGetProgress.mockRejectedValue(new ApiError('boom', 500));
+
+    renderCatalog();
+
+    expect(await screen.findByText(CARD_A.title)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText('0/3')).not.toBeInTheDocument();
+  });
+
+  it('asks for progress only for the recordings on the page', async () => {
+    mockedGetCatalog.mockResolvedValue(catalogResponse([CARD_A, CARD_B]));
+    mockedGetProgress.mockResolvedValue([] as never);
+
+    renderCatalog();
+    await screen.findByText(CARD_A.title);
+
+    await waitFor(() =>
+      expect(mockedGetProgress).toHaveBeenCalledWith([CARD_A.id, CARD_B.id]),
+    );
   });
 });

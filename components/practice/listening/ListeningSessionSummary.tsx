@@ -119,10 +119,13 @@ const ListeningSessionSummary: React.FC<ListeningSessionSummaryProps> = ({
         </div>
       </div>
 
-      {/* Session-only, stated outright. The catalog shows no progress for this
-          recording after a refresh, and this line is why that is not a bug. */}
+      {/* Sprint 11 Phase 4A — this line used to say the opposite: that nothing
+          was saved. It is now a persistence note because the sentences really
+          are recorded against the account, and leaving the old wording would
+          have been a false statement in the one place a student looks for
+          reassurance. */}
       <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-        {t.practice.listeningSessionOnlyNote}
+        {t.practice.listeningProgressSavedNote}
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-3">

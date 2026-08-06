@@ -7,15 +7,23 @@ import type { ListeningSegment } from '../../../services/listeningService';
 
 export type WorkspaceFontSize = 'normal' | 'large' | 'xlarge';
 
-// assisted=true when any word was revealed (hint-reveal or reveal-all) — a
-// revealed word never counts as independently earned. wordsCorrect/wordsTotal
-// are real, this-segment word counts (Sprint 03G) — wordsCorrect excludes
-// revealed words from the numerator, so a lesson-wide accuracy stat derived
-// from these can't be masked by a segment merely reaching "solved".
-export interface SegmentSolvedResult {
-  assisted: boolean;
-  wordsCorrect: number;
-  wordsTotal: number;
+/**
+ * Sprint 11 Phase 4A — what this component reports, and what it stopped
+ * reporting.
+ *
+ * It used to hand up `assisted`, `wordsCorrect` and `wordsTotal`: a verdict,
+ * computed here, from a rule that lived only in the browser. Now it reports
+ * the two RAW FACTS it is the only thing that knows — what the student typed
+ * and how many words they revealed — and the server decides what they mean.
+ *
+ * The word diff below survives, but its job changed. It is live typing
+ * feedback (which words are right as you type), not grading. That distinction
+ * matters: feedback may be approximate and may disagree slightly with the
+ * server's canonical normalizer; a score may not.
+ */
+export interface DictationSubmission {
+  typedText: string;
+  revealedWordCount: number;
 }
 
 interface DictationWorkspaceProps {
@@ -31,13 +39,39 @@ interface DictationWorkspaceProps {
   onFontSizeChange: (size: WorkspaceFontSize) => void;
   isSentenceSaved: boolean;
   onToggleSaveSentence: () => void;
-  onSegmentSolved: (result: SegmentSolvedResult) => void;
+  /** Fired once, when the live diff first reaches every word. */
+  onSegmentSolved: (submission: DictationSubmission) => void;
   onAdvance: () => void;
+  /** True while the server is grading; the Next control waits for it. */
+  saving?: boolean;
   onPlayPause: () => void;
   onReplay: () => void;
 }
 
-const cleanWord = (word: string): string => word.toLowerCase().replace(/[^a-z0-9']/g, '');
+/**
+ * Fold one word for the live typing diff.
+ *
+ * >>> THIS MUST TRACK THE SERVER'S `normalizeReferenceText` <<<
+ * Sprint 11 Phase 4A moved grading to the server, and the server folds with
+ * NFKC, maps every Unicode apostrophe and dash variant to its ASCII form, and
+ * KEEPS a hyphen or apostrophe between two word characters. The old rule here
+ * was `[^a-z0-9']`, which deleted hyphens outright (`well-known` ->
+ * `wellknown`) and mangled anything non-ASCII.
+ *
+ * Where the two disagree the student sees green ticks for a sentence the
+ * server then refuses to mark solved — so this is not cosmetic. The remaining
+ * theoretical gap (a token the server splits in two, e.g. `hello,world`) is
+ * caught by DictationModePanel, which surfaces a server "not solved" instead
+ * of silently accepting it.
+ */
+const cleanWord = (word: string): string =>
+  word
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[‘’ʼʹ՚＇]/g, "'")
+    .replace(/[‐-―−]/g, '-')
+    .replace(/(?<![\p{L}\p{N}])['-]|['-](?![\p{L}\p{N}])/gu, '')
+    .replace(/[^\p{L}\p{N}'-]/gu, '');
 
 // Keyboard map (Sprint 03F, locked): Space play/pause · standalone Ctrl
 // replay · Alt+H first-letter hint · Alt+R reveal word · Enter
@@ -56,6 +90,7 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
   onToggleSaveSentence,
   onSegmentSolved,
   onAdvance,
+  saving = false,
   onPlayPause,
   onReplay,
 }) => {
@@ -107,9 +142,8 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
       playCorrect();
       setBurstKey((k) => k + 1);
       onSegmentSolved({
-        assisted: revealedWordIndices.length > 0,
-        wordsCorrect: targetWords.length - revealedWordIndices.length,
-        wordsTotal: targetWords.length,
+        typedText: revealedWordIndices.length > 0 ? segment.text : typedText,
+        revealedWordCount: revealedWordIndices.length,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -414,7 +448,10 @@ const DictationWorkspace: React.FC<DictationWorkspaceProps> = ({
         <button
           type="button"
           onClick={onAdvance}
-          disabled={!solved}
+          // Sprint 11 Phase 4A: also blocked while the server is grading, so
+          // a student cannot skip past a sentence whose result has not landed
+          // and leave it recorded as unsolved.
+          disabled={!solved || saving}
           className="ml-auto px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           <span>{t.practice.listeningNextAction}</span>

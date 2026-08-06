@@ -72,9 +72,14 @@ describe('ListeningSessionSummary — real figures only', () => {
     expect(screen.getByText('02:05')).toBeInTheDocument();
   });
 
-  it('states plainly that the result is not saved', () => {
+  // Sprint 11 Phase 4A inverted this line. It used to warn that nothing was
+  // saved; Dictation progress is now persisted server-side, so the old copy
+  // would be a false statement in the one place a student looks for
+  // reassurance about their work.
+  it('states plainly that the result IS saved', () => {
     renderSummary();
-    expect(screen.getByText(/kept for this session only/i)).toBeInTheDocument();
+    expect(screen.getByText(/saved to your account/i)).toBeInTheDocument();
+    expect(screen.queryByText(/kept for this session only/i)).not.toBeInTheDocument();
   });
 });
 

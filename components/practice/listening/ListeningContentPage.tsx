@@ -21,6 +21,8 @@ import { useSegmentPlayback, MediaController } from './useSegmentPlayback';
 import { useStudyActivity } from '../../shared/StudyTimeBoundary';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { ApiError } from '../../../services/apiError';
+import { authService } from '../../../services/authService';
+import { recordRecentActivity } from '../../../services/recentActivity';
 import {
   getListeningContent,
   ListeningContentDetail,
@@ -55,6 +57,15 @@ interface ListeningContentContextValue {
   isPlaying: boolean;
   togglePlay: () => void;
   replaySegment: () => void;
+  /**
+   * Stop the recording's audio outright.
+   *
+   * Sprint 11 Phase 3 needs a one-way pause, not a toggle: Shadowing silences
+   * the player before opening the microphone, and `togglePlay` would have
+   * STARTED playback in the (common) case where the student had already paused
+   * it themselves.
+   */
+  pauseMedia: () => void;
   /** False whenever the media cannot be driven — a broken video must not block practice. */
   mediaAvailable: boolean;
   solvedSegmentIds: Set<string>;
@@ -120,6 +131,31 @@ const ListeningContentPage: React.FC = () => {
     try {
       const data = await getListeningContent(contentId);
       setContent(data);
+
+      // Sprint 11 Phase 4A — rehydrate from the SERVER, which is what makes a
+      // refresh mid-exercise lossless. Before this, progress lived only in
+      // component state and a reload started the recording over.
+      //
+      // Only sentences the student has attempted have a row, so absence is
+      // "not started" and needs no placeholder.
+      const rows = data.dictationProgress?.segments ?? [];
+      setSolvedSegmentIds(
+        new Set(rows.filter((row) => row.completedAt).map((row) => row.segmentId)),
+      );
+      setAssistedSegmentIds(
+        new Set(rows.filter((row) => row.assisted).map((row) => row.segmentId)),
+      );
+
+      // Land on the first unfinished sentence rather than always on the first
+      // one. "Progress is not lost" has to mean the student resumes where the
+      // work actually is, not merely that a tick mark survived.
+      const solvedIds = new Set(
+        rows.filter((row) => row.completedAt).map((row) => row.segmentId),
+      );
+      const resumeAt = data.segments.findIndex(
+        (segment) => !solvedIds.has(segment.id),
+      );
+      setCurrentIndex(resumeAt === -1 ? 0 : resumeAt);
     } catch (caught) {
       setContent(null);
       if (caught instanceof ApiError && caught.status === 404) {
@@ -247,6 +283,26 @@ const ListeningContentPage: React.FC = () => {
     mediaPlaying,
   });
 
+  // Sprint 11 Phase 4A — put this recording into the Continue Learning ring
+  // buffer, which no Listening surface had ever done. The LISTENING branch of
+  // ContinueLearningCard has existed since Sprint 05 and could never fire,
+  // because nothing wrote an entry for it to find.
+  //
+  // The path is resolved HERE, where the id is in scope, and stored whole —
+  // the buffer never re-derives a route from a bare id.
+  useEffect(() => {
+    if (!content || !contentId) return;
+    const user = authService.getUser();
+    if (!user) return;
+    recordRecentActivity(user.id, {
+      type: 'practice',
+      id: contentId,
+      title: content.title,
+      path: `/practice/listening/${contentId}`,
+      courseType: 'LISTENING',
+    });
+  }, [content, contentId]);
+
   const currentMode = useMemo<ListeningMode | null>(() => {
     const tail = location.pathname.split('/').filter(Boolean).pop();
     return (tail && MODE_BY_PATH[tail]) || null;
@@ -339,6 +395,7 @@ const ListeningContentPage: React.FC = () => {
     isPlaying,
     togglePlay: () => (isPlaying ? pause() : playSegment()),
     replaySegment,
+    pauseMedia: pause,
     mediaAvailable: controller !== null,
     solvedSegmentIds,
     setSolvedSegmentIds,
