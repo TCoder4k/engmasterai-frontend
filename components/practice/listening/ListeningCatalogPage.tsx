@@ -9,8 +9,10 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import { CefrLevel } from '../../../types';
 import {
   getListeningCatalog,
+  getListeningProgress,
   ListeningCard,
   ListeningCatalogResponse,
+  ListeningDictationSummary,
 } from '../../../services/listeningService';
 
 // /practice/listening — the Listening catalog, SERVER-DRIVEN as of Sprint 11
@@ -42,10 +44,18 @@ import {
 // could never learn about a category an admin created, and would happily
 // advertise a topic with nothing behind it.
 //
-// NO PROGRESS IS SHOWN, because none exists. There is no Listening progress
-// model until Phase 4A. A card shows what the recording IS (level, sentence
-// count, duration, modes) and never "60%" or "In progress" — a number nothing
-// can back is worse than no number.
+// PROGRESS IS REAL AS OF PHASE 4A, and it is fetched SEPARATELY on purpose.
+// The catalog request returns what a recording IS; a second batch request
+// returns what this student has done with it. Keeping them apart means a
+// progress failure degrades to "no bar" instead of taking the whole catalog
+// down with it — a student who cannot see their percentage can still start a
+// lesson, which is the more important of the two.
+//
+// A MISSING PROGRESS ENTRY IS "NOT STARTED", NOT "FAILED". The batch endpoint
+// omits ids it cannot resolve rather than erroring, so the map lookup below
+// legitimately misses. What must never happen is the inverse of Sprint 08's
+// bug: `progressError` is tracked separately and a failed request renders no
+// bar at all, never a fabricated 0%.
 
 const PAGE_SIZE = 12;
 const LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -63,6 +73,11 @@ const ListeningCatalogPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Keyed by contentId. Absent = the student has not started that recording;
+  // null map = progress could not be loaded, so no bar is drawn anywhere.
+  const [progress, setProgress] =
+    useState<Map<string, ListeningDictationSummary> | null>(null);
+
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [level, setLevel] = useState<CefrLevel | null>(null);
   const [page, setPage] = useState(1);
@@ -78,11 +93,29 @@ const ListeningCatalogPage: React.FC = () => {
         limit: PAGE_SIZE,
       });
       setResponse(data);
+
+      // Sprint 11 Phase 4A. Deliberately AFTER the catalog resolved and in its
+      // own try: a progress failure must not blank the grid.
+      try {
+        const ids = data.data.map((card) => card.id);
+        const rows = await getListeningProgress(ids);
+        setProgress(
+          new Map(
+            rows
+              .filter((row) => row.dictation !== null)
+              .map((row) => [row.contentId, row.dictation!]),
+          ),
+        );
+      } catch {
+        // No bar rather than a wrong one. The catalog still works.
+        setProgress(null);
+      }
     } catch (caught) {
       // The previous response is dropped on purpose. Keeping stale cards under
       // an error banner would leave a student reading content that may since
       // have been unpublished.
       setResponse(null);
+      setProgress(null);
       setError(caught instanceof Error ? caught.message : t.practice.listeningLoadError);
     } finally {
       setLoading(false);
@@ -113,6 +146,14 @@ const ListeningCatalogPage: React.FC = () => {
 
   const contentCard = (card: ListeningCard) => {
     const minutes = formatDuration(card.durationMs);
+    // Only drawn when there is a real, server-computed figure AND the student
+    // has actually attempted something. A 0% bar on an untouched recording is
+    // visual noise that reads as failure.
+    const dictation = progress?.get(card.id) ?? null;
+    const showProgress =
+      dictation !== null &&
+      dictation.totalSegments > 0 &&
+      dictation.completedSegments > 0;
     return (
       <Link
         key={card.id}
@@ -158,6 +199,48 @@ const ListeningCatalogPage: React.FC = () => {
               </span>
             )}
           </div>
+          {showProgress && dictation && (
+            <div className="pt-1 space-y-1">
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className="text-slate-500 dark:text-slate-400">
+                  {t.practice.listeningProgressLabel}
+                </span>
+                <span
+                  className={
+                    dictation.completed
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-blue-600 dark:text-blue-400'
+                  }
+                >
+                  {dictation.completed
+                    ? t.practice.listeningCompletedLabel
+                    : `${dictation.completedSegments}/${dictation.totalSegments}`}
+                </span>
+              </div>
+              {/* Real values on the element itself — a progressbar whose
+                  aria values disagree with its width is worse than none. */}
+              <div
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={dictation.totalSegments}
+                aria-valuenow={dictation.completedSegments}
+                aria-label={t.practice.listeningProgressLabel}
+                className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"
+              >
+                <div
+                  className={`h-full rounded-full ${
+                    dictation.completed ? 'bg-emerald-500' : 'bg-blue-500'
+                  }`}
+                  style={{
+                    width: `${Math.round(
+                      (dictation.completedSegments / dictation.totalSegments) * 100,
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
             {card.supportedModes.map((mode) => (
               <span

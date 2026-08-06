@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Headphones } from 'lucide-react';
+import { AlertCircle, Headphones, Loader2 } from 'lucide-react';
 import EmptyState from '../../shared/EmptyState';
 import DictationWorkspace, {
-  SegmentSolvedResult,
+  DictationSubmission,
   WorkspaceFontSize,
 } from './DictationWorkspace';
 import ListeningSessionSummary from './ListeningSessionSummary';
 import { useListeningContent } from './ListeningContentPage';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { submitDictationAttempt } from '../../../services/listeningService';
 
 interface DictationResult {
   totalSegments: number;
@@ -18,24 +19,26 @@ interface DictationResult {
   elapsedSeconds: number;
 }
 
-// Sprint 11 Phase 2 — the Dictation exercise, now a child of the shared
-// content layout instead of a whole page.
+// Sprint 11 Phase 4A — the Dictation exercise, now server-graded and
+// server-persisted.
 //
-// WHAT MOVED OUT. The media player, the sentence list and sentence selection
-// belong to ListeningContentPage and are shared with every future mode; this
-// panel keeps only what is specific to typing what you hear.
+// WHAT CHANGED FROM PHASE 2. Solving a sentence used to be a fact this
+// component decided and kept in React state; a refresh started the recording
+// over. Now the client sends what the student typed, the SERVER decides
+// whether it is correct, and the answer is stored. This panel renders the
+// server's verdict; it never computes one.
 //
-// WHAT DID NOT CHANGE. Grading is still the live word diff inside
-// DictationWorkspace, and it is still session-only: nothing is posted, nothing
-// is persisted, and a refresh legitimately starts over. Phase 4A moves that
-// judgement to the server. Until then this panel must not display anything
-// that looks like saved progress.
+// THE LIVE WORD DIFF STAYS, and it is not a contradiction. Colouring words as
+// you type is feedback, and feedback may be approximate. A score may not.
+// DictationWorkspace's diff folds words with the same rules as the server's
+// normalizer so the two agree, but where they ever DISAGREE the server wins
+// and `submitError` says so out loud — see `handleSegmentSolved`.
 //
-// AUDIO NOW COMES FROM THE RECORDING, NOT FROM TTS. The old page spoke each
-// sentence with the browser's speech synthesiser because the seed content had
-// no media. Playback controls here delegate to the real player through the
-// layout, which is the entire point of Phase 2 — the student practises against
-// the actual audio a teacher chose.
+// THERE IS NO SESSION FALLBACK. `listeningSessionStore.ts` was deleted in
+// Phase 2 and nothing replaced it. If a submission fails, the sentence is not
+// marked solved and the student is told; it is never optimistically accepted
+// and quietly lost, which is the failure mode that made Sprint 08's silent
+// fallback worth removing everywhere it appeared.
 const DictationModePanel: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -60,6 +63,9 @@ const DictationModePanel: React.FC = () => {
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [wordStats, setWordStats] = useState({ correct: 0, total: 0 });
   const [result, setResult] = useState<DictationResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pendingRetry, setPendingRetry] = useState<DictationSubmission | null>(null);
   const startedAtRef = useRef<number>(Date.now());
   // Sprint 03F: untracked before — nothing cancelled this if the student
   // advanced manually before it fired, risking a double-advance.
@@ -82,6 +88,8 @@ const DictationModePanel: React.FC = () => {
 
   useEffect(() => {
     clearAutoAdvanceTimer();
+    setSubmitError(null);
+    setPendingRetry(null);
   }, [currentIndex]);
 
   if (segments.length === 0 || !segment) {
@@ -125,11 +133,10 @@ const DictationModePanel: React.FC = () => {
 
   const handleAdvance = () => {
     clearAutoAdvanceTimer();
-    // A manual click is always a later, separate event from whatever effect
-    // last updated wordStats/assistedSegmentIds/solvedSegmentIds, so reading
-    // current state directly is safe here (unlike the scheduled path below,
-    // which must capture the post-update values up front to avoid a stale
-    // closure).
+    // A manual click is always a later, separate event than whatever effect
+    // last updated the solved set, so reading current state directly is safe
+    // here (unlike the scheduled path below, which must capture the
+    // post-update values up front to avoid a stale closure).
     const target = nextUnsolvedIndex(solvedSegmentIds, currentIndex);
     if (target === -1) {
       finish(assistedSegmentIds.size, wordStats.correct, wordStats.total);
@@ -138,38 +145,78 @@ const DictationModePanel: React.FC = () => {
     }
   };
 
-  const handleSegmentSolved = (solvedResult: SegmentSolvedResult) => {
-    // The post-update set, computed here rather than read from state: the
-    // scheduled auto-advance below runs after this function returns but was
-    // created with THIS render's closure, so `solvedSegmentIds` would still be
-    // missing the sentence that was just solved.
-    const solvedAfter = new Set(solvedSegmentIds).add(segment.id);
-    setSolvedSegmentIds(solvedAfter);
+  /**
+   * Send the attempt and let the server decide.
+   *
+   * Every number below comes off the response. Nothing is added to the solved
+   * set until the server has said the sentence is solved — including the case
+   * where the browser's live diff was satisfied and the server was not, which
+   * is exactly the divergence that would otherwise show a student a green tick
+   * for work that was never recorded.
+   */
+  const submit = async (submission: DictationSubmission) => {
+    setSaving(true);
+    setSubmitError(null);
+    try {
+      const outcome = await submitDictationAttempt(segment.id, {
+        // A fresh key per attempt. Retrying a failed request reuses the key
+        // held in `pendingRetry`, so a submission that reached the server but
+        // lost its response is replayed rather than double-counted.
+        clientAttemptId: crypto.randomUUID(),
+        typedText: submission.typedText,
+        revealedWordCount: submission.revealedWordCount,
+      });
 
-    const assistedCountAfter = solvedResult.assisted
-      ? assistedSegmentIds.size + (assistedSegmentIds.has(segment.id) ? 0 : 1)
-      : assistedSegmentIds.size;
-    const wordsCorrectAfter = wordStats.correct + solvedResult.wordsCorrect;
-    const wordsTotalAfter = wordStats.total + solvedResult.wordsTotal;
+      if (!outcome.solved) {
+        // The server graded it and said no. Say so rather than pretending.
+        setSubmitError(t.practice.listeningNotAcceptedError);
+        setPendingRetry(null);
+        return;
+      }
 
-    if (solvedResult.assisted) {
-      setAssistedSegmentIds((prev) => new Set(prev).add(segment.id));
+      const solvedAfter = new Set(solvedSegmentIds).add(segment.id);
+      setSolvedSegmentIds(solvedAfter);
+      if (outcome.assisted) {
+        setAssistedSegmentIds((prev) => new Set(prev).add(segment.id));
+      }
+
+      // Server word counts, not the browser's. `wordsCorrect` already excludes
+      // revealed words, so the summary cannot flatter a student who revealed
+      // their way through.
+      const wordsCorrectAfter = wordStats.correct + outcome.wordsCorrect;
+      const wordsTotalAfter = wordStats.total + outcome.wordsTotal;
+      setWordStats({ correct: wordsCorrectAfter, total: wordsTotalAfter });
+
+      const assistedCountAfter =
+        outcome.assisted && !assistedSegmentIds.has(segment.id)
+          ? assistedSegmentIds.size + 1
+          : assistedSegmentIds.size;
+
+      if (autoAdvance) {
+        clearAutoAdvanceTimer();
+        // Same completion rule as the manual path — auto-advance must not be a
+        // second way to reach the summary early.
+        const target = nextUnsolvedIndex(solvedAfter, currentIndex);
+        autoAdvanceTimeoutRef.current = setTimeout(() => {
+          if (target === -1) {
+            finish(assistedCountAfter, wordsCorrectAfter, wordsTotalAfter);
+          } else {
+            goToSegment(target);
+          }
+        }, 1200);
+      }
+    } catch (caught) {
+      setSubmitError(
+        caught instanceof Error ? caught.message : t.practice.listeningSaveError,
+      );
+      setPendingRetry(submission);
+    } finally {
+      setSaving(false);
     }
-    setWordStats({ correct: wordsCorrectAfter, total: wordsTotalAfter });
+  };
 
-    if (autoAdvance) {
-      clearAutoAdvanceTimer();
-      // Same completion rule as the manual path — auto-advance must not be a
-      // second way to reach the summary early.
-      const target = nextUnsolvedIndex(solvedAfter, currentIndex);
-      autoAdvanceTimeoutRef.current = setTimeout(() => {
-        if (target === -1) {
-          finish(assistedCountAfter, wordsCorrectAfter, wordsTotalAfter);
-        } else {
-          goToSegment(target);
-        }
-      }, 1200);
-    }
+  const handleSegmentSolved = (submission: DictationSubmission) => {
+    void submit(submission);
   };
 
   const handleReplayMistakes = () => {
@@ -250,14 +297,53 @@ const DictationModePanel: React.FC = () => {
         onToggleSaveSentence={toggleSaveSentence}
         onSegmentSolved={handleSegmentSolved}
         onAdvance={handleAdvance}
+        saving={saving}
         onPlayPause={togglePlay}
         onReplay={replaySegment}
       />
 
-      {/* Stated on the exercise itself, not only on the summary: a student who
-          never finishes must still know nothing was saved. */}
+      {saving && (
+        <p
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500"
+        >
+          <Loader2 size={13} aria-hidden="true" className="motion-safe:animate-spin" />
+          <span>{t.practice.listeningSaving}</span>
+        </p>
+      )}
+
+      {submitError && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-amber-200 dark:border-amber-500/40 bg-amber-50 dark:bg-amber-500/10"
+        >
+          <AlertCircle
+            size={14}
+            aria-hidden="true"
+            className="text-amber-700 dark:text-amber-400 shrink-0"
+          />
+          <span className="text-[12px] font-semibold text-amber-800 dark:text-amber-300">
+            {submitError}
+          </span>
+          {/* Retry only exists for a request that FAILED. A sentence the
+              server graded and rejected has nothing to retry — the student
+              has to correct their answer. */}
+          {pendingRetry && (
+            <button
+              type="button"
+              onClick={() => void submit(pendingRetry)}
+              disabled={saving}
+              className="ml-auto px-3 py-1.5 min-h-[36px] rounded-lg bg-white dark:bg-slate-900 border border-amber-300 dark:border-amber-500/50 text-amber-800 dark:text-amber-300 text-[11px] font-bold hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            >
+              {t.common.tryAgain}
+            </button>
+          )}
+        </div>
+      )}
+
       <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
-        {t.practice.listeningSessionOnlyNote}
+        {t.practice.listeningProgressSavedNote}
       </p>
     </div>
   );
