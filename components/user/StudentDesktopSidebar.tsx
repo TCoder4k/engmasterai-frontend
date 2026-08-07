@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
   GraduationCap,
   Home,
@@ -27,6 +27,19 @@ const navLinkClass = (isActive: boolean) =>
 // StudentMobileHeader + StudentBottomNavigation instead).
 const StudentDesktopSidebar: React.FC = () => {
   const { t } = useTranslation();
+  const location = useLocation();
+
+  // NavLink's own `to`-based matching already covers /practice/listening and
+  // its :contentId/... sub-routes; the audio-practice entry ALSO needs to
+  // read as current on /practice/shadowing, which does not share that
+  // prefix. NavLink's `aria-current` is derived entirely from its own
+  // isActive and cannot be overridden by a passed prop (react-router computes
+  // it internally: `isActive ? ariaCurrentProp : undefined`), so this one
+  // entry is rendered as a plain `Link` below with the combined boolean
+  // computed by hand — see StudentBottomNavigation's matching comment.
+  const isAudioPracticeActive =
+    location.pathname.startsWith('/practice/listening') ||
+    location.pathname.startsWith('/practice/shadowing');
 
   return (
     <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col h-screen sticky top-0 overflow-hidden flex-shrink-0">
@@ -64,11 +77,27 @@ const StudentDesktopSidebar: React.FC = () => {
             dedicated Listening entry — Vocabulary practice is reached via
             the Vocabulary section below instead (see VocabLibraryPage ->
             LibraryDetailPage's deck list). /practice (the hub) remains an
-            internal compatibility route, no longer primary navigation. */}
-        <NavLink to="/practice/listening" className={({ isActive }) => navLinkClass(isActive)}>
+            internal compatibility route, no longer primary navigation.
+
+            Sprint 11 — ONE entry for both Dictation and Shadowing, not two.
+            An earlier revision gave each its own NavLink here ("Chủ đề" for
+            Dictation, a separate "Shadowing" item); once
+            ListeningCatalogPage grew an in-page Dictation<->Shadowing toggle
+            in its hero, a second nav item pointing at the same shared
+            catalog was redundant, and merging them is what keeps this
+            sidebar short (no scrollbar) while ALSO being how a phone reaches
+            Shadowing without a 6th bottom-nav slot: the toggle does that
+            job, on both surfaces, from this one door in. `/practice/shadowing`
+            still exists and still resolves — the toggle navigates there —
+            it is simply no longer a separate nav item. */}
+        <Link
+          to="/practice/listening"
+          aria-current={isAudioPracticeActive ? 'page' : undefined}
+          className={navLinkClass(isAudioPracticeActive)}
+        >
           <Headphones size={20} aria-hidden="true" />
-          <span>{t.nav.listening}</span>
-        </NavLink>
+          <span>{t.nav.audioPractice}</span>
+        </Link>
 
         <NavLink to="/vocab" className={({ isActive }) => navLinkClass(isActive)}>
           <BookMarked size={20} aria-hidden="true" />

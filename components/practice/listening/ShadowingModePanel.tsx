@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Headphones, Volume2, Mic } from 'lucide-react';
+import { Headphones, Mic, Loader2, AlertCircle } from 'lucide-react';
 import EmptyState from '../../shared/EmptyState';
+import ShadowingHeaderBar from './ShadowingHeaderBar';
+import ShadowingReferenceCard from './ShadowingReferenceCard';
 import MicrophonePreflight from './recording/MicrophonePreflight';
 import MicrophoneSelector from './recording/MicrophoneSelector';
 import RecordingControls from './recording/RecordingControls';
@@ -12,6 +14,11 @@ import { isPermissionKind } from './recording/recordingErrorCopy';
 import { useMicrophones } from './recording/useMicrophones';
 import { useMicrophonePreflight } from './recording/useMicrophonePreflight';
 import { authService } from '../../../services/authService';
+import ShadowingResultPanel from './recording/ShadowingResultPanel';
+import AiPronunciationFeedback from './recording/AiPronunciationFeedback';
+import { submitShadowingAttempt } from '../../../services/listeningService';
+import type { SubmitShadowingAttemptResult } from '../../../services/listeningService';
+import { ApiError, AuthExpiredError } from '../../../services/apiError';
 import {
   useRecorder,
   MAX_RECORDING_MS,
@@ -81,6 +88,31 @@ const ShadowingModePanel: React.FC = () => {
   // Read once. The preference key is per-user, and an id that changed under a
   // mounted panel would only mean a logout — which unmounts this anyway.
   const [userId] = useState(() => authService.getUser()?.id ?? '');
+
+  // Sprint 11 Phase 4C — saved sentences, SESSION-ONLY and honestly labelled,
+  // exactly as Dictation has them. There is no endpoint behind this in either
+  // mode; the tooltip on the button is what keeps that from being a broken
+  // promise. Held here rather than in the header bar so it survives the student
+  // moving between sentences and back.
+  const [savedSegmentIds, setSavedSegmentIds] = useState<Set<string>>(new Set());
+  const toggleSavedSegment = useCallback((id: string) => {
+    setSavedSegmentIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Phase 4B — the submitted verdict. Server-owned: this component stores what
+  // it was told and derives nothing from it.
+  const [result, setResult] = useState<SubmitShadowingAttemptResult | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  // Generated ONCE per recording, not per click. A retry after a timeout must
+  // carry the same key so the server replays its original verdict instead of
+  // paying for — and possibly disagreeing with — a second transcription.
+  const attemptIdRef = useRef<string | null>(null);
   const microphones = useMicrophones(userId);
   const preflight = useMicrophonePreflight(microphones.selected?.deviceId ?? null);
 
@@ -112,6 +144,64 @@ const ShadowingModePanel: React.FC = () => {
   useEffect(() => {
     if (isRecording && selectedDeviceId === null) recorderRetry();
   }, [isRecording, selectedDeviceId, recorderRetry]);
+
+  // A new take invalidates the previous verdict AND its idempotency key. Both
+  // must reset together: keeping the key would make the second recording
+  // replay the first one's score, and keeping the result would leave a verdict
+  // on screen that belongs to audio the student has already discarded.
+  const recordingUrl = recorder.blobUrl;
+  const previousUrlRef = useRef(recordingUrl);
+  useEffect(() => {
+    if (previousUrlRef.current === recordingUrl) return;
+    previousUrlRef.current = recordingUrl;
+    setResult(null);
+    setSubmitError(null);
+    attemptIdRef.current = null;
+  }, [recordingUrl]);
+
+  // Changing sentence clears the verdict too — for the same reason it clears
+  // the recording.
+  useEffect(() => {
+    setResult(null);
+    setSubmitError(null);
+    attemptIdRef.current = null;
+  }, [segmentId]);
+
+  const recordedBlob = recorder.blob;
+  const recordedDurationMs = recorder.durationMs;
+  const handleSubmit = useCallback(async () => {
+    if (!segmentId || !recordedBlob) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    // Reused across retries on purpose — see attemptIdRef.
+    attemptIdRef.current ??= crypto.randomUUID();
+    try {
+      const verdict = await submitShadowingAttempt(segmentId, {
+        clientAttemptId: attemptIdRef.current,
+        audio: recordedBlob,
+        durationMs: recordedDurationMs ?? undefined,
+      });
+      setResult(verdict);
+    } catch (error) {
+      // Each failure gets its own sentence, because the recoveries differ: a
+      // 503 means wait, a 400 means record again, a 429 means slow down, and a
+      // 401 means sign in. A shared "something went wrong" would send every
+      // one of those students to do the wrong thing.
+      if (error instanceof AuthExpiredError) {
+        setSubmitError(t.practice.shadowingErrorSessionExpired);
+      } else if (error instanceof ApiError && error.status === 400) {
+        setSubmitError(t.practice.shadowingErrorInvalidAudio);
+      } else if (error instanceof ApiError && error.status === 429) {
+        setSubmitError(t.practice.shadowingErrorRateLimited);
+      } else if (error instanceof ApiError && error.status === 503) {
+        setSubmitError(t.practice.shadowingErrorProviderUnavailable);
+      } else {
+        setSubmitError(t.practice.shadowingErrorUploadFailed);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }, [segmentId, recordedBlob, recordedDurationMs, t]);
 
   if (segments.length === 0 || !segment) {
     return (
@@ -149,31 +239,24 @@ const ShadowingModePanel: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm p-5 space-y-4">
-        <div className="space-y-1.5">
-          <p className="text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
-            {t.practice.shadowingReferenceTitle}
-          </p>
-          {/* The sentence is SHOWN here, unlike Dictation where it is the
-              answer. Reading it aloud is the exercise. */}
-          <p className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 leading-relaxed">
-            {segment.text}
-          </p>
-          {segment.ipa && (
-            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-              /{segment.ipa}/
-            </p>
-          )}
-        </div>
+        {/* The accuracy comes from the CURRENT verdict only. There is no
+            fallback to a previous best and no client-side estimate: before the
+            server has judged this take, there is no accuracy, and the pill is
+            simply absent. */}
+        <ShadowingHeaderBar
+          segmentNumber={currentIndex + 1}
+          wordCount={segment.text.trim().split(/\s+/).filter(Boolean).length}
+          accuracyPercent={result?.accuracyPercent ?? null}
+          passed={result?.passed ?? null}
+          isSentenceSaved={savedSegmentIds.has(segment.id)}
+          onToggleSaveSentence={() => toggleSavedSegment(segment.id)}
+        />
 
-        <button
-          type="button"
-          onClick={replaySegment}
-          disabled={!mediaAvailable}
-          className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-        >
-          <Volume2 size={14} aria-hidden="true" />
-          <span>{t.practice.shadowingListenAction}</span>
-        </button>
+        <ShadowingReferenceCard
+          segment={segment}
+          onListen={replaySegment}
+          listenEnabled={mediaAvailable}
+        />
       </div>
 
       {/* MICROPHONE SETUP. Above the recorder, not hidden behind a settings
@@ -302,6 +385,7 @@ const ShadowingModePanel: React.FC = () => {
             have a next step the student can reach. */}
         {microphones.access !== 'BLOCKED' && (
           <RecordingControls
+            variant="circle"
             state={recorder.state}
             onStart={recorder.start}
             onStop={recorder.stop}
@@ -322,12 +406,94 @@ const ShadowingModePanel: React.FC = () => {
           <RecordingPermissionDialog kind={recorder.errorKind} onRetry={recorder.retry} />
         )}
 
-        <RecordingPlayback
-          url={recorder.blobUrl}
-          blob={recorder.blob}
-          durationMs={recorder.durationMs}
-          mimeType={recorder.mimeType}
-        />
+        {/* THE PLAYER MOVES ONCE A VERDICT EXISTS. Before then it belongs with
+            the recorder, where the student is deciding whether the take is
+            worth sending; afterwards it belongs under "You said", because the
+            transcript and the audio it was made from are one claim and reading
+            them apart invites the student to dispute the wrong half. It is the
+            same component either way — only its place in the page changes. */}
+        {!result && (
+          <RecordingPlayback
+            url={recorder.blobUrl}
+            blob={recorder.blob}
+            durationMs={recorder.durationMs}
+            mimeType={recorder.mimeType}
+          />
+        )}
+
+        {/* Phase 4B — SUBMIT IS A SEPARATE, EXPLICIT ACT. Recording does not
+            upload; the student listens back first and decides. That ordering
+            is what makes "your voice is sent only when you ask" true rather
+            than a claim, and it is also simply how a person practises. */}
+        {recorder.state === 'RESULT' && recorder.blob && !result && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={submitting}
+              className="px-4 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold flex items-center gap-1.5 transition-opacity hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            >
+              {submitting && (
+                <Loader2 size={14} aria-hidden="true" className="motion-safe:animate-spin" />
+              )}
+              <span>
+                {submitting
+                  ? t.practice.shadowingSubmittingLabel
+                  : t.practice.shadowingSubmitAction}
+              </span>
+            </button>
+            {/* Stated at the moment of the decision, not buried in a footnote
+                the student read once on a different sentence. */}
+            <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+              {t.practice.shadowingUploadNote}
+            </p>
+          </div>
+        )}
+
+        {submitError && (
+          <div className="space-y-2" role="alert">
+            <p className="flex items-start gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+              <AlertCircle size={13} aria-hidden="true" className="mt-px shrink-0" />
+              <span>{submitError}</span>
+            </p>
+            {/* The recording is still in hand, so the recovery is one button
+                and NOT "record it again". Losing a good take to a network
+                blip would be the app's fault charged to the student. */}
+            <button
+              type="button"
+              onClick={() => void handleSubmit()}
+              disabled={submitting}
+              className="px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            >
+              {t.practice.shadowingRetryUpload}
+            </button>
+          </div>
+        )}
+
+        {result && (
+          <ShadowingResultPanel
+            result={result}
+            playback={
+              <RecordingPlayback
+                url={recorder.blobUrl}
+                blob={recorder.blob}
+                durationMs={recorder.durationMs}
+                mimeType={recorder.mimeType}
+              />
+            }
+            aiFeedback={
+              // KEYED ON THE ATTEMPT. A new take must not leave the previous
+              // take's coaching on screen — the component holds its own
+              // feedback state, and remounting is what clears it.
+              <AiPronunciationFeedback
+                key={attemptIdRef.current ?? 'none'}
+                segmentId={segment.id}
+                clientAttemptId={attemptIdRef.current}
+                audio={recorder.blob}
+              />
+            }
+          />
+        )}
 
         {!SPEECH_RECOGNITION_WHILE_RECORDING && (
           <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">

@@ -116,6 +116,25 @@ export interface ListeningProgressSummary {
   dictation: ListeningDictationSummary | null;
 }
 
+/**
+ * A recording's Shadowing standing, DERIVED server-side on every read — the
+ * Shadowing counterpart of ListeningDictationSummary. See
+ * ShadowingSegmentProgress for why Dictation and Shadowing were never given a
+ * shared progress shape.
+ */
+export interface ListeningShadowingSummary {
+  totalSegments: number;
+  completedSegments: number;
+  completed: boolean;
+  lastActivityAt: string | null;
+}
+
+export interface ListeningShadowingProgressSummary {
+  contentId: string;
+  /** Null when the recording does not enable SHADOWING at all. */
+  shadowing: ListeningShadowingSummary | null;
+}
+
 export interface SubmitDictationAttemptResult {
   accuracyPercent: number;
   wordsCorrect: number;
@@ -150,6 +169,71 @@ export interface ListeningContentDetail {
    * memory. Before Phase 4A there was nothing to rebuild from at all.
    */
   dictationProgress: ListeningDictationProgress | null;
+  /** Sprint 11 Phase 4B. Null when the recording does not enable SHADOWING. */
+  shadowingProgress: ShadowingSegmentProgress[] | null;
+}
+
+/* ── Shadowing (Phase 4B) ───────────────────────────────────────────────── */
+
+/**
+ * One sentence's shadowing standing.
+ *
+ * No `assisted`: speaking has no hint mechanism. The absence is the reason
+ * Dictation and Shadowing were not given a shared progress shape.
+ */
+export interface ShadowingSegmentProgress {
+  segmentId: string;
+  completedAt: string | null;
+  bestAccuracyPercent: number | null;
+  attemptCount: number;
+}
+
+/**
+ * One aligned word pair, produced ENTIRELY by the server.
+ *
+ * The client renders these and computes nothing from them. Deriving accuracy
+ * in the browser from tokens the browser was handed would put grading back on
+ * the client through the back door.
+ */
+export interface ShadowingAlignmentToken {
+  op: 'MATCH' | 'SUBSTITUTE' | 'INSERT' | 'DELETE';
+  reference: string | null;
+  spoken: string | null;
+  referenceIndex: number | null;
+}
+
+export interface SubmitShadowingAttemptResult {
+  /** Raw engine output. Shown as-is, because the normalized form is not what the student said. */
+  transcript: string;
+  normalizedTranscript: string;
+  alignment: ShadowingAlignmentToken[];
+  accuracyPercent: number;
+  wordsCorrect: number;
+  wordsTotal: number;
+  substitutions: number;
+  insertions: number;
+  deletions: number;
+  passed: boolean;
+  passThresholdPercent: number;
+  segment: ShadowingSegmentProgress;
+}
+
+/**
+ * Sprint 11 Phase 4C — AI pronunciation coaching for one attempt.
+ *
+ * NO NUMBER OF ANY KIND, and there is no field here for one. The attempt
+ * already carries an accuracy computed from the alignment; a second figure
+ * produced by a model that heard a single clip would be a fabricated
+ * measurement standing next to a real one.
+ *
+ * `cached` is not a performance detail — it is the honest answer to "why does
+ * it say exactly what it said last time".
+ */
+export interface ShadowingFeedbackResult {
+  feedback: string;
+  generatedAt: string;
+  model: string;
+  cached: boolean;
 }
 
 export interface ListeningCatalogResponse {
@@ -267,6 +351,93 @@ export const getListeningProgress = async (
   );
   if (!response.ok) {
     return throwApiError(response, 'Không tải được tiến độ bài nghe');
+  }
+  return response.json();
+};
+
+/**
+ * Batch Shadowing progress for a catalog page. Read-only, max 20 ids — the
+ * Shadowing counterpart of getListeningProgress, on its own route
+ * (`/listening/shadowing/progress`) because `/listening/progress` already
+ * belongs to Dictation.
+ */
+export const getListeningShadowingProgress = async (
+  contentIds: string[],
+): Promise<ListeningShadowingProgressSummary[]> => {
+  if (contentIds.length === 0) return [];
+  const response = await apiFetch(
+    `${API_BASE_URL}/listening/shadowing/progress?contentIds=${encodeURIComponent(contentIds.join(','))}`,
+  );
+  if (!response.ok) {
+    return throwApiError(response, 'Không tải được tiến độ luyện nhại');
+  }
+  return response.json();
+};
+
+/**
+ * Submit one spoken attempt: upload the recording, get back a verdict.
+ *
+ * `FormData`, and NO `Content-Type` header — the browser must set it itself so
+ * it can append the multipart boundary. Setting `multipart/form-data` by hand
+ * produces a body the server cannot parse, and the symptom is a bare 400 with
+ * nothing in it pointing at the header.
+ *
+ * The audio leaves the browser here and is not stored anywhere: the server
+ * transcribes it inside one request and discards it. That is the product
+ * decision this phase was approved on, and it is the only point in the app
+ * where a student's voice is transmitted at all.
+ */
+export const submitShadowingAttempt = async (
+  segmentId: string,
+  body: { clientAttemptId: string; audio: Blob; durationMs?: number },
+): Promise<SubmitShadowingAttemptResult> => {
+  const form = new FormData();
+  form.append('clientAttemptId', body.clientAttemptId);
+  if (body.durationMs !== undefined) {
+    form.append('durationMs', String(Math.round(body.durationMs)));
+  }
+  // A filename is required for the server to see this as a file part at all.
+  // The extension is cosmetic — the server reads the blob's MIME type.
+  form.append('audio', body.audio, 'attempt');
+
+  const response = await apiFetch(
+    `${API_BASE_URL}/listening/segments/${segmentId}/shadowing/attempts`,
+    { method: 'POST', body: form },
+  );
+  if (!response.ok) {
+    return throwApiError(response, 'Không chấm được bài nói');
+  }
+  return response.json();
+};
+
+/**
+ * Sprint 11 Phase 4C — ask for AI coaching on an attempt already graded.
+ *
+ * THE RECORDING IS SENT AGAIN, because nothing kept it. The server discarded
+ * the audio inside the submit request by design, so re-uploading is the honest
+ * cost of that decision — the alternative is a stored copy of the student's
+ * voice waiting in case they press a button, which is exactly what Shadowing
+ * refused to build.
+ *
+ * `clientAttemptId` is the SAME key the attempt was submitted under. That is
+ * what lets the server find the sentence and transcript in its own row, and
+ * what makes a second press return the first answer instead of paying for a
+ * second opinion that disagrees with it.
+ */
+export const requestShadowingFeedback = async (
+  segmentId: string,
+  body: { clientAttemptId: string; audio: Blob },
+): Promise<ShadowingFeedbackResult> => {
+  const form = new FormData();
+  form.append('clientAttemptId', body.clientAttemptId);
+  form.append('audio', body.audio, 'attempt');
+
+  const response = await apiFetch(
+    `${API_BASE_URL}/listening/segments/${segmentId}/shadowing/feedback`,
+    { method: 'POST', body: form },
+  );
+  if (!response.ok) {
+    return throwApiError(response, 'Không lấy được nhận xét của AI');
   }
   return response.json();
 };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
@@ -241,14 +241,21 @@ describe('Listening catalog — cards state only what is real', () => {
     expect(screen.queryByText(/min/)).not.toBeInTheDocument();
   });
 
-  it('advertises only the modes the recording actually enables', async () => {
+  it('shows this page’s mode on the card, not the other one', async () => {
+    // Sprint 11 — the catalog is now filtered server-side by `mode`, so a
+    // card is only ever shown on the page for a mode it enables; the footer
+    // states that ONE mode rather than listing every `supportedModes` entry
+    // (see ListeningCatalogPage's own header comment). "Shadowing" now
+    // legitimately appears elsewhere on the page too — in the sidebar nav
+    // item StudentLayout renders — so this scopes to the card itself rather
+    // than asserting on the whole document.
     mockedGetCatalog.mockResolvedValue(catalogResponse([CARD_B]) as never);
 
     renderCatalog();
-    await screen.findByText(CARD_B.title);
+    const card = await screen.findByRole('link', { name: /ponyo/i });
 
-    expect(screen.getByText('Dictation')).toBeInTheDocument();
-    expect(screen.queryByText('Shadowing')).not.toBeInTheDocument();
+    expect(within(card).getByText('Dictation')).toBeInTheDocument();
+    expect(within(card).queryByText('Shadowing')).not.toBeInTheDocument();
   });
 });
 

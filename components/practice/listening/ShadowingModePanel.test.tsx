@@ -7,6 +7,27 @@ import { ThemeProvider } from '../../../theme/ThemeProvider';
 import ShadowingModePanel from './ShadowingModePanel';
 import { PREFLIGHT_DURATION_MS } from './recording/useMicrophonePreflight';
 import {
+  submitShadowingAttempt,
+  requestShadowingFeedback,
+} from '../../../services/listeningService';
+import type { SubmitShadowingAttemptResult } from '../../../services/listeningService';
+import { ApiError, AuthExpiredError } from '../../../services/apiError';
+
+// Phase 4B — the network is mocked at the SERVICE boundary, not at `fetch`.
+// The panel's contract is "what did it send and what did it do with the
+// answer"; the multipart body itself is the service's contract and is covered
+// by the backend e2e, which exercises a real HTTP request end to end.
+vi.mock('../../../services/listeningService', async () => {
+  const actual = await vi.importActual<
+    typeof import('../../../services/listeningService')
+  >('../../../services/listeningService');
+  return {
+    ...actual,
+    submitShadowingAttempt: vi.fn(),
+    requestShadowingFeedback: vi.fn(),
+  };
+});
+import {
   installRecordingMocks,
   restoreRecordingMocks,
   FakeMediaRecorder,
@@ -121,6 +142,8 @@ const completeSetup = async () => {
 
 beforeEach(() => {
   currentIndex = 0;
+  (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockReset();
+  (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockReset();
   localStorage.clear();
   // The microphone preference is keyed per user, so the panel needs one.
   localStorage.setItem('user', JSON.stringify({ id: 'u-1', role: 'USER' }));
@@ -318,12 +341,20 @@ describe('ShadowingModePanel — transcript', () => {
     expect(screen.queryByText(/\bpassed\b/i)).not.toBeInTheDocument();
   });
 
-  it('tells the student their recording is not uploaded or saved', () => {
+  // Phase 4C corrected this sentence rather than deleting it. The Phase 3
+  // wording — "not uploaded, scored or saved to your account" — was true when
+  // it was written and became false in Phase 4B, which added the button that
+  // uploads and scores. A page that contradicts itself two clicks later is
+  // worse than one that says nothing.
+  it('says the recording stays local UNTIL the student chooses to send it', () => {
     renderPanel();
 
     expect(
-      screen.getByText(/not uploaded, scored or saved to your account/i),
+      screen.getByText(/stays in this browser until you choose to send it/i),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/not uploaded, scored or saved to your account/i),
+    ).not.toBeInTheDocument();
   });
 
   // Firefox used to be told its browser could not transcribe. That sentence is
@@ -709,5 +740,574 @@ describe('ShadowingModePanel — hardware that comes and goes', () => {
     view.unmount();
 
     expect(mocks.deviceChangeListenerCount()).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sprint 11 Phase 4B — submitting a spoken attempt.
+//
+// The browser recogniser is gone for good (Phase 3.1): it cannot be pinned to
+// the microphone the student chose and the preflight verified, so a transcript
+// from it is a transcript from an unknown input. Scoring now happens on the
+// server, over an uploaded blob that is transcribed and discarded.
+//
+// EVERY NUMBER RENDERED HERE CAME FROM THE SERVER. These tests assert that the
+// panel displays a verdict rather than computing one — the fixture below is
+// deliberately INTERNALLY INCONSISTENT (a "passed" verdict at 40%) so that a
+// component quietly re-deriving pass/fail from the accuracy would fail.
+// ---------------------------------------------------------------------------
+
+const VERDICT: SubmitShadowingAttemptResult = {
+  transcript: 'The otter wraps her baby',
+  normalizedTranscript: 'the otter wraps her baby',
+  alignment: [
+    { op: 'MATCH', reference: 'the', spoken: 'the', referenceIndex: 0 },
+    { op: 'SUBSTITUTE', reference: 'otter', spoken: 'water', referenceIndex: 1 },
+    { op: 'DELETE', reference: 'wraps', spoken: null, referenceIndex: 2 },
+    { op: 'INSERT', reference: null, spoken: 'um', referenceIndex: null },
+  ],
+  accuracyPercent: 40,
+  wordsCorrect: 1,
+  wordsTotal: 4,
+  substitutions: 1,
+  insertions: 1,
+  deletions: 1,
+  // Deliberately at odds with the accuracy above. A panel that recomputes this
+  // would show "Not quite yet" and fail the test that reads it.
+  passed: true,
+  passThresholdPercent: 70,
+  segment: {
+    segmentId: 'seg-1',
+    completedAt: '2026-08-06T00:00:00.000Z',
+    bestAccuracyPercent: 40,
+    attemptCount: 1,
+  },
+};
+
+const recordAndStop = async () => {
+  await completeSetup();
+  await clickAndFlush(/^record$/i);
+  await clickAndFlush(/stop/i);
+};
+
+describe('ShadowingModePanel — submitting for scoring', () => {
+  it('does not upload anything until the student asks', async () => {
+    renderPanel();
+
+    await recordAndStop();
+
+    expect(submitShadowingAttempt).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: /check my speaking/i }),
+    ).toBeInTheDocument();
+  });
+
+  // Said at the moment of the decision, not buried in a footnote the student
+  // read once on a different sentence.
+  it('says what happens to the recording next to the button that sends it', async () => {
+    renderPanel();
+
+    await recordAndStop();
+
+    expect(
+      screen.getByText(/sent for transcription and deleted immediately/i),
+    ).toBeInTheDocument();
+  });
+
+  it('uploads the recorded blob and the duration', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(submitShadowingAttempt).toHaveBeenCalledTimes(1);
+    const [segmentId, body] = (submitShadowingAttempt as ReturnType<typeof vi.fn>)
+      .mock.calls[0];
+    expect(segmentId).toBe('seg-1');
+    expect(body.audio).toBeInstanceOf(Blob);
+    expect(typeof body.clientAttemptId).toBe('string');
+    // No transcript and no score: the client cannot claim what it said.
+    expect(Object.keys(body).sort()).toEqual([
+      'audio',
+      'clientAttemptId',
+      'durationMs',
+    ]);
+  });
+
+  it('renders the server verdict rather than deriving one', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    // 40% with `passed: true` — only a panel that reads the flag says "Passed".
+    expect(screen.getByTestId('shadowing-result')).toBeInTheDocument();
+    expect(screen.getByText('Passed')).toBeInTheDocument();
+    // Exactly once, in the header pill. Phase 4C stopped repeating it beside
+    // the verdict: one number in two places is one number that can be read as
+    // two, and `getByText` failing on a duplicate is what pins that.
+    expect(screen.getByText('40%')).toBeInTheDocument();
+    expect(screen.getByText(/1\/4/)).toBeInTheDocument();
+  });
+
+  it('states the pass mark, so the score can be interpreted', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(screen.getByText(/Pass mark: 70%/)).toBeInTheDocument();
+  });
+
+  // The accuracy is a WORD-MATCH figure from a transcript. Presenting it as a
+  // pronunciation score would be a fabricated assessment.
+  it('says plainly that this is not a pronunciation score', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(
+      screen.getByText(/not a pronunciation score/i),
+    ).toBeInTheDocument();
+  });
+
+  it('shows the raw transcript, not the normalised one', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    // Showing "the otter wraps her baby" would present our own processing as
+    // the student's speech.
+    expect(screen.getByText('The otter wraps her baby')).toBeInTheDocument();
+  });
+});
+
+describe('ShadowingModePanel — the word-by-word comparison', () => {
+  beforeEach(() => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+  });
+
+  it('renders one token per alignment entry, from the server', async () => {
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    const comparison = screen.getByTestId('transcript-comparison');
+    expect(comparison.children).toHaveLength(VERDICT.alignment.length);
+  });
+
+  // COLOUR IS NEVER THE ONLY CARRIER. This is the surface where "which word
+  // did I get wrong?" is the entire question, and a red-and-green diff gives a
+  // student with deuteranopia nothing at all.
+  it('labels every token in words, not only in colour', async () => {
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    screen.getByTestId('transcript-comparison');
+    expect(screen.getByLabelText('the: Correct')).toBeInTheDocument();
+    expect(screen.getByLabelText('otter: Wrong word')).toBeInTheDocument();
+    expect(screen.getByLabelText('wraps: Missing')).toBeInTheDocument();
+    expect(screen.getByLabelText('um: Extra')).toBeInTheDocument();
+  });
+
+  it('shows what was said instead, for a wrong word', async () => {
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(screen.getByText('(water)')).toBeInTheDocument();
+  });
+});
+
+describe('ShadowingModePanel — submission failures each say their own thing', () => {
+  const failWith = (error: Error) => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+  };
+
+  it('tells the student to wait when the speech service is down', async () => {
+    failWith(new ApiError('down', 503));
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(
+      screen.getByText(/speech recognition is unavailable right now/i),
+    ).toBeInTheDocument();
+  });
+
+  it('tells the student to record again when the audio was unusable', async () => {
+    failWith(new ApiError('bad audio', 400));
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(
+      screen.getByText(/could not be processed. Please record again/i),
+    ).toBeInTheDocument();
+  });
+
+  it('tells the student to slow down when rate limited', async () => {
+    failWith(new ApiError('slow down', 429));
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(screen.getByText(/submitted a lot of attempts/i)).toBeInTheDocument();
+  });
+
+  it('names an expired session as an expired session', async () => {
+    failWith(new AuthExpiredError('expired'));
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(screen.getByText(/session expired/i)).toBeInTheDocument();
+  });
+
+  // Losing a good take to a network blip would be the app's fault charged to
+  // the student. The recording is still in hand, so the recovery is one button.
+  it('keeps the recording and offers a retry rather than making them speak again', async () => {
+    failWith(new ApiError('offline', 0));
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    expect(screen.getByTestId('recording-playback-audio')).toBeInTheDocument();
+  });
+
+  // A retry after a timeout must carry the SAME key, or the server pays for a
+  // second transcription and may return a verdict that disagrees with the one
+  // it already recorded.
+  it('retries under the same idempotency key', async () => {
+    failWith(new ApiError('offline', 0));
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    await clickAndFlush(/try again/i);
+
+    const calls = (submitShadowingAttempt as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1][1].clientAttemptId).toBe(calls[0][1].clientAttemptId);
+  });
+
+  // A NEW recording is a new attempt. Reusing the key would replay the old
+  // verdict and score the student on audio they discarded.
+  it('uses a fresh key for a fresh recording', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+    screen.getByTestId('shadowing-result');
+
+    await clickAndFlush(/record again/i);
+    await clickAndFlush(/^record$/i);
+    await clickAndFlush(/stop/i);
+    await clickAndFlush(/check my speaking/i);
+
+    const calls = (submitShadowingAttempt as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(2);
+    expect(calls[1][1].clientAttemptId).not.toBe(calls[0][1].clientAttemptId);
+  });
+
+  it('clears the previous verdict when a new recording starts', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+    expect(screen.getByTestId('shadowing-result')).toBeInTheDocument();
+
+    await clickAndFlush(/record again/i);
+
+    // A verdict left on screen would belong to audio that no longer exists.
+    expect(screen.queryByTestId('shadowing-result')).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sprint 11 Phase 4C — the redesigned workspace.
+//
+// The layout changed; what the panel is ALLOWED TO SAY did not. The tests that
+// matter here are the ones about absence: no accuracy before the server has
+// produced one, no second copy of a number, no control that promises something
+// there is no endpoint for.
+// ---------------------------------------------------------------------------
+
+describe('ShadowingModePanel — the status strip', () => {
+  it('numbers the sentence and counts its words', () => {
+    renderPanel();
+
+    expect(screen.getByText('#1')).toBeInTheDocument();
+    // "The otter wraps her baby in kelp." — seven words, counted from the text
+    // on screen. A count of what is rendered is not a score.
+    expect(screen.getByText('7 words')).toBeInTheDocument();
+  });
+
+  // THE ABSENCE IS THE POINT. A 0% next to a sentence nobody has attempted
+  // reads as a verdict, and this panel may not produce one.
+  it('shows no accuracy at all until the server has judged an attempt', async () => {
+    renderPanel();
+    await recordAndStop();
+
+    expect(screen.queryByText(/accuracy/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
+
+  it('shows the accuracy once, from the verdict', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(screen.getByText('Accuracy')).toBeInTheDocument();
+    expect(screen.getAllByText('40%')).toHaveLength(1);
+  });
+
+  it('saves a sentence for the session only, and says so', () => {
+    renderPanel();
+
+    const save = screen.getByRole('button', { name: /save sentence/i });
+    expect(save).toHaveAttribute(
+      'title',
+      expect.stringMatching(/this session only/i),
+    );
+
+    fireEvent.click(save);
+
+    expect(
+      screen.getByRole('button', { name: /saved for this session/i }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  // There is no report endpoint in either mode. A live-looking button that
+  // drops the report on the floor is worse than a grey one.
+  it('offers Report as an admitted not-yet rather than a dead click', () => {
+    renderPanel();
+
+    expect(screen.getByRole('button', { name: /report issue/i })).toBeDisabled();
+  });
+});
+
+describe('ShadowingModePanel — showing and hiding the sentence', () => {
+  it('shows the sentence and its IPA by default, but not the translation', () => {
+    renderPanel();
+
+    expect(screen.getByText(SEGMENTS[0].text)).toBeInTheDocument();
+    expect(screen.getByText('/ˈɒtə/')).toBeInTheDocument();
+    expect(screen.queryByText(SEGMENTS[0].translationVi)).not.toBeInTheDocument();
+  });
+
+  it('hides the sentence on request and brings it back', () => {
+    renderPanel();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sentence' }));
+    expect(screen.queryByText(SEGMENTS[0].text)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sentence' }));
+    expect(screen.getByText(SEGMENTS[0].text)).toBeInTheDocument();
+  });
+
+  it('reveals the translation on request', () => {
+    renderPanel();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Meaning' }));
+
+    expect(screen.getByText(SEGMENTS[0].translationVi)).toBeInTheDocument();
+  });
+
+  // A toggle that reveals nothing reads as broken rather than as empty.
+  it('offers no IPA toggle for a sentence that has no IPA', () => {
+    currentIndex = 1;
+    renderPanel();
+
+    expect(screen.getByText(SEGMENTS[1].text)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'IPA' })).not.toBeInTheDocument();
+  });
+});
+
+describe('ShadowingModePanel — the recording and its transcript stay together', () => {
+  it('moves the player under "You said" once a verdict exists, without duplicating it', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    const players = screen.getAllByTestId('recording-playback-audio');
+    expect(players).toHaveLength(1);
+    expect(screen.getByTestId('shadowing-result')).toContainElement(players[0]);
+    expect(screen.getByText('You said:')).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sprint 11 Phase 4C — AI pronunciation coaching.
+//
+// It is an OPTIONAL SECOND ACTION on an attempt that has already been graded,
+// and the tests below are mostly about what it must not do: appear before there
+// is anything to coach on, put a number on screen, or make a failure look like
+// the student's result is in doubt.
+// ---------------------------------------------------------------------------
+
+const FEEDBACK = {
+  feedback: 'Bạn nói rõ ràng. Chú ý âm cuối /p/ trong "kelp".',
+  generatedAt: '2026-08-06T00:00:00.000Z',
+  model: 'gemini-2.5-flash',
+  cached: false,
+};
+
+describe('ShadowingModePanel — AI pronunciation feedback', () => {
+  beforeEach(() => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
+  });
+
+  it('offers no coaching until there is a graded attempt to coach on', async () => {
+    renderPanel();
+    await recordAndStop();
+
+    expect(
+      screen.queryByRole('button', { name: /ask ai about my pronunciation/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('asks nothing of the server until the student presses the button', async () => {
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(requestShadowingFeedback).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: /ask ai about my pronunciation/i }),
+    ).toBeInTheDocument();
+  });
+
+  // Said at the moment of the decision, not after the upload has happened.
+  it('warns that the recording is sent again, next to the button that sends it', async () => {
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/check my speaking/i);
+
+    expect(screen.getByText(/sent again for this and deleted immediately/i))
+      .toBeInTheDocument();
+  });
+
+  // THE SAME KEY AS THE ATTEMPT. That is what lets the server find the sentence
+  // and the transcript in its own row, and what makes a second press free.
+  it('sends the recording under the attempt s own idempotency key', async () => {
+    (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+
+    await clickAndFlush(/ask ai about my pronunciation/i);
+
+    const submitCall = (submitShadowingAttempt as ReturnType<typeof vi.fn>).mock.calls[0];
+    const feedbackCall = (requestShadowingFeedback as ReturnType<typeof vi.fn>).mock
+      .calls[0];
+    expect(feedbackCall[0]).toBe('seg-1');
+    expect(feedbackCall[1].clientAttemptId).toBe(submitCall[1].clientAttemptId);
+    expect(feedbackCall[1].audio).toBeInstanceOf(Blob);
+    // No transcript, no sentence, no score: the client cannot put words in the
+    // coach's mouth.
+    expect(Object.keys(feedbackCall[1]).sort()).toEqual(['audio', 'clientAttemptId']);
+  });
+
+  it('renders the advice with what produced it stated underneath', async () => {
+    (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+
+    await clickAndFlush(/ask ai about my pronunciation/i);
+
+    expect(screen.getByTestId('ai-pronunciation-feedback')).toHaveTextContent(
+      'Chú ý âm cuối',
+    );
+    expect(screen.getByText(/they are advice, not a score/i)).toBeInTheDocument();
+  });
+
+  // >>> THE ONE THAT MATTERS. <<< The attempt has exactly one number and it came
+  // from the server's alignment. Coaching must not add a second.
+  it('puts no second number on the screen', async () => {
+    (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+
+    await clickAndFlush(/ask ai about my pronunciation/i);
+
+    expect(screen.getAllByText('40%')).toHaveLength(1);
+    expect(screen.getByTestId('ai-pronunciation-feedback').textContent).not.toMatch(
+      /\d+\s*%/,
+    );
+  });
+
+  // A feedback failure changes nothing about a result already earned, and the
+  // copy has to say so rather than leaving the student wondering.
+  it('says the result is unaffected when the coach is unavailable', async () => {
+    (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new ApiError('down', 503),
+    );
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+
+    await clickAndFlush(/ask ai about my pronunciation/i);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      /your result above is unaffected/i,
+    );
+    expect(screen.getByTestId('shadowing-result')).toBeInTheDocument();
+    expect(screen.getByText('Passed')).toBeInTheDocument();
+  });
+
+  it('names an expired session as an expired session here too', async () => {
+    (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new AuthExpiredError('expired'),
+    );
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+
+    await clickAndFlush(/ask ai about my pronunciation/i);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/session expired/i);
+  });
+
+  // Coaching belongs to the take it was written about. Leaving it on screen
+  // after a new recording would attribute advice to audio that no longer exists.
+  it('drops the advice when the student records again', async () => {
+    (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/check my speaking/i);
+    await clickAndFlush(/ask ai about my pronunciation/i);
+    expect(screen.getByTestId('ai-pronunciation-feedback')).toBeInTheDocument();
+
+    await clickAndFlush(/record again/i);
+
+    expect(
+      screen.queryByTestId('ai-pronunciation-feedback'),
+    ).not.toBeInTheDocument();
   });
 });
