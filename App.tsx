@@ -35,6 +35,7 @@ import PracticeHubPage from './components/practice/PracticeHubPage';
 import VocabPracticeSessionPage from './components/practice/vocab/VocabPracticeSessionPage';
 import ReviewSessionPage from './components/practice/review/ReviewSessionPage';
 import ListeningCatalogPage from './components/practice/listening/ListeningCatalogPage';
+import ShadowingCatalogPage from './components/practice/listening/ShadowingCatalogPage';
 import ListeningContentPage from './components/practice/listening/ListeningContentPage';
 import DictationModePanel from './components/practice/listening/DictationModePanel';
 import ShadowingModePanel from './components/practice/listening/ShadowingModePanel';
@@ -165,6 +166,12 @@ const App: React.FC = () => {
               not-found, never a redirect. Every path here survives a direct
               refresh — they are registered routes, not client-only state. */}
           <Route path="/practice/listening" element={<ListeningCatalogPage />} />
+          {/* Sprint 11 — the Shadowing sidebar's own entry point. Same
+              recordings and the same /practice/listening/:contentId/shadowing
+              destination as clicking through from the Listening catalog; only
+              the catalog's default mode filter and card status differ. See
+              ShadowingCatalogPage.tsx. */}
+          <Route path="/practice/shadowing" element={<ShadowingCatalogPage />} />
           <Route path="/practice/listening/:contentId" element={<ListeningContentPage />}>
             <Route index element={<></>} />
             <Route path="dictation" element={<DictationModePanel />} />
