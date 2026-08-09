@@ -86,6 +86,12 @@ describe('VocabPracticeSessionPage — canonical initial mode', () => {
       if (url.includes('/vocab/libraries/lib-1')) {
         return Promise.resolve(jsonResponse(200, MOCK_LIBRARY));
       }
+      // Guess-the-Word and Fill-in-the-Blank both lazily fetch per-word
+      // examples the same way Flashcard does — a shallow, example-less 200
+      // is enough for this file's mechanism-level checks.
+      if (url.includes('/vocab/words/')) {
+        return Promise.resolve(jsonResponse(200, { examples: [] }));
+      }
       return Promise.resolve(jsonResponse(404, { message: 'Not found' }));
     });
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -115,6 +121,24 @@ describe('VocabPracticeSessionPage — canonical initial mode', () => {
 
     const dictationTab = await screen.findByRole('tab', { name: /dictation/i });
     expect(dictationTab).toHaveAttribute('aria-selected', 'true');
+    const flashcardTab = screen.getByRole('tab', { name: /flashcards/i });
+    expect(flashcardTab).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('honors a valid ?mode=guess param (mechanism sanity check)', async () => {
+    renderSessionPage('/practice/vocab/deck-1?mode=guess');
+
+    const guessTab = await screen.findByRole('tab', { name: /guess the word/i });
+    expect(guessTab).toHaveAttribute('aria-selected', 'true');
+    const flashcardTab = screen.getByRole('tab', { name: /flashcards/i });
+    expect(flashcardTab).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('honors a valid ?mode=contextual param (mechanism sanity check)', async () => {
+    renderSessionPage('/practice/vocab/deck-1?mode=contextual');
+
+    const contextualTab = await screen.findByRole('tab', { name: /fill in the blank/i });
+    expect(contextualTab).toHaveAttribute('aria-selected', 'true');
     const flashcardTab = screen.getByRole('tab', { name: /flashcards/i });
     expect(flashcardTab).toHaveAttribute('aria-selected', 'false');
   });

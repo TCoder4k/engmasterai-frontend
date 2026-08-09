@@ -90,7 +90,7 @@ describe('Speed round timeout behavior (fake timers)', () => {
     expect(screen.getByText('Question 2/2')).toBeInTheDocument();
   });
 
-  it('a full-timeout session reaches the summary with zero score', () => {
+  it('a full-timeout Speed Round shows the go-to-Matching-Game interstitial without calling onComplete', () => {
     const onComplete = renderGames();
 
     // Two questions, each: 8s countdown then a 1.5s reveal window.
@@ -103,8 +103,63 @@ describe('Speed round timeout behavior (fake timers)', () => {
       vi.advanceTimersByTime(1500);
     });
 
-    expect(onComplete).toHaveBeenCalledTimes(1);
-    expect(onComplete).toHaveBeenCalledWith({ totalCards: 2, correctCount: 0 });
+    // Finishing Speed Round does not exit the mode — it offers Matching
+    // Game next, not "back to deck list".
+    expect(onComplete).not.toHaveBeenCalled();
+    expect(screen.getByText('Speed Round complete!')).toBeInTheDocument();
+    expect(screen.getByText('Score: 0/2 (0%)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Go to Matching Game' })).toBeInTheDocument();
+  });
+
+  it('clicking "Go to Matching Game" from the Speed Round interstitial switches games', () => {
+    renderGames();
+    advanceSeconds(8);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    advanceSeconds(8);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Matching Game' }));
+
+    expect(screen.getByRole('button', { name: 'alpha' })).toBeInTheDocument();
+  });
+
+  it('"Try again" from the Speed Round interstitial restarts a fresh round', () => {
+    renderGames();
+    advanceSeconds(8);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    advanceSeconds(8);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(screen.getByText('Question 1/2')).toBeInTheDocument();
+  });
+
+  it('re-entering the Speed Round tab after finishing it starts a fresh round, not the stale interstitial', () => {
+    renderGames();
+    advanceSeconds(8);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    advanceSeconds(8);
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+    expect(screen.getByText('Speed Round complete!')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^matching game$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^speed round$/i }));
+
+    expect(screen.getByText('Question 1/2')).toBeInTheDocument();
+    expect(screen.queryByText('Speed Round complete!')).not.toBeInTheDocument();
   });
 
   it('answering before timeout locks the question and advances after a short delay (no double advance)', () => {

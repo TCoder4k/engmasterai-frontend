@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layers, Headphones, Gamepad2, PenLine } from 'lucide-react';
+import { Layers, HelpCircle, Headphones, Gamepad2, PenLine } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { VocabPracticeMode } from './types';
 
@@ -8,18 +8,18 @@ interface ModeSelectorBarProps {
   onSelect: (mode: VocabPracticeMode) => void;
 }
 
-// Contextual (fill-in-the-blank) stays disabled — deferred to its own
-// checkpoint pending a small backend addition (word examples aren't on the
-// deck word list yet). Never a dead link: shown disabled with a "Soon" cue,
-// same convention as the sidebar/bottom-nav coming-soon items.
+// All five modes are live. `comingSoon` stays supported in the shape below
+// (never a dead link, shown disabled with a "Soon" cue) for whatever the
+// next one turns out to be — it just isn't set on any entry right now.
 const ModeSelectorBar: React.FC<ModeSelectorBarProps> = ({ activeMode, onSelect }) => {
   const { t } = useTranslation();
 
   const modes: { id: VocabPracticeMode; label: string; icon: React.ReactNode; comingSoon?: boolean }[] = [
     { id: 'flashcard', label: t.practice.modeFlashcards, icon: <Layers size={16} /> },
-    { id: 'dictation', label: t.practice.modeDictation, icon: <Headphones size={16} /> },
+    { id: 'guess', label: t.practice.modeGuess, icon: <HelpCircle size={16} /> },
     { id: 'games', label: t.practice.modeGames, icon: <Gamepad2 size={16} /> },
-    { id: 'contextual', label: t.practice.modeContextual, icon: <PenLine size={16} />, comingSoon: true },
+    { id: 'contextual', label: t.practice.modeContextual, icon: <PenLine size={16} /> },
+    { id: 'dictation', label: t.practice.modeDictation, icon: <Headphones size={16} /> },
   ];
 
   return (

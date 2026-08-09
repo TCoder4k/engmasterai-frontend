@@ -8,8 +8,10 @@ import { useStudyActivity } from '../../shared/StudyTimeBoundary';
 import ModeSelectorBar from '../ModeSelectorBar';
 import SessionHeader from './SessionHeader';
 import FlashcardSession from './FlashcardSession';
+import GuessWordSession from './GuessWordSession';
 import DictationSession from './DictationSession';
 import GamesSession from './GamesSession';
+import ContextualSession from './ContextualSession';
 import SessionSummary from '../SessionSummary';
 import { getPublishedDeck, getPublishedDeckWords } from '../../../services/vocabDeckService';
 import { getPublishedLibrary } from '../../../services/vocabLibraryService';
@@ -19,7 +21,7 @@ import { VocabDeck, VocabWordListItem } from '../../../types';
 import { VocabPracticeMode, SessionResult } from '../types';
 import { BookMarked } from 'lucide-react';
 
-const VALID_PRACTICE_MODES: VocabPracticeMode[] = ['flashcard', 'dictation', 'games', 'contextual'];
+const VALID_PRACTICE_MODES: VocabPracticeMode[] = ['flashcard', 'guess', 'dictation', 'games', 'contextual'];
 
 // /practice/vocab/:deckId — hosts the vocabulary practice modes against
 // real deck/word data. As of Sprint 04C, Flashcard's Again/Hard/Good/Easy
@@ -172,12 +174,14 @@ const VocabPracticeSessionPage: React.FC = () => {
           <SessionSummary result={result} onRestart={handleRestart} onExit={handleExit} />
         ) : mode === 'flashcard' ? (
           <FlashcardSession key={sessionKey} words={words} onComplete={handleComplete} />
+        ) : mode === 'guess' ? (
+          <GuessWordSession key={sessionKey} words={words} onComplete={handleComplete} />
         ) : mode === 'dictation' ? (
           <DictationSession key={sessionKey} words={words} onComplete={handleComplete} />
         ) : mode === 'games' ? (
           <GamesSession key={sessionKey} words={words} onComplete={handleComplete} />
         ) : (
-          <EmptyState message={t.practice.comingSoonMode} />
+          <ContextualSession key={sessionKey} words={words} onComplete={handleComplete} />
         )}
       </div>
     </StudentLayout>

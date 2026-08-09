@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Zap, Grid3x3, Clock } from 'lucide-react';
+import { Zap, Grid3x3, Clock, PartyPopper } from 'lucide-react';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { VocabWordListItem } from '../../../types';
 import { shuffleArray } from '../shuffle';
@@ -191,6 +191,51 @@ const SpeedRound: React.FC<{ words: VocabWordListItem[]; onComplete: (r: Session
   );
 };
 
+// Shown in place of SpeedRound once it finishes — deliberately NOT the
+// session-ending SessionSummary (that always exits to the deck list).
+// Finishing Speed Round should lead into the other game, not out of the
+// mode entirely; the outer onComplete only fires once Matching Game itself
+// finishes (see GamesSession below).
+const SpeedRoundComplete: React.FC<{ result: SessionResult; onRetry: () => void; onGoToMatching: () => void }> = ({
+  result,
+  onRetry,
+  onGoToMatching,
+}) => {
+  const { t } = useTranslation();
+  const percent = result.totalCards > 0 ? Math.round((result.correctCount / result.totalCards) * 100) : 0;
+
+  return (
+    <div className="practice-fade-in max-w-md mx-auto bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm p-8 text-center space-y-5">
+      <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-500 text-white flex items-center justify-center">
+        <PartyPopper size={26} aria-hidden="true" />
+      </div>
+      <div>
+        <p className="text-lg font-black text-slate-900 dark:text-slate-100">{t.practice.speedRoundCompleteTitle}</p>
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">
+          {t.practice.scoreLabel}: {result.correctCount}/{result.totalCards} ({percent}%)
+        </p>
+      </div>
+      <div className="flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
+          {t.common.tryAgain}
+        </button>
+        <button
+          type="button"
+          onClick={onGoToMatching}
+          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
+          <Grid3x3 size={16} aria-hidden="true" />
+          {t.practice.goToMatchingGame}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 interface MatchTile {
   key: string;
   wordId: string;
@@ -377,6 +422,12 @@ const MatchingGame: React.FC<{ words: VocabWordListItem[]; onComplete: (r: Sessi
 const GamesSession: React.FC<GamesSessionProps> = ({ words, onComplete }) => {
   const { t } = useTranslation();
   const [mode, setMode] = useState<GameMode>('speed');
+  // Speed Round's own completion is intercepted here rather than bubbling
+  // straight to the page-level onComplete — see SpeedRoundComplete's own
+  // comment for why. A counter (not a boolean) so "Try again" can force a
+  // fresh SpeedRound mount without changing `mode` itself.
+  const [speedRoundResult, setSpeedRoundResult] = useState<SessionResult | null>(null);
+  const [speedRoundAttempt, setSpeedRoundAttempt] = useState(0);
 
   const tabClass = (active: boolean) =>
     `flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
@@ -385,10 +436,27 @@ const GamesSession: React.FC<GamesSessionProps> = ({ words, onComplete }) => {
         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
     }`;
 
+  const openSpeedTab = () => {
+    setMode('speed');
+    // A stale completed round from a previous visit must not resurface —
+    // re-entering the tab always starts a fresh one.
+    setSpeedRoundResult(null);
+  };
+
+  const handleRetrySpeedRound = () => {
+    setSpeedRoundResult(null);
+    setSpeedRoundAttempt((a) => a + 1);
+  };
+
+  const handleGoToMatching = () => {
+    setSpeedRoundResult(null);
+    setMode('match');
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl max-w-xs mx-auto">
-        <button type="button" onClick={() => setMode('speed')} className={tabClass(mode === 'speed')}>
+        <button type="button" onClick={openSpeedTab} className={tabClass(mode === 'speed')}>
           <Zap size={16} aria-hidden="true" />
           <span>{t.practice.speedRound}</span>
         </button>
@@ -401,7 +469,15 @@ const GamesSession: React.FC<GamesSessionProps> = ({ words, onComplete }) => {
       {/* key= forces a full remount on mode switch, unmounting the other
           game and (via its cleanup effects) clearing its pending timers. */}
       {mode === 'speed' ? (
-        <SpeedRound key="speed" words={words} onComplete={onComplete} />
+        speedRoundResult ? (
+          <SpeedRoundComplete
+            result={speedRoundResult}
+            onRetry={handleRetrySpeedRound}
+            onGoToMatching={handleGoToMatching}
+          />
+        ) : (
+          <SpeedRound key={`speed-${speedRoundAttempt}`} words={words} onComplete={setSpeedRoundResult} />
+        )
       ) : (
         <MatchingGame key="match" words={words} onComplete={onComplete} />
       )}

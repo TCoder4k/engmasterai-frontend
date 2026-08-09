@@ -108,6 +108,32 @@ describe('FlashcardSession flip', () => {
     expect(getInner()).toHaveClass('practice-flip-card-flipped');
   });
 
+  it('flips via the Space shortcut even when nothing on the card has focus', async () => {
+    renderSession([word('w1', 'contract', 'hợp đồng')]);
+    // Nothing explicitly focused — the card's own hint chip promises Space
+    // works regardless, not just when the face button happens to be focused.
+    expect(document.activeElement).toBe(document.body);
+
+    await userEvent.keyboard(' ');
+    expect(getInner()).toHaveClass('practice-flip-card-flipped');
+
+    // Toggles back too, like a real card, not just front -> back once.
+    await userEvent.keyboard(' ');
+    expect(getInner()).not.toHaveClass('practice-flip-card-flipped');
+  });
+
+  it('ignores the Space shortcut while a text field elsewhere has focus', async () => {
+    renderSession([word('w1', 'contract', 'hợp đồng')]);
+    const strayInput = document.createElement('input');
+    document.body.appendChild(strayInput);
+    strayInput.focus();
+
+    await userEvent.keyboard(' ');
+
+    expect(getInner()).not.toHaveClass('practice-flip-card-flipped');
+    document.body.removeChild(strayInput);
+  });
+
   it('exactly one face is exposed to assistive tech at a time', async () => {
     renderSession([word('w1', 'contract', 'hợp đồng')]);
 

@@ -139,6 +139,25 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
     return playWordAudio(currentWord);
   }, [currentWord?.id]);
 
+  // The front face advertises "Space" as the flip shortcut (see the hint
+  // chip below), but neither face is reliably focused for the browser's
+  // native button-activation-on-Space to fire — a click can move focus
+  // elsewhere, and the very first render never focuses anything. A window
+  // listener makes the shortcut actually work regardless of focus, toggling
+  // either direction like a real card. Ignored while a text field elsewhere
+  // has focus so it never fights page scrolling/typing outside this mode.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return;
+      const active = document.activeElement as HTMLElement | null;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+      e.preventDefault();
+      setIsFlipped((prev) => !prev);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (!currentWord) return null;
 
   const handleRate = async (rating: ReviewRating) => {
