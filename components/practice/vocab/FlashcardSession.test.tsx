@@ -24,8 +24,17 @@ vi.mock('../../../services/learningService', async () => {
   return { ...actual, getWordProgress: vi.fn(), submitReview: vi.fn() };
 });
 
+// speakText/cancelSpeech mocked so the auto-play tests below can assert on
+// them directly; isTtsSupported keeps its real (jsdom: unsupported) behavior
+// via importActual, same partial-mock shape as learningService above.
+vi.mock('../../../services/tts', async () => {
+  const actual = await vi.importActual<typeof import('../../../services/tts')>('../../../services/tts');
+  return { ...actual, speakText: vi.fn(() => true), cancelSpeech: vi.fn() };
+});
+
 import { getWord } from '../../../services/vocabWordService';
 import { getWordProgress, submitReview } from '../../../services/learningService';
+import { speakText, cancelSpeech } from '../../../services/tts';
 
 beforeEach(() => {
   (getWord as ReturnType<typeof vi.fn>).mockResolvedValue({ examples: [] });
@@ -130,6 +139,50 @@ describe('FlashcardSession flip', () => {
 
     await waitFor(() => expect(onComplete).toHaveBeenCalledTimes(1));
     expect(onComplete).toHaveBeenCalledWith({ totalCards: 1, correctCount: 1 });
+  });
+});
+
+describe('FlashcardSession — auto-play on card change', () => {
+  it('speaks the very first card on mount, with no click required', () => {
+    renderSession([word('w1', 'contract', 'hợp đồng')]);
+
+    expect(speakText).toHaveBeenCalledWith('contract');
+  });
+
+  it('speaks the next card the moment a rating click advances to it', async () => {
+    // Session order is shuffled (useVocabSession), so don't assume which of
+    // the two words lands first — read it back from the DOM instead.
+    renderSession([word('w1', 'contract', 'hợp đồng'), word('w2', 'agreement', 'thỏa thuận')]);
+    const [firstText, secondText] = screen.queryAllByText('contract').length > 0
+      ? ['contract', 'agreement']
+      : ['agreement', 'contract'];
+    expect(speakText).toHaveBeenCalledWith(firstText);
+
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
+
+    await waitFor(() => expect(speakText).toHaveBeenCalledWith(secondText));
+    // The outgoing card's utterance is stopped rather than left to finish
+    // underneath the new one — the auto-play effect's cleanup fires before
+    // the next card's effect runs.
+    expect(cancelSpeech).toHaveBeenCalled();
+  });
+
+  it('plays real audio instead of TTS when the word has a recorded audioUrl', () => {
+    // Deliberately not restored within the test: this component's own
+    // cleanup calls .pause() on unmount, which React Testing Library's
+    // cleanup() only runs in the file's afterEach — AFTER this test body
+    // would have already restored the spy, defeating it. Left spied for the
+    // rest of the suite is harmless (jsdom's real play/pause are themselves
+    // unimplemented no-ops); vi.clearAllMocks() in afterEach still resets
+    // call counts between tests.
+    vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
+    const playSpy = window.HTMLMediaElement.prototype.play as ReturnType<typeof vi.fn>;
+    vi.spyOn(window.HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+
+    renderSession([{ ...word('w1', 'contract', 'hợp đồng'), audioUrl: 'https://example.com/contract.mp3' }]);
+
+    expect(playSpy).toHaveBeenCalled();
+    expect(speakText).not.toHaveBeenCalled();
   });
 });
 
