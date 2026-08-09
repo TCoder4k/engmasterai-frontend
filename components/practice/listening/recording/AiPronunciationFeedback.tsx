@@ -77,21 +77,21 @@ const AiPronunciationFeedback: React.FC<AiPronunciationFeedbackProps> = ({
   if (feedback) {
     return (
       <div
-        className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-500/40 space-y-2"
+        className="p-3 rounded-2xl bg-blue-50 dark:bg-[#0F172A] border border-blue-300 dark:border-[#00A3FF]/40 space-y-2"
         data-testid="ai-pronunciation-feedback"
       >
-        <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-blue-600 dark:text-blue-400">
+        <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-blue-700 dark:text-[#00A3FF]">
           <Sparkles size={13} aria-hidden="true" />
           {t.practice.shadowingAiFeedbackTitle}
         </p>
         {/* `whitespace-pre-line` because the model writes paragraphs and
             flattening them turns three pieces of advice into one wall. */}
-        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 whitespace-pre-line">
+        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 whitespace-pre-line">
           {feedback}
         </p>
         {/* Stated under the advice, every time. A student who reads coaching
             without knowing what produced it will treat it as an assessment. */}
-        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-500">
           {t.practice.shadowingAiFeedbackDisclaimer}
         </p>
       </div>
@@ -104,7 +104,7 @@ const AiPronunciationFeedback: React.FC<AiPronunciationFeedbackProps> = ({
         type="button"
         onClick={() => void handleRequest()}
         disabled={loading}
-        className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/40 text-blue-700 dark:text-blue-300 text-sm font-bold flex items-center justify-center gap-2 transition-colors hover:bg-blue-100 dark:hover:bg-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        className="w-full px-4 py-3 min-h-[44px] rounded-2xl bg-blue-50 dark:bg-[#00A3FF]/10 border border-blue-300 dark:border-[#00A3FF]/40 text-blue-700 dark:text-[#00A3FF] text-sm font-bold flex items-center justify-center gap-2 transition-colors hover:bg-blue-100 dark:hover:bg-[#00A3FF]/20 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
         {loading ? (
           <Loader2 size={16} aria-hidden="true" className="motion-safe:animate-spin" />
@@ -120,14 +120,14 @@ const AiPronunciationFeedback: React.FC<AiPronunciationFeedbackProps> = ({
 
       {/* Said at the moment of the decision — the recording goes up a second
           time, and a student should know that before they press, not after. */}
-      <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-500">
         {t.practice.shadowingAiFeedbackNote}
       </p>
 
       {error && (
         <p
           role="alert"
-          className="flex items-start gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-400"
+          className="flex items-start gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400"
         >
           <AlertCircle size={13} aria-hidden="true" className="mt-px shrink-0" />
           <span>{error}</span>

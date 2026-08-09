@@ -70,7 +70,7 @@ const RecordingWaveform: React.FC<RecordingWaveformProps> = ({
       className={`flex items-end justify-center gap-[3px] h-12 px-3 rounded-xl border transition-colors ${
         active
           ? 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/40'
-          : 'bg-slate-50 dark:bg-slate-800/60 border-slate-100 dark:border-slate-800'
+          : 'bg-slate-50 dark:bg-[#0F172A] border-slate-200 dark:border-slate-800'
       }`}
     >
       {Array.from({ length: BAR_COUNT }, (_, index) => (
@@ -80,9 +80,7 @@ const RecordingWaveform: React.FC<RecordingWaveformProps> = ({
             barsRef.current[index] = node;
           }}
           className={`w-[3px] rounded-full transition-[height] duration-150 ${
-            active
-              ? 'bg-rose-400 dark:bg-rose-400/80'
-              : 'bg-slate-200 dark:bg-slate-700'
+            active ? 'bg-rose-500 dark:bg-rose-400/80' : 'bg-slate-300 dark:bg-slate-700'
           }`}
           style={{ height: `${MIN_BAR_PERCENT}%` }}
         />

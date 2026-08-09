@@ -82,11 +82,13 @@ const RecordingStatusIndicator: React.FC<RecordingStatusIndicatorProps> = ({
   })();
 
   const tone = (() => {
-    if (recording) return 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/40';
-    if (state === 'RESULT') return 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/40';
+    if (recording)
+      return 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/40';
+    if (state === 'RESULT')
+      return 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/40';
     if (state === 'ERROR' || state === 'PERMISSION_DENIED' || state === 'UNSUPPORTED')
       return 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/40';
-    return 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
+    return 'text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#0F172A] border-slate-200 dark:border-slate-800';
   })();
 
   // Errors whose fix is a browser setting are rendered by
@@ -127,7 +129,7 @@ const RecordingStatusIndicator: React.FC<RecordingStatusIndicatorProps> = ({
       </p>
 
       {inlineError && (
-        <p className="flex items-start gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+        <p className="flex items-start gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
           <AlertCircle size={13} aria-hidden="true" className="mt-px shrink-0" />
           <span>{inlineError}</span>
         </p>
@@ -142,7 +144,7 @@ const RecordingStatusIndicator: React.FC<RecordingStatusIndicatorProps> = ({
         <p
           role="alert"
           aria-live="assertive"
-          className="flex items-start gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-400"
+          className="flex items-start gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400"
         >
           <AlertCircle size={13} aria-hidden="true" className="mt-px shrink-0" />
           <span>{t.practice.shadowingSilenceWarning}</span>
@@ -152,12 +154,12 @@ const RecordingStatusIndicator: React.FC<RecordingStatusIndicatorProps> = ({
       {/* Two different facts, deliberately worded apart: the browser never had
           speech recognition, versus it had it and it broke this time. */}
       {transcriptEnabled && !speechSupported && (
-        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-500">
           {t.practice.shadowingSpeechUnsupported}
         </p>
       )}
       {transcriptEnabled && speechSupported && recognitionFailed && (
-        <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+        <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400">
           {t.practice.shadowingRecognitionFailed}
         </p>
       )}

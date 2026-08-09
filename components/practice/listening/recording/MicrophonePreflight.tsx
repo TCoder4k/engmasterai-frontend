@@ -46,7 +46,7 @@ const MicrophonePreflight: React.FC<MicrophonePreflightProps> = ({
 
   const actionClass =
     'px-3.5 py-2.5 min-h-[44px] rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400';
-  const neutralAction = `${actionClass} bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700`;
+  const neutralAction = `${actionClass} bg-white dark:bg-[#0F172A] hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800`;
 
   if (state === 'CHECKING') {
     return (
@@ -70,7 +70,7 @@ const MicrophonePreflight: React.FC<MicrophonePreflightProps> = ({
         data-testid="microphone-preflight"
         role="status"
         aria-live="polite"
-        className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400"
+        className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400"
       >
         <CheckCircle2 size={13} aria-hidden="true" />
         <span>{t.practice.shadowingPreflightWorking}</span>
@@ -90,7 +90,7 @@ const MicrophonePreflight: React.FC<MicrophonePreflightProps> = ({
         role="alert"
         className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/40 space-y-2"
       >
-        <p className="flex items-start gap-1.5 text-[11px] font-bold text-amber-800 dark:text-amber-300">
+        <p className="flex items-start gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
           <AlertTriangle size={13} aria-hidden="true" className="mt-px shrink-0" />
           <span>{headline}</span>
         </p>
@@ -98,7 +98,7 @@ const MicrophonePreflight: React.FC<MicrophonePreflightProps> = ({
         {/* Ordered by how often each one is the answer, not by how technical
             it sounds. The virtual-device case is third because it is the one a
             student will never guess and the one that shipped this phase. */}
-        <ul className="pl-4 space-y-0.5 list-disc text-[11px] font-semibold text-amber-800/90 dark:text-amber-300/90">
+        <ul className="pl-4 space-y-0.5 list-disc text-[11px] font-semibold text-amber-700/90 dark:text-amber-300/90">
           <li>{t.practice.shadowingPreflightHintSpeak}</li>
           <li>{t.practice.shadowingPreflightHintMute}</li>
           <li>{t.practice.shadowingPreflightHintOtherDevice}</li>
@@ -126,7 +126,7 @@ const MicrophonePreflight: React.FC<MicrophonePreflightProps> = ({
   return (
     <div className="space-y-2" data-testid="microphone-preflight">
       {!measurable && (
-        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-500">
           {t.practice.shadowingPreflightUnavailable}
         </p>
       )}

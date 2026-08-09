@@ -98,7 +98,7 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
           onClick: undefined,
           busy: true,
           inlineTone: 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
-          circleTone: 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
+          circleTone: 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400',
         };
       case 'RESULT':
       case 'ERROR':
@@ -110,18 +110,18 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
           onClick: onRetry,
           busy: false,
           inlineTone: null,
-          circleTone: 'bg-blue-600 text-white',
+          circleTone: 'bg-blue-500 dark:bg-[#00A3FF] text-white',
         };
       default:
         return {
           verb: t.practice.shadowingRecordAction,
           hint: t.practice.shadowingRecordHint,
           icon: <Mic size={14} aria-hidden="true" />,
-          circleIcon: <Mic size={22} aria-hidden="true" />,
+          circleIcon: <Mic size={26} aria-hidden="true" />,
           onClick: onStart,
           busy: false,
           inlineTone: 'bg-gradient-to-r from-rose-500 to-red-500 text-white hover:opacity-90',
-          circleTone: 'bg-gradient-to-br from-rose-500 to-red-500 text-white',
+          circleTone: 'bg-blue-500 dark:bg-[#00A3FF] text-white shadow-lg shadow-blue-500/30 dark:shadow-[#00A3FF]/30',
         };
     }
   })();
@@ -141,28 +141,28 @@ const RecordingControls: React.FC<RecordingControlsProps> = ({
         // name would announce "Record again Record your pronunciation again" —
         // and would break every caller that looks the button up by its verb.
         aria-describedby={action.hint ? hintId : undefined}
-        className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed ${
+        className={`w-full flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border-2 text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed ${
           isDisabled
-            ? 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40'
-            : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800'
+            ? 'border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-[#0B132B]/60'
+            : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-[#0B132B] hover:border-slate-200 dark:hover:border-slate-700'
         }`}
       >
         <span
-          className={`w-14 h-14 shrink-0 rounded-full flex items-center justify-center ${action.circleTone} ${
+          className={`w-16 h-16 shrink-0 rounded-full flex items-center justify-center ${action.circleTone} ${
             state === 'RECORDING' ? 'motion-safe:animate-pulse' : ''
           }`}
         >
           {action.circleIcon}
         </span>
         <span className="min-w-0">
-          <span className="block text-base font-bold text-slate-900 dark:text-slate-100">
+          <span className="block text-base font-extrabold text-slate-900 dark:text-white">
             {action.verb}
           </span>
           {action.hint && (
             <span
               id={hintId}
               aria-hidden="true"
-              className="block text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5"
+              className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5"
             >
               {action.hint}
             </span>

@@ -33,9 +33,7 @@ const ShadowingReferenceCard: React.FC<ShadowingReferenceCardProps> = ({
   const { t } = useTranslation();
   const [showSentence, setShowSentence] = useState(true);
   const [showIpa, setShowIpa] = useState(true);
-  // Hidden by default: the exercise is to say the English, and a translation
-  // sitting under it is the first thing the eye goes to.
-  const [showTranslation, setShowTranslation] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(true);
 
   const toggle = (
     label: string,
@@ -49,8 +47,8 @@ const ShadowingReferenceCard: React.FC<ShadowingReferenceCardProps> = ({
       title={`${visible ? t.practice.shadowingHideAction : t.practice.shadowingShowAction} — ${label}`}
       className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
         visible
-          ? 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-          : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400'
+          ? 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          : 'text-slate-400 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400'
       }`}
     >
       {/* The icon shows the CURRENT state, not the action — an eye with a line
@@ -67,7 +65,7 @@ const ShadowingReferenceCard: React.FC<ShadowingReferenceCardProps> = ({
   );
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-2">
+    <div className="bg-slate-50 dark:bg-[#0B132B] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-2">
       <div className="flex flex-wrap items-center justify-end gap-1">
         {toggle(t.practice.shadowingToggleSentence, showSentence, setShowSentence)}
         {segment.ipa && toggle(t.practice.shadowingToggleIpa, showIpa, setShowIpa)}
@@ -75,12 +73,12 @@ const ShadowingReferenceCard: React.FC<ShadowingReferenceCardProps> = ({
           toggle(t.practice.shadowingToggleTranslation, showTranslation, setShowTranslation)}
       </div>
 
-      <p className="text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+      <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-500">
         {t.practice.shadowingReferenceTitle}
       </p>
 
       {showSentence ? (
-        <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-slate-100 leading-snug">
+        <p className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white leading-snug">
           {segment.text}
         </p>
       ) : (
@@ -95,7 +93,7 @@ const ShadowingReferenceCard: React.FC<ShadowingReferenceCardProps> = ({
       )}
 
       {segment.ipa && showIpa && (
-        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 border-l-2 border-slate-200 dark:border-slate-700 pl-3">
+        <p className="text-sm font-semibold text-blue-600 dark:text-[#00A3FF] border-l-2 border-slate-300 dark:border-slate-700 pl-3">
           /{segment.ipa}/
         </p>
       )}
@@ -110,9 +108,9 @@ const ShadowingReferenceCard: React.FC<ShadowingReferenceCardProps> = ({
         type="button"
         onClick={onListen}
         disabled={!listenEnabled}
-        className="mt-1 px-3.5 py-2.5 min-h-[44px] rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        className="mt-1 px-3.5 py-2.5 min-h-[44px] rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
       >
-        <Volume2 size={14} aria-hidden="true" />
+        <Volume2 size={14} aria-hidden="true" className="text-blue-600 dark:text-[#00A3FF]" />
         <span>{t.practice.shadowingListenAction}</span>
       </button>
     </div>

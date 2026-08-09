@@ -762,13 +762,11 @@ const en = {
     shadowingPreflightChooseAnother: "Choose another microphone",
     shadowingPreflightUnavailable:
       "This browser cannot test the microphone in advance. Recording still works, and a silent recording will be reported.",
-    shadowingPreflightRequired: "Test the microphone before recording.",
     shadowingErrorSilentCapture:
       "The microphone recorded silence. Check that it is not muted, that the right input device is selected, and that no other tab or app is holding it.",
     shadowingSilenceWarning: "No sound is reaching the microphone.",
     shadowingTranscriptDisabled:
       "Live speech recognition is off while recording: on some browsers it takes over the microphone and the recording comes out silent. Recording and playback are unaffected.",
-    shadowingSubmitAction: "Check my speaking",
     shadowingSubmittingLabel: "Checking your speaking…",
     shadowingComparisonTitle: "Word by word",
     shadowingTokenCorrect: "Correct",
@@ -781,8 +779,6 @@ const en = {
     shadowingPassThreshold: "Pass mark",
     shadowingAccuracyDisclaimer:
       "This compares the WORDS that were recognised. It is not a pronunciation score and says nothing about your accent.",
-    shadowingUploadNote:
-      "Your recording is sent for transcription and deleted immediately afterwards. It is never stored.",
     shadowingErrorUploadFailed:
       "Your recording could not be sent. Check your connection and try again.",
     shadowingErrorProviderUnavailable:
@@ -794,13 +790,13 @@ const en = {
     shadowingErrorSessionExpired: "Your session expired. Please sign in again.",
     shadowingRetryUpload: "Try again",
     shadowingNextSegment: "Next sentence",
-    // Phase 4C corrected this sentence. It used to read "It is not uploaded,
-    // scored or saved to your account" — written in Phase 3, when that was
-    // true, and left standing through Phase 4B, which added the button that
-    // uploads and scores. A promise the page itself breaks two clicks later is
-    // worse than no promise.
+    // Phase 3.2 corrected this sentence again. Phase 4C's wording — "stays in
+    // this browser until you choose to send it" — was true when Submit was a
+    // separate click, and became false the moment Stop began sending it
+    // automatically. Same discipline as the correction it replaces: a promise
+    // the page itself breaks a moment later is worse than no promise.
     shadowingLocalOnlyNote:
-      "Your recording stays in this browser until you choose to send it for checking.",
+      "Your recording is sent for scoring as soon as you stop, then deleted immediately afterward. It is never stored.",
     shadowingMaxDurationNote: "Recording stops automatically after 30 seconds.",
 
     // Sprint 11 Phase 4C — the redesigned Shadowing workspace.
@@ -812,10 +808,12 @@ const en = {
     // Sub-labels under the round record button. They are `aria-hidden` and
     // reached through `aria-describedby`, so the button's accessible NAME stays
     // the verb alone — "Record", not "Record Read the sentence above aloud".
-    shadowingRecordHint: "Read the sentence above aloud",
+    shadowingRecordHint: "Up to 30 seconds",
     shadowingStopHint: "Tap when you have finished speaking",
     shadowingRetryHint: "Record your pronunciation again",
     shadowingYouSaidTitle: "You said:",
+    shadowingListenRepeatTitle: "Listen and repeat the sentence above",
+    shadowingListenRepeatReplayAction: "Restart",
     // Sprint 11 Phase 4C — AI feedback. Every string here is deliberately
     // hedged: the model listens to one clip with no reference recording of the
     // student's own voice, so what it produces is coaching, not measurement.
@@ -1469,8 +1467,8 @@ const vi: TranslationDict = {
     // Giữ nguyên tiếng Anh "Dictation"/"Shadowing" — đây là tên chế độ luyện
     // tập, dùng thống nhất trên toggle danh mục, footer thẻ bài và tab luyện
     // tập. "Nói nhại" dễ gây hiểu nhầm với "phát âm" (pronunciation).
-    listeningModeDictation: "Bài Đang Luyện (Dictation)",
-    listeningModeShadowing: "Studio Shadowing",
+    listeningModeDictation: "Luyện nghe",
+    listeningModeShadowing: "Shadowing",
     listeningModeTablist: "Chế độ luyện tập",
     listeningSourceLabel: "Nguồn",
     listeningPagination: "Trang danh mục",
@@ -1555,13 +1553,11 @@ const vi: TranslationDict = {
     shadowingPreflightChooseAnother: "Chọn micro khác",
     shadowingPreflightUnavailable:
       "Trình duyệt này không kiểm tra trước được micro. Việc ghi âm vẫn hoạt động, và bản ghi im lặng sẽ được báo lỗi.",
-    shadowingPreflightRequired: "Hãy kiểm tra micro trước khi ghi âm.",
     shadowingErrorSilentCapture:
       "Micro chỉ ghi được sự im lặng. Hãy kiểm tra micro có đang bị tắt tiếng không, đã chọn đúng thiết bị đầu vào chưa, và không có tab hay ứng dụng nào khác đang giữ micro.",
     shadowingSilenceWarning: "Không có âm thanh nào vào micro.",
     shadowingTranscriptDisabled:
       "Nhận dạng giọng nói trực tiếp đang tắt trong lúc ghi âm: trên một số trình duyệt, nó chiếm micro và làm bản ghi không có tiếng. Ghi âm và nghe lại không bị ảnh hưởng.",
-    shadowingSubmitAction: "Chấm bài nói",
     shadowingSubmittingLabel: "Đang chấm bài nói…",
     shadowingComparisonTitle: "Đối chiếu từng từ",
     shadowingTokenCorrect: "Đúng",
@@ -1574,8 +1570,6 @@ const vi: TranslationDict = {
     shadowingPassThreshold: "Mức đạt",
     shadowingAccuracyDisclaimer:
       "Đây là kết quả đối chiếu CÁC TỪ được nhận dạng. Đây không phải điểm phát âm và không đánh giá giọng của bạn.",
-    shadowingUploadNote:
-      "Bản ghi âm được gửi đi để chuyển thành văn bản và bị xóa ngay sau đó. Nội dung này không được lưu trữ.",
     shadowingErrorUploadFailed:
       "Không gửi được bản ghi âm. Hãy kiểm tra kết nối rồi thử lại.",
     shadowingErrorProviderUnavailable:
@@ -1589,7 +1583,7 @@ const vi: TranslationDict = {
     shadowingRetryUpload: "Thử lại",
     shadowingNextSegment: "Câu tiếp theo",
     shadowingLocalOnlyNote:
-      "Bản ghi âm chỉ nằm trong trình duyệt của bạn cho tới khi bạn chủ động gửi đi chấm.",
+      "Bản ghi âm sẽ được gửi đi chấm điểm ngay khi bạn dừng ghi, và bị xóa ngay sau đó. Bản ghi không được lưu trữ.",
     shadowingMaxDurationNote: "Quá trình ghi âm tự dừng sau 30 giây.",
 
     shadowingToggleSentence: "Câu mẫu",
@@ -1597,13 +1591,15 @@ const vi: TranslationDict = {
     shadowingToggleTranslation: "Dịch nghĩa",
     shadowingShowAction: "Hiện",
     shadowingHideAction: "Ẩn",
-    shadowingRecordHint: "Đọc to câu ở trên",
+    shadowingRecordHint: "Tối đa 30 giây",
     shadowingStopHint: "Bấm khi bạn đã nói xong",
     shadowingRetryHint: "Ghi âm lại phát âm",
     shadowingYouSaidTitle: "Bạn đã nói:",
-    shadowingAiFeedbackAction: "Nhờ AI nhận xét phát âm",
+    shadowingListenRepeatTitle: "Nghe và lặp lại câu trên",
+    shadowingListenRepeatReplayAction: "Nghe lại từ đầu",
+    shadowingAiFeedbackAction: "Nhận xét AI",
     shadowingAiFeedbackLoading: "AI đang nghe bản ghi của bạn…",
-    shadowingAiFeedbackTitle: "AI nhận xét",
+    shadowingAiFeedbackTitle: "Nhận xét AI",
     shadowingAiFeedbackDisclaimer:
       "Đây là gợi ý của AI khi nghe riêng bản ghi này. Nó là lời khuyên, không phải điểm số, và không làm thay đổi kết quả ở trên.",
     shadowingAiFeedbackNote:

@@ -3,6 +3,7 @@ import {
   classifyMicrophoneError,
   createSpeechRecognition,
   detectRecordingSupport,
+  probeGrantedMicrophonePermission,
   requestMicrophoneStream,
   stopStream,
   unsupportedReason,
@@ -170,6 +171,43 @@ describe('stopStream', () => {
 
   it('tolerates a missing stream', () => {
     expect(() => stopStream(null)).not.toThrow();
+  });
+});
+
+describe('probeGrantedMicrophonePermission', () => {
+  // The whole point: this must answer the question without ever asking for
+  // it. A prompt here would defeat the reason the probe exists.
+  it('never calls getUserMedia', async () => {
+    const mocks = installRecordingMocks({ alreadyGranted: true });
+
+    await probeGrantedMicrophonePermission();
+
+    expect(mocks.getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it('resolves true when a device already has a label', async () => {
+    installRecordingMocks({ alreadyGranted: true });
+
+    await expect(probeGrantedMicrophonePermission()).resolves.toBe(true);
+  });
+
+  it('resolves false on a fresh install where no permission has ever been granted', async () => {
+    installRecordingMocks();
+
+    await expect(probeGrantedMicrophonePermission()).resolves.toBe(false);
+  });
+
+  it('resolves false where enumerateDevices does not exist', async () => {
+    installRecordingMocks({ withoutDeviceSelection: true });
+
+    await expect(probeGrantedMicrophonePermission()).resolves.toBe(false);
+  });
+
+  it('resolves false rather than throwing when enumerateDevices rejects', async () => {
+    const mocks = installRecordingMocks({ alreadyGranted: true });
+    mocks.enumerateDevices.mockRejectedValueOnce(new Error('blocked by policy'));
+
+    await expect(probeGrantedMicrophonePermission()).resolves.toBe(false);
   });
 });
 

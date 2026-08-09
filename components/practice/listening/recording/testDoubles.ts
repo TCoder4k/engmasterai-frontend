@@ -330,6 +330,12 @@ interface InstallOptions {
   withoutDeviceSelection?: boolean;
   /** Start from a specific device list instead of DEFAULT_FAKE_DEVICES. */
   devices?: unknown[];
+  /**
+   * Seed as if this origin already holds permission from an earlier visit —
+   * `enumerateDevices` returns real labels from the very first call, with no
+   * prior `getUserMedia`. Default false, matching a fresh browser profile.
+   */
+  alreadyGranted?: boolean;
 }
 
 /**
@@ -347,14 +353,30 @@ export const installRecordingMocks = (
   FakeSpeechRecognition.reset();
   FakeAudioContext.reset();
 
-  const getUserMedia = vi.fn(() =>
-    options.denyWith
-      ? Promise.reject(new DOMException('denied', options.denyWith))
-      : Promise.resolve(stream),
-  );
+  // Mirrors the real platform rule `describeDevice`/`enumerateAudioInputs`
+  // depend on: `enumerateDevices` returns blank labels until permission has
+  // actually been granted, and a resolved `getUserMedia` IS that grant. A
+  // fixture that always returns full labels — regardless of whether
+  // `getUserMedia` was ever called — cannot exercise the silent mount-time
+  // probe at all, which is exactly what it needs to prove.
+  let permissionGranted = options.alreadyGranted ?? false;
+
+  const getUserMedia = vi.fn(() => {
+    if (options.denyWith) {
+      return Promise.reject(new DOMException('denied', options.denyWith));
+    }
+    permissionGranted = true;
+    return Promise.resolve(stream);
+  });
 
   let devices = options.devices ?? DEFAULT_FAKE_DEVICES;
-  const enumerateDevices = vi.fn(() => Promise.resolve(devices));
+  const enumerateDevices = vi.fn(() =>
+    Promise.resolve(
+      permissionGranted
+        ? devices
+        : devices.map((device) => ({ ...(device as Record<string, unknown>), label: '' })),
+    ),
+  );
   const deviceChangeListeners = new Set<() => void>();
 
   Object.defineProperty(window, 'isSecureContext', {
