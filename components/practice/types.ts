@@ -3,7 +3,7 @@
 // persisted rating/review types will be authored separately to mirror the
 // backend DTOs exactly, per the migration plan's Decisions log.
 
-export type VocabPracticeMode = 'flashcard' | 'dictation' | 'games' | 'contextual';
+export type VocabPracticeMode = 'flashcard' | 'guess' | 'dictation' | 'games' | 'contextual';
 
 // A session's outcome, held in memory only for the lifetime of the page —
 // never persisted, never labeled as anything other than "this session."
