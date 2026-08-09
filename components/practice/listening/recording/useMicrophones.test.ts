@@ -42,15 +42,26 @@ describe('useMicrophones — permission', () => {
   // Device LABELS are empty until permission is granted, so a chooser built on
   // mount would be a list of "Microphone 2". Prompting on load also asks before
   // the student has done anything that needs a microphone.
+  //
+  // `enumerateDevices` IS called on mount now (Phase 3.2's silent probe) — it
+  // cannot raise a prompt or open a stream, so that guarantee stays intact.
+  // The one that must never change is `getUserMedia`.
   it('asks for nothing until it is told to', () => {
     const { result } = renderHook(() => useMicrophones('user-1'));
 
     expect(result.current.access).toBe('UNKNOWN');
     expect(mocks.getUserMedia).not.toHaveBeenCalled();
-    expect(mocks.enumerateDevices).not.toHaveBeenCalled();
   });
 
   it('prompts, then enumerates, in that order', async () => {
+    const { result } = renderHook(() => useMicrophones('user-1'));
+    // Let the silent mount-time probe settle first — permission is not
+    // granted in this fixture, so it resolves to a no-op, but it does call
+    // `enumerateDevices` once and this test is about a different sequence.
+    await act(async () => {
+      await flush();
+    });
+
     const order: string[] = [];
     mocks.getUserMedia.mockImplementation(() => {
       order.push('getUserMedia');
@@ -60,7 +71,6 @@ describe('useMicrophones — permission', () => {
       order.push('enumerateDevices');
       return Promise.resolve([]);
     });
-    const { result } = renderHook(() => useMicrophones('user-1'));
 
     await grant(result);
 
@@ -87,6 +97,82 @@ describe('useMicrophones — permission', () => {
     expect(result.current.access).toBe('BLOCKED');
     expect(result.current.errorKind).toBe('PERMISSION_DENIED');
     expect(result.current.devices).toHaveLength(0);
+  });
+});
+
+describe('useMicrophones — silent mount detection', () => {
+  it('reaches READY with the remembered device selected, with no click and no getUserMedia call, when permission is already granted', async () => {
+    writePreferredMicrophone('user-1', 'realtek-1');
+    restoreRecordingMocks();
+    mocks = installRecordingMocks({ alreadyGranted: true });
+
+    const { result } = renderHook(() => useMicrophones('user-1'));
+    await act(async () => {
+      await flush();
+    });
+
+    expect(result.current.access).toBe('READY');
+    expect(result.current.autoInitialized).toBe(true);
+    expect(result.current.detecting).toBe(false);
+    expect(result.current.selected?.deviceId).toBe('realtek-1');
+    expect(mocks.getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the OS default when nothing was remembered but permission is already granted', async () => {
+    restoreRecordingMocks();
+    mocks = installRecordingMocks({ alreadyGranted: true });
+
+    const { result } = renderHook(() => useMicrophones('user-1'));
+    await act(async () => {
+      await flush();
+    });
+
+    expect(result.current.access).toBe('READY');
+    expect(result.current.selected?.isSystemDefault).toBe(true);
+  });
+
+  it('flags a remembered device that has vanished, even when reached silently', async () => {
+    writePreferredMicrophone('user-1', 'usb-gone');
+    restoreRecordingMocks();
+    mocks = installRecordingMocks({ alreadyGranted: true });
+
+    const { result } = renderHook(() => useMicrophones('user-1'));
+    await act(async () => {
+      await flush();
+    });
+
+    expect(result.current.access).toBe('READY');
+    expect(result.current.autoInitialized).toBe(true);
+    expect(result.current.preferenceWasStale).toBe(true);
+    expect(result.current.selected).toBeNull();
+  });
+
+  it('does nothing automatically when permission has not been granted yet', async () => {
+    const { result } = renderHook(() => useMicrophones('user-1'));
+    await act(async () => {
+      await flush();
+    });
+
+    expect(result.current.access).toBe('UNKNOWN');
+    expect(result.current.autoInitialized).toBe(false);
+    expect(result.current.detecting).toBe(false);
+    expect(mocks.getUserMedia).not.toHaveBeenCalled();
+    // The probe itself is the intentional behaviour change — it is what makes
+    // the granted path possible — and it cannot raise a prompt on its own.
+    expect(mocks.enumerateDevices).toHaveBeenCalled();
+  });
+
+  it('still reaches READY through the ordinary button flow after a silent no-op', async () => {
+    const { result } = renderHook(() => useMicrophones('user-1'));
+    await act(async () => {
+      await flush();
+    });
+    expect(result.current.access).toBe('UNKNOWN');
+
+    await grant(result);
+
+    expect(result.current.access).toBe('READY');
+    expect(result.current.autoInitialized).toBe(false);
   });
 });
 

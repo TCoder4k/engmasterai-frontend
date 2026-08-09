@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, AlertTriangle, X, Plus } from 'lucide-react';
+import { Check, X, Plus } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/useTranslation';
 import type { ShadowingAlignmentToken } from '../../../../services/listeningService';
 
@@ -40,34 +40,52 @@ const TranscriptComparison: React.FC<TranscriptComparisonProps> = ({ tokens }) =
     }
   };
 
+  // Sprint 11 Phase 4C dark redesign — pale, high-contrast chips deliberately
+  // NOT dark-on-dark: this is the surface where "which word did I get wrong?"
+  // is the entire question, and a wash of colour needs to read at a glance
+  // against the card behind it. The badge is a small circle overlapping the
+  // chip's corner rather than an inline icon, which is what makes room for
+  // a per-chip verdict AND the word itself without crowding a five-letter chip.
+  //
+  // Sprint 11 Phase 3.4 — three colours, not four: correct is green, wrong is
+  // red, and MISSING/EXTRA share one grey rather than each getting its own
+  // hue. Amber is gone entirely — a fourth colour for "wrong" was one more
+  // distinction a student had to learn without one more thing to say. Missing
+  // and extra still read apart from each other without colour (strike-through
+  // + X vs. a dashed border + plus), which is the whole point of never making
+  // colour the only carrier.
   const chipStyle = (op: ShadowingAlignmentToken['op']) => {
     switch (op) {
       case 'MATCH':
         return {
-          className:
-            'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-500/60 text-emerald-700 dark:text-emerald-300',
-          icon: <Check size={13} aria-hidden="true" className="shrink-0" />,
+          className: 'bg-emerald-50 border-emerald-300 text-emerald-900',
+          badgeClassName: 'bg-emerald-500 text-white',
+          badgeIcon: <Check size={11} aria-hidden="true" strokeWidth={3} />,
           strike: false,
         };
       case 'SUBSTITUTE':
         return {
-          className:
-            'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-500/60 text-amber-700 dark:text-amber-300',
-          icon: <AlertTriangle size={13} aria-hidden="true" className="shrink-0" />,
+          className: 'bg-rose-50 border-rose-300 text-rose-900',
+          badgeClassName: 'bg-rose-500 text-white',
+          badgeIcon: (
+            <span aria-hidden="true" className="text-[10px] font-black leading-none">
+              ~
+            </span>
+          ),
           strike: false,
         };
       case 'DELETE':
         return {
-          className:
-            'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-500/60 text-rose-700 dark:text-rose-300',
-          icon: <X size={13} aria-hidden="true" className="shrink-0" />,
+          className: 'bg-slate-100 border-slate-300 text-slate-600',
+          badgeClassName: 'bg-slate-500 text-white',
+          badgeIcon: <X size={11} aria-hidden="true" strokeWidth={3} />,
           strike: true,
         };
       case 'INSERT':
         return {
-          className:
-            'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 border-dashed',
-          icon: <Plus size={13} aria-hidden="true" className="shrink-0" />,
+          className: 'bg-slate-100 border-slate-300 border-dashed text-slate-600',
+          badgeClassName: 'bg-slate-500 text-white',
+          badgeIcon: <Plus size={11} aria-hidden="true" strokeWidth={3} />,
           strike: false,
         };
     }
@@ -75,12 +93,12 @@ const TranscriptComparison: React.FC<TranscriptComparisonProps> = ({ tokens }) =
 
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+      <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-500">
         {t.practice.shadowingComparisonTitle}
       </p>
 
       <div
-        className="flex flex-wrap items-center gap-2"
+        className="flex flex-wrap items-center gap-3"
         data-testid="transcript-comparison"
       >
         {tokens.map((token, index) => {
@@ -96,7 +114,7 @@ const TranscriptComparison: React.FC<TranscriptComparisonProps> = ({ tokens }) =
               key={index}
               aria-label={label}
               title={label}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-bold ${style.className}`}
+              className={`relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-sm font-bold ${style.className}`}
             >
               <span className={style.strike ? 'line-through' : undefined}>{word}</span>
               {/* What they said instead, inline. Shown only for a substitution:
@@ -107,7 +125,12 @@ const TranscriptComparison: React.FC<TranscriptComparisonProps> = ({ tokens }) =
                   ({token.spoken})
                 </span>
               )}
-              {style.icon}
+              <span
+                aria-hidden="true"
+                className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-[#0B132B] ${style.badgeClassName}`}
+              >
+                {style.badgeIcon}
+              </span>
             </span>
           );
         })}
@@ -115,20 +138,20 @@ const TranscriptComparison: React.FC<TranscriptComparisonProps> = ({ tokens }) =
 
       {/* A key, because four visual treatments are not self-explanatory and a
           student should not have to hover to learn them. */}
-      <p className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-        <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+      <p className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-semibold text-slate-500 dark:text-slate-500">
+        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
           <Check size={11} aria-hidden="true" />
           {t.practice.shadowingTokenCorrect}
         </span>
-        <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
-          <AlertTriangle size={11} aria-hidden="true" />
+        <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400">
+          <span aria-hidden="true" className="font-black">~</span>
           {t.practice.shadowingTokenWrong}
         </span>
-        <span className="inline-flex items-center gap-1 text-rose-700 dark:text-rose-400">
+        <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400">
           <X size={11} aria-hidden="true" />
           {t.practice.shadowingTokenMissing}
         </span>
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400">
           <Plus size={11} aria-hidden="true" />
           {t.practice.shadowingTokenExtra}
         </span>

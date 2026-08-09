@@ -2,6 +2,7 @@ import React from 'react';
 import { CheckCircle2, AlertCircle, BarChart3 } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/useTranslation';
 import TranscriptComparison from './TranscriptComparison';
+import ShadowingScoreRing from './ShadowingScoreRing';
 import type { SubmitShadowingAttemptResult } from '../../../../services/listeningService';
 
 // Sprint 11 Phase 4B — the verdict on one spoken attempt.
@@ -55,8 +56,8 @@ const ShadowingResultPanel: React.FC<ShadowingResultPanelProps> = ({
           aria-live="polite"
           className={`inline-flex items-center gap-1.5 text-xs font-black ${
             result.passed
-              ? 'text-emerald-800 dark:text-emerald-300'
-              : 'text-amber-800 dark:text-amber-300'
+              ? 'text-emerald-700 dark:text-emerald-300'
+              : 'text-amber-700 dark:text-amber-300'
           }`}
         >
           {result.passed ? (
@@ -71,33 +72,28 @@ const ShadowingResultPanel: React.FC<ShadowingResultPanelProps> = ({
           </span>
         </span>
 
-        {/* THE ACCURACY FIGURE IS NOT REPEATED HERE. Phase 4C put it in the
-            header pill, and one number in two places is one number that can be
-            read as two — a student comparing them is being asked to check the
-            app's arithmetic. The verdict and the bar it was judged against are
-            what this row is for.
-
-            The bar the student was measured against, stated rather than implied.
-            A score with no visible threshold is a number they cannot interpret. */}
+        {/* The bar the student was measured against, stated rather than
+            implied. A score with no visible threshold is a number they cannot
+            interpret. */}
         <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
           {t.practice.shadowingPassThreshold}: {result.passThresholdPercent}%
         </span>
       </div>
 
       <p className="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-200">
-        <BarChart3 size={15} aria-hidden="true" className="text-slate-400" />
+        <BarChart3 size={15} aria-hidden="true" className="text-slate-500 dark:text-slate-500" />
         <span className="tabular-nums">
           {result.wordsCorrect}/{result.wordsTotal} {t.practice.shadowingWordsMatched}
         </span>
       </p>
 
-      <div className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 space-y-2">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+      <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 space-y-2">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-500">
           {t.practice.shadowingYouSaidTitle}
         </p>
         {/* The RAW transcript, not the normalized one. Showing "dont" for
             "don't" would present our own processing as the student's speech. */}
-        <p className="text-sm sm:text-base font-semibold italic text-slate-800 dark:text-slate-200 min-h-[1.25rem]">
+        <p className="text-sm sm:text-base font-semibold italic text-slate-700 dark:text-slate-200 min-h-[1.25rem]">
           {result.transcript ? (
             // The quote marks are their own decorative elements so the
             // transcript stays one exact, addressable string — punctuation the
@@ -108,7 +104,7 @@ const ShadowingResultPanel: React.FC<ShadowingResultPanelProps> = ({
               <span aria-hidden="true">”</span>
             </>
           ) : (
-            <span className="not-italic font-medium text-slate-400 dark:text-slate-500">
+            <span className="not-italic font-medium text-slate-500 dark:text-slate-500">
               {t.practice.shadowingTranscriptEmpty}
             </span>
           )}
@@ -116,9 +112,23 @@ const ShadowingResultPanel: React.FC<ShadowingResultPanelProps> = ({
         {playback}
       </div>
 
-      <TranscriptComparison tokens={result.alignment} />
+      {/* THE ACCURACY FIGURE RENDERS EXACTLY ONCE, IN THIS RING. It used to be
+          a pill in `ShadowingHeaderBar`; Phase 4C's dark redesign moved it
+          here, beside the word-by-word comparison it explains, and it is not
+          also repeated in the header — one number in two places is one number
+          that can be read as two. */}
+      <div className="flex items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <TranscriptComparison tokens={result.alignment} />
+        </div>
+        <ShadowingScoreRing
+          percent={result.accuracyPercent}
+          passed={result.passed}
+          label={t.practice.listeningAccuracyLabel}
+        />
+      </div>
 
-      <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-500">
         {t.practice.shadowingAccuracyDisclaimer}
       </p>
 

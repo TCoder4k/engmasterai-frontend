@@ -248,6 +248,35 @@ export const describeDevice = (
  * this question with amplitude, which is the only evidence that transfers
  * across machines the developer has never seen.
  */
+/**
+ * Does this origin already hold microphone permission — checked WITHOUT
+ * opening a stream and WITHOUT ever being able to raise a prompt.
+ *
+ * `enumerateDevices` is safe to call at any time, from any context, with no
+ * user gesture: it is the one capture-related call in this module the spec
+ * guarantees never surfaces a permission UI. What it returns differs by
+ * permission state — every `audioinput` label is the empty string until this
+ * origin has been granted access (see `describeDevice` above). A non-empty
+ * label is therefore proof, not a guess, that permission already exists —
+ * from an earlier visit's click, a synced browser profile, or a persistent
+ * grant set up outside this app entirely.
+ */
+export const probeGrantedMicrophonePermission = async (): Promise<boolean> => {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
+    return false;
+  }
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.some(
+      (device) => device.kind === 'audioinput' && Boolean(device.label?.trim()),
+    );
+  } catch {
+    // Same posture as enumerateAudioInputs: a rejection degrades to "treat as
+    // not yet granted", which is the safe direction to be wrong in.
+    return false;
+  }
+};
+
 export const enumerateAudioInputs = async (): Promise<AudioInputDevice[]> => {
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.enumerateDevices) {
     return [];

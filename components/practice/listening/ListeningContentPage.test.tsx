@@ -410,6 +410,30 @@ describe('Dictation completion — every sentence, not just the last one', () =>
     expect(screen.getByText('Question 2/2')).toBeInTheDocument();
     expect(screen.queryByText('Listening Complete')).not.toBeInTheDocument();
   });
+
+  // Sprint 11 Phase 3.4 — Next used to only select the next sentence; it now
+  // plays it too, the same gesture as clicking a row in the sentence list.
+  it('Next plays the sentence it lands on, not only selects it', async () => {
+    mockedGetContent.mockResolvedValue(baseContent as never);
+    serverSolves();
+
+    renderAt(`/practice/listening/${CONTENT_ID}/dictation`);
+    await screen.findByPlaceholderText('Type what you hear');
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Play' })).not.toBeDisabled(),
+    );
+    ytPlayer.seekTo.mockClear();
+    ytPlayer.playVideo.mockClear();
+
+    await solveCurrent('hi there');
+    fireEvent.click(screen.getByRole('button', { name: 'Next >' }));
+
+    expect(screen.getByText('Question 2/2')).toBeInTheDocument();
+    // Sentence 2 starts at 3000ms — the same seek+play a manual row click
+    // would trigger, now fired automatically by Next.
+    await waitFor(() => expect(ytPlayer.seekTo).toHaveBeenCalledWith(3, true));
+    expect(ytPlayer.playVideo).toHaveBeenCalled();
+  });
 });
 
 describe('ListeningContentPage — media providers', () => {

@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
 import ShadowingModePanel from './ShadowingModePanel';
 import { PREFLIGHT_DURATION_MS } from './recording/useMicrophonePreflight';
+import { SILENCE_VERDICT_AFTER_MS } from './recording/useRecorder';
 import {
   submitShadowingAttempt,
   requestShadowingFeedback,
@@ -73,32 +74,60 @@ const SEGMENTS = [
 let currentIndex = 0;
 let mocks: RecordingMocks;
 
-const Host: React.FC = () => (
-  <Outlet
-    context={{
-      content: {
-        id: 'c1',
-        title: 'Otter Moms',
-        level: 'B1',
-        category: { id: 'k', name: 'Animals', nameVi: 'Động vật', orderIndex: 0 },
-        supportedModes: ['SHADOWING'],
-        segments: SEGMENTS,
-      },
-      currentIndex,
-      goToSegment: vi.fn(),
-      isPlaying: false,
-      togglePlay: vi.fn(),
-      replaySegment,
-      pauseMedia,
-      mediaAvailable: true,
-      solvedSegmentIds: new Set<string>(),
-      setSolvedSegmentIds: vi.fn(),
-      assistedSegmentIds: new Set<string>(),
-      setAssistedSegmentIds: vi.fn(),
-      setStudyActive: vi.fn(),
-    }}
-  />
-);
+// Stateful, not a plain object literal — Next/completion tests need
+// `goToSegmentAndPlay` to actually move `currentIndex` and
+// `shadowingCompletedSegmentIds` to actually accumulate, the same way the
+// real ListeningContentPage does. The `currentIndex` module variable is kept
+// as the external override existing tests already use (set it, then
+// `view.rerender(...)`) — the ref-compare below adopts it into local state
+// on the next render without disturbing Next-driven internal changes, which
+// never touch the module variable.
+const Host: React.FC = () => {
+  const [index, setIndex] = useState(currentIndex);
+  const [shadowingCompletedSegmentIds, setShadowingCompletedSegmentIds] = useState<
+    Set<string>
+  >(new Set());
+  const lastExternalIndexRef = useRef(currentIndex);
+  if (lastExternalIndexRef.current !== currentIndex) {
+    lastExternalIndexRef.current = currentIndex;
+    setIndex(currentIndex);
+  }
+
+  return (
+    <Outlet
+      context={{
+        content: {
+          id: 'c1',
+          title: 'Otter Moms',
+          level: 'B1',
+          category: { id: 'k', name: 'Animals', nameVi: 'Động vật', orderIndex: 0 },
+          supportedModes: ['SHADOWING'],
+          segments: SEGMENTS,
+        },
+        currentIndex: index,
+        goToSegment: (next: number) => setIndex(next),
+        goToSegmentAndPlay: (next: number) => setIndex(next),
+        isPlaying: false,
+        togglePlay: vi.fn(),
+        replaySegment,
+        pauseMedia,
+        mediaAvailable: true,
+        loop: false,
+        setLoop: vi.fn(),
+        playbackRate: 1,
+        availableRates: [0.5, 0.75, 1, 1.25, 1.5],
+        setPlaybackRate: vi.fn(),
+        solvedSegmentIds: new Set<string>(),
+        setSolvedSegmentIds: vi.fn(),
+        assistedSegmentIds: new Set<string>(),
+        setAssistedSegmentIds: vi.fn(),
+        shadowingCompletedSegmentIds,
+        setShadowingCompletedSegmentIds,
+        setStudyActive: vi.fn(),
+      }}
+    />
+  );
+};
 
 const renderPanel = () =>
   render(
@@ -120,22 +149,43 @@ const flush = async () => {
 };
 
 const clickAndFlush = async (name: RegExp) => {
+  // Flushed BEFORE the click too, not only after: Phase 3.2's silent mount
+  // probe means the button a test is about to look for may not exist in the
+  // very first synchronous render — `renderPanel()` does not itself wait for
+  // it. The flush and the DOM query are in SEPARATE `act()` calls on purpose:
+  // a `setState` that lands from a floating promise (this probe is exactly
+  // that — started on mount, resolved on its own schedule) is only guaranteed
+  // committed once the `act()` callback that let it resolve has itself
+  // returned. Querying `getByRole` from inside that same still-open callback
+  // read a DOM that had not caught up yet, even though the state had already
+  // changed — this is what broke every test through the setup step until it
+  // was split like this.
   await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name }));
+    await flush();
+  });
+  fireEvent.click(screen.getByRole('button', { name }));
+  await act(async () => {
     await flush();
   });
 };
 
-// Phase 3.1 put two steps in front of the Record button, and they are the
-// point of the phase: grant permission (which is what unlocks device names),
-// then prove the chosen microphone can actually be heard. Every test that
-// records now goes through them, which is itself the guarantee that a student
-// cannot skip them either.
+// Phase 3.1 put a permission step in front of the Record button — grant
+// access, which is what unlocks device names. Phase 3.2 removed the second
+// step: proving the chosen microphone can actually be heard now happens
+// automatically inside the Record press itself (see `pressRecord` below),
+// not as a separate click a student — or a test — has to make first.
 const completeSetup = async () => {
   await clickAndFlush(/set up microphone/i);
-  await clickAndFlush(/^test microphone$/i);
+};
+
+// Presses Record. Sprint 11 Phase 3.3 removed the blocking signal check from
+// this path entirely — recording starts on the same click, with nothing in
+// front of it. A test that wants the OPTIONAL, secondary "Test microphone"
+// check drives that button and `vi.advanceTimersByTime` directly instead of
+// reaching for this.
+const pressRecord = async () => {
   await act(async () => {
-    vi.advanceTimersByTime(PREFLIGHT_DURATION_MS + 100);
+    fireEvent.click(screen.getByRole('button', { name: /^record$/i }));
     await flush();
   });
 };
@@ -197,14 +247,13 @@ describe('ShadowingModePanel — record, stop, replay, retry', () => {
     renderPanel();
 
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
-    // Three opens, one per step, and each is closed before the next: the
-    // permission probe that unlocks device names, the preflight, and the
-    // recording itself. They are separate on purpose — holding the first two
-    // open would keep the OS microphone indicator lit while the student is
-    // still reading a list of device names.
-    expect(mocks.getUserMedia).toHaveBeenCalledTimes(3);
+    // Two opens: the permission probe that unlocks device names, then the
+    // recording itself. Phase 3.3 removed the blocking signal check that used
+    // to sit between them — there is no third stream opened and closed before
+    // Record is allowed to actually record.
+    expect(mocks.getUserMedia).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('button', { name: /stop/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^record$/i })).not.toBeInTheDocument();
     expect(screen.getAllByText('Recording').length).toBeGreaterThan(0);
@@ -216,7 +265,7 @@ describe('ShadowingModePanel — record, stop, replay, retry', () => {
     renderPanel();
 
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     expect(pauseMedia).toHaveBeenCalledTimes(1);
   });
@@ -224,7 +273,7 @@ describe('ShadowingModePanel — record, stop, replay, retry', () => {
   it('offers playback of the recording after Stop', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     await clickAndFlush(/stop/i);
 
@@ -239,7 +288,7 @@ describe('ShadowingModePanel — record, stop, replay, retry', () => {
   it('replays the recording from the beginning, not from where it was left', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     await clickAndFlush(/stop/i);
 
     const audio = screen.getByTestId('recording-playback-audio') as HTMLAudioElement;
@@ -257,7 +306,7 @@ describe('ShadowingModePanel — record, stop, replay, retry', () => {
   it('discards the recording on Record again and returns to Ready', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     await clickAndFlush(/stop/i);
 
     await clickAndFlush(/record again/i);
@@ -276,7 +325,7 @@ describe('ShadowingModePanel — transcript', () => {
   it('explains that live transcription is off instead of showing a panel that stays empty', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     expect(screen.queryByText('What the browser heard')).not.toBeInTheDocument();
     expect(
@@ -290,10 +339,12 @@ describe('ShadowingModePanel — transcript', () => {
   it('warns during the recording when no sound is reaching the microphone', async () => {
     renderPanel();
     await completeSetup();
-    // Silence only AFTER the preflight has passed, so this is the recorder's
-    // own live warning rather than the preflight's verdict leaking through.
+    await pressRecord();
+    // Silence only AFTER the preflight has passed AND recording has begun,
+    // so this is the recorder's own live warning rather than the preflight's
+    // verdict leaking through (pressRecord's own check ran against a normal
+    // signal, same as every other test's default fixture).
     FakeAudioContext.sampleAmplitude = 0;
-    await clickAndFlush(/^record$/i);
     await act(async () => {
       vi.advanceTimersByTime(2_000);
       await flush();
@@ -307,7 +358,7 @@ describe('ShadowingModePanel — transcript', () => {
   it('shows no such warning when the microphone is delivering audio', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     await act(async () => {
       vi.advanceTimersByTime(2_000);
       await flush();
@@ -320,7 +371,7 @@ describe('ShadowingModePanel — transcript', () => {
     renderPanel();
 
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     expect(FakeSpeechRecognition.instances).toHaveLength(0);
   });
@@ -332,7 +383,7 @@ describe('ShadowingModePanel — transcript', () => {
   it('renders no accuracy, no score and no pass verdict', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     await clickAndFlush(/stop/i);
 
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
@@ -341,19 +392,17 @@ describe('ShadowingModePanel — transcript', () => {
     expect(screen.queryByText(/\bpassed\b/i)).not.toBeInTheDocument();
   });
 
-  // Phase 4C corrected this sentence rather than deleting it. The Phase 3
-  // wording — "not uploaded, scored or saved to your account" — was true when
-  // it was written and became false in Phase 4B, which added the button that
-  // uploads and scores. A page that contradicts itself two clicks later is
-  // worse than one that says nothing.
-  it('says the recording stays local UNTIL the student chooses to send it', () => {
+  // Phase 3.2 corrected this sentence again — see the dedicated test in
+  // "submitting for scoring" for the current wording. What stays true across
+  // every rewrite is that neither retired claim is still on screen.
+  it('does not repeat either retired privacy claim', () => {
     renderPanel();
 
     expect(
-      screen.getByText(/stays in this browser until you choose to send it/i),
-    ).toBeInTheDocument();
-    expect(
       screen.queryByText(/not uploaded, scored or saved to your account/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/stays in this browser until you choose to send it/i),
     ).not.toBeInTheDocument();
   });
 
@@ -439,7 +488,7 @@ describe('ShadowingModePanel — failures each say their own thing', () => {
   it('reports a withdrawn permission distinctly from a refused one', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     await act(async () => {
       mocks.track.onended?.();
@@ -454,7 +503,7 @@ describe('ShadowingModePanel — cleanup', () => {
   it('releases the microphone when the student navigates away', async () => {
     const view = renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     view.unmount();
 
@@ -465,7 +514,7 @@ describe('ShadowingModePanel — cleanup', () => {
   it('revokes the recording URL when the student navigates away', async () => {
     const view = renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     await clickAndFlush(/stop/i);
 
     view.unmount();
@@ -478,7 +527,7 @@ describe('ShadowingModePanel — cleanup', () => {
   it('discards the recording when the student moves to another sentence', async () => {
     const view = renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     await clickAndFlush(/stop/i);
     expect(screen.getByTestId('recording-playback-audio')).toBeInTheDocument();
 
@@ -520,11 +569,20 @@ describe('ShadowingModePanel — cleanup', () => {
 // ---------------------------------------------------------------------------
 
 describe('ShadowingModePanel — microphone setup', () => {
-  it('asks for no permission until the student asks for it', () => {
+  // `enumerateDevices` IS called on mount now (the silent Phase 3.2 probe) —
+  // it cannot raise a prompt or open a stream, so that guarantee is unchanged.
+  // The one that must never be called before a click is `getUserMedia`.
+  it('asks for no permission until the student asks for it', async () => {
     renderPanel();
 
+    // The button itself only appears once the silent mount probe (Phase 3.2)
+    // has settled — permission is not granted in this fixture, so it settles
+    // to a no-op almost immediately, but that still takes a tick.
+    await act(async () => {
+      await flush();
+    });
+
     expect(mocks.getUserMedia).not.toHaveBeenCalled();
-    expect(mocks.enumerateDevices).not.toHaveBeenCalled();
     expect(
       screen.getByRole('button', { name: /set up microphone/i }),
     ).toBeInTheDocument();
@@ -562,15 +620,19 @@ describe('ShadowingModePanel — microphone setup', () => {
     ).toBe(true);
   });
 
+  // Sprint 11 Phase 3.3 — the compact mic row dropped the separate "Using: X"
+  // line; the picker itself now shows the selected device, which is why a
+  // wrong one is still visible without a second line of text to maintain.
   it('names the microphone in use, so a wrong one is visible', async () => {
     renderPanel();
 
     await clickAndFlush(/set up microphone/i);
 
-    expect(screen.getByText(/^Using:/)).toBeInTheDocument();
-    expect(
-      screen.getByText('Voice Changer Virtual Audio Device (WDM)'),
-    ).toBeInTheDocument();
+    const select = screen.getByLabelText('Microphone') as HTMLSelectElement;
+    expect(select.value).toBe('default');
+    expect(select.options[select.selectedIndex].textContent).toContain(
+      'Voice Changer Virtual Audio Device (WDM)',
+    );
   });
 
   it('never renders a raw deviceId', async () => {
@@ -588,12 +650,7 @@ describe('ShadowingModePanel — microphone setup', () => {
     fireEvent.change(screen.getByLabelText('Microphone'), {
       target: { value: 'realtek-1' },
     });
-    await clickAndFlush(/^test microphone$/i);
-    await act(async () => {
-      vi.advanceTimersByTime(PREFLIGHT_DURATION_MS + 100);
-      await flush();
-    });
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     expect(mocks.getUserMedia).toHaveBeenLastCalledWith({
       audio: expect.objectContaining({ deviceId: { exact: 'realtek-1' } }),
@@ -614,77 +671,147 @@ describe('ShadowingModePanel — microphone setup', () => {
   });
 });
 
-describe('ShadowingModePanel — the preflight', () => {
-  it('refuses to record until the microphone has proved it can be heard', async () => {
+// ---------------------------------------------------------------------------
+// Sprint 11 Phase 3.3 — mic safety moved OFF the blocking Record path.
+//
+// Real-browser QA on Phase 3.2's design found Record waiting out a fixed
+// 2.5s "Đang nghe…" check on every press — unacceptable. The signal check is
+// no longer a precondition of anything: Record starts capture on the same
+// click, every time. What used to be automatic and blocking is now a small,
+// OPTIONAL, clearly secondary "Test microphone" action the student may use
+// before pressing Record, and the primary safety net for a genuinely silent
+// device becomes the live in-recording warning plus the existing hard
+// rejection of a fully-silent take at Stop (`finalize()`'s SILENT_CAPTURE
+// guard, unchanged, covered above in "warns during the recording…").
+// ---------------------------------------------------------------------------
+
+describe('ShadowingModePanel — Record never waits on a signal check', () => {
+  it('is reachable as soon as a microphone is resolved, before anything has been measured', async () => {
     renderPanel();
     await clickAndFlush(/set up microphone/i);
 
-    expect(screen.getByRole('button', { name: /^record$/i })).toBeDisabled();
-    expect(screen.getByText(/test the microphone before recording/i)).toBeInTheDocument();
-  });
-
-  it('enables recording once a signal is detected', async () => {
-    renderPanel();
-    await completeSetup();
-
-    expect(screen.getByText('Microphone is working.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^record$/i })).toBeEnabled();
+    expect(screen.queryByTestId('microphone-preflight')).not.toBeInTheDocument();
   });
 
-  // THE WHOLE PHASE, IN ONE TEST. The virtual device opens cleanly and returns
-  // silence; the student must be told so before they read a sentence into it,
-  // and must still not be allowed to record.
-  it('reports a silent device and keeps recording disabled', async () => {
+  it('starts recording immediately on Record, with no listening/checking step in front of it', async () => {
+    renderPanel();
+    await completeSetup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^record$/i }));
+      await flush();
+    });
+
+    expect(screen.queryByText(/listening… say something/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /stop/i })).toBeInTheDocument();
+  });
+
+  // The virtual/silent device is no longer caught BEFORE recording — it is
+  // caught DURING it (the live warning, asserted in the transcript describe
+  // block above) and REJECTED at Stop by the recorder's own, preflight-
+  // independent silence guard, exactly as it always has been for any take
+  // that stayed silent throughout.
+  it('records on a device that would have failed a signal check, then rejects the fully silent take at Stop', async () => {
     FakeAudioContext.sampleAmplitude = 0;
     renderPanel();
     await completeSetup();
 
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'No sound was detected from this microphone.',
-    );
-    expect(screen.getByRole('button', { name: /^record$/i })).toBeDisabled();
+    await pressRecord();
+    expect(screen.getByRole('button', { name: /stop/i })).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(SILENCE_VERDICT_AFTER_MS + 200);
+      await flush();
+    });
+    await clickAndFlush(/stop/i);
+
+    expect(screen.getByText(/microphone recorded silence/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /stop/i })).not.toBeInTheDocument();
+    expect(submitShadowingAttempt).not.toHaveBeenCalled();
   });
 
-  it('tells the student to try another input when one is silent', async () => {
+  // Gating on a check that physically cannot run would lock these students out
+  // of the feature over a verdict nobody ever reached — moot now that nothing
+  // gates on it at all, but still worth pinning that recording works cleanly
+  // with no level meter available.
+  it('records normally on a browser that cannot measure signal at all', async () => {
+    restoreRecordingMocks();
+    mocks = installRecordingMocks({ withoutAudioContext: true });
+    renderPanel();
+    await completeSetup();
+
+    await pressRecord();
+
+    expect(screen.getByRole('button', { name: /stop/i })).toBeInTheDocument();
+    expect(screen.getByTestId('recorder-status')).toHaveTextContent('Recording');
+  });
+});
+
+describe('ShadowingModePanel — the optional "Test microphone" action', () => {
+  it('is a quiet, secondary control that never disables Record', async () => {
+    renderPanel();
+    await completeSetup();
+
+    expect(screen.queryByTestId('microphone-preflight')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /test microphone/i }));
+      await flush();
+    });
+
+    expect(screen.getByText(/listening… say something/i)).toBeInTheDocument();
+    // Advisory, not a gate — Record stays enabled while the check runs.
+    expect(screen.getByRole('button', { name: /^record$/i })).toBeEnabled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(PREFLIGHT_DURATION_MS + 100);
+      await flush();
+    });
+
+    expect(screen.getByText(/microphone is working/i)).toBeInTheDocument();
+  });
+
+  it('tells the student to try another input when the optional check finds one silent', async () => {
     FakeAudioContext.sampleAmplitude = 0;
     renderPanel();
     await completeSetup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /test microphone/i }));
+      await flush();
+      vi.advanceTimersByTime(PREFLIGHT_DURATION_MS + 100);
+      await flush();
+    });
 
     expect(screen.getByText(/voice changer.*often produces no sound/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /test again/i })).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /choose another microphone/i }),
     ).toBeInTheDocument();
+    // Still advisory even on a failing verdict — nothing here blocks Record.
+    expect(screen.getByRole('button', { name: /^record$/i })).toBeEnabled();
   });
 
-  // A verdict belongs to the device it was measured on.
-  it('drops a passed verdict when the student switches microphone', async () => {
+  // A verdict belongs to the device it was measured on. Switching must
+  // invalidate a previous manual check, same as before.
+  it('clears a previous manual check result when the device is switched', async () => {
     renderPanel();
     await completeSetup();
-    expect(screen.getByRole('button', { name: /^record$/i })).toBeEnabled();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /test microphone/i }));
+      await flush();
+      vi.advanceTimersByTime(PREFLIGHT_DURATION_MS + 100);
+      await flush();
+    });
+    expect(screen.getByText(/microphone is working/i)).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Microphone'), {
       target: { value: 'realtek-1' },
     });
 
-    expect(screen.getByRole('button', { name: /^record$/i })).toBeDisabled();
-  });
-
-  // Gating on a check that physically cannot run would lock these students out
-  // of the feature over a verdict nobody ever reached.
-  it('does not gate recording on a browser that cannot measure at all', async () => {
-    restoreRecordingMocks();
-    mocks = installRecordingMocks({ withoutAudioContext: true });
-    renderPanel();
-    await clickAndFlush(/set up microphone/i);
-    await clickAndFlush(/^test microphone$/i);
-    await act(async () => {
-      vi.advanceTimersByTime(PREFLIGHT_DURATION_MS + 100);
-      await flush();
-    });
-
-    expect(screen.getByText(/cannot test the microphone in advance/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^record$/i })).toBeEnabled();
+    expect(screen.queryByTestId('microphone-preflight')).not.toBeInTheDocument();
   });
 });
 
@@ -707,7 +834,7 @@ describe('ShadowingModePanel — hardware that comes and goes', () => {
     localStorage.setItem('engmasterai:preferred-microphone:u-1', 'realtek-1');
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     expect(screen.getByRole('button', { name: /stop/i })).toBeInTheDocument();
 
     mocks.setDevices([{ kind: 'audioinput', deviceId: 'default', label: 'Built-in' }]);
@@ -725,7 +852,7 @@ describe('ShadowingModePanel — hardware that comes and goes', () => {
   it('cannot be reconfigured mid-recording', async () => {
     renderPanel();
     await completeSetup();
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
 
     // The chooser is gone entirely while capture is running — swapping the
     // input under a live recorder is not something this supports.
@@ -786,31 +913,39 @@ const VERDICT: SubmitShadowingAttemptResult = {
 
 const recordAndStop = async () => {
   await completeSetup();
-  await clickAndFlush(/^record$/i);
+  await pressRecord();
   await clickAndFlush(/stop/i);
+  // Submission is automatic now (Phase 3.2) — this is what lets every caller
+  // assume a result (or a failure) already exists the moment this returns.
+  await act(async () => {
+    await flush();
+  });
 };
 
 describe('ShadowingModePanel — submitting for scoring', () => {
-  it('does not upload anything until the student asks', async () => {
+  // Phase 3.2 — Submit stopped being a click a student could stop short of.
+  // Stopping the recording is the whole decision now.
+  it('uploads automatically once the student stops recording, with no button to press', async () => {
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
     renderPanel();
 
     await recordAndStop();
 
-    expect(submitShadowingAttempt).not.toHaveBeenCalled();
+    expect(submitShadowingAttempt).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByRole('button', { name: /check my speaking/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /check my speaking/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('shadowing-result')).toBeInTheDocument();
   });
 
-  // Said at the moment of the decision, not buried in a footnote the student
-  // read once on a different sentence.
-  it('says what happens to the recording next to the button that sends it', async () => {
+  // Said up front, before there is anything to decide — Phase 3.2 corrected
+  // this copy for the same reason it corrected shadowingLocalOnlyNote: a
+  // sentence promising a choice that no longer exists is worse than none.
+  it('says the recording is sent as soon as it stops, and what happens to it after', () => {
     renderPanel();
 
-    await recordAndStop();
-
     expect(
-      screen.getByText(/sent for transcription and deleted immediately/i),
+      screen.getByText(/sent for scoring as soon as you stop/i),
     ).toBeInTheDocument();
   });
 
@@ -818,8 +953,6 @@ describe('ShadowingModePanel — submitting for scoring', () => {
     (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
     renderPanel();
     await recordAndStop();
-
-    await clickAndFlush(/check my speaking/i);
 
     expect(submitShadowingAttempt).toHaveBeenCalledTimes(1);
     const [segmentId, body] = (submitShadowingAttempt as ReturnType<typeof vi.fn>)
@@ -840,7 +973,6 @@ describe('ShadowingModePanel — submitting for scoring', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     // 40% with `passed: true` — only a panel that reads the flag says "Passed".
     expect(screen.getByTestId('shadowing-result')).toBeInTheDocument();
@@ -857,7 +989,6 @@ describe('ShadowingModePanel — submitting for scoring', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(screen.getByText(/Pass mark: 70%/)).toBeInTheDocument();
   });
@@ -869,7 +1000,6 @@ describe('ShadowingModePanel — submitting for scoring', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(
       screen.getByText(/not a pronunciation score/i),
@@ -881,7 +1011,6 @@ describe('ShadowingModePanel — submitting for scoring', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     // Showing "the otter wraps her baby" would present our own processing as
     // the student's speech.
@@ -898,7 +1027,6 @@ describe('ShadowingModePanel — the word-by-word comparison', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     const comparison = screen.getByTestId('transcript-comparison');
     expect(comparison.children).toHaveLength(VERDICT.alignment.length);
@@ -911,7 +1039,6 @@ describe('ShadowingModePanel — the word-by-word comparison', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     screen.getByTestId('transcript-comparison');
     expect(screen.getByLabelText('the: Correct')).toBeInTheDocument();
@@ -924,7 +1051,6 @@ describe('ShadowingModePanel — the word-by-word comparison', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(screen.getByText('(water)')).toBeInTheDocument();
   });
@@ -940,7 +1066,6 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(
       screen.getByText(/speech recognition is unavailable right now/i),
@@ -952,7 +1077,6 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(
       screen.getByText(/could not be processed. Please record again/i),
@@ -964,7 +1088,6 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(screen.getByText(/submitted a lot of attempts/i)).toBeInTheDocument();
   });
@@ -974,7 +1097,6 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(screen.getByText(/session expired/i)).toBeInTheDocument();
   });
@@ -985,10 +1107,29 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     failWith(new ApiError('offline', 0));
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
 
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
     expect(screen.getByTestId('recording-playback-audio')).toBeInTheDocument();
+  });
+
+  // Auto-submit fires once per take, not once per render. A network blip
+  // must not turn into a loop that silently repeats a paid call — the only
+  // way to try again is the student's own "Try again" press.
+  it('does not automatically retry a failed submission', async () => {
+    failWith(new ApiError('offline', 0));
+    renderPanel();
+    await recordAndStop();
+    expect(submitShadowingAttempt).toHaveBeenCalledTimes(1);
+
+    // Time and renders keep passing with nothing further asked of the
+    // student — if the effect were mis-guarded this is where it would loop.
+    await act(async () => {
+      vi.advanceTimersByTime(5_000);
+      await flush();
+    });
+
+    expect(submitShadowingAttempt).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 
   // A retry after a timeout must carry the SAME key, or the server pays for a
@@ -998,7 +1139,6 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     failWith(new ApiError('offline', 0));
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
 
     (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
     await clickAndFlush(/try again/i);
@@ -1014,13 +1154,14 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
     screen.getByTestId('shadowing-result');
 
     await clickAndFlush(/record again/i);
-    await clickAndFlush(/^record$/i);
+    await pressRecord();
     await clickAndFlush(/stop/i);
-    await clickAndFlush(/check my speaking/i);
+    await act(async () => {
+      await flush();
+    });
 
     const calls = (submitShadowingAttempt as ReturnType<typeof vi.fn>).mock.calls;
     expect(calls).toHaveLength(2);
@@ -1031,7 +1172,6 @@ describe('ShadowingModePanel — submission failures each say their own thing', 
     (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
     expect(screen.getByTestId('shadowing-result')).toBeInTheDocument();
 
     await clickAndFlush(/record again/i);
@@ -1075,7 +1215,6 @@ describe('ShadowingModePanel — the status strip', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(screen.getByText('Accuracy')).toBeInTheDocument();
     expect(screen.getAllByText('40%')).toHaveLength(1);
@@ -1107,12 +1246,14 @@ describe('ShadowingModePanel — the status strip', () => {
 });
 
 describe('ShadowingModePanel — showing and hiding the sentence', () => {
-  it('shows the sentence and its IPA by default, but not the translation', () => {
+  // Sprint 11 Phase 3.4 — the translation now defaults to visible too, along
+  // with the sentence and its IPA.
+  it('shows the sentence, its IPA, and its translation by default', () => {
     renderPanel();
 
     expect(screen.getByText(SEGMENTS[0].text)).toBeInTheDocument();
     expect(screen.getByText('/ˈɒtə/')).toBeInTheDocument();
-    expect(screen.queryByText(SEGMENTS[0].translationVi)).not.toBeInTheDocument();
+    expect(screen.getByText(SEGMENTS[0].translationVi)).toBeInTheDocument();
   });
 
   it('hides the sentence on request and brings it back', () => {
@@ -1125,11 +1266,14 @@ describe('ShadowingModePanel — showing and hiding the sentence', () => {
     expect(screen.getByText(SEGMENTS[0].text)).toBeInTheDocument();
   });
 
-  it('reveals the translation on request', () => {
+  it('hides the translation on request and brings it back', () => {
     renderPanel();
+    expect(screen.getByText(SEGMENTS[0].translationVi)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Meaning' }));
+    expect(screen.queryByText(SEGMENTS[0].translationVi)).not.toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole('button', { name: 'Meaning' }));
     expect(screen.getByText(SEGMENTS[0].translationVi)).toBeInTheDocument();
   });
 
@@ -1149,7 +1293,6 @@ describe('ShadowingModePanel — the recording and its transcript stay together'
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     const players = screen.getAllByTestId('recording-playback-audio');
     expect(players).toHaveLength(1);
@@ -1179,20 +1322,43 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockResolvedValue(VERDICT);
   });
 
-  it('offers no coaching until there is a graded attempt to coach on', async () => {
+  // Phase 3.2 — there is no longer a UI state where a recording has stopped
+  // but not yet been submitted (that gap closed with auto-submit), so the
+  // only window left where "stopped but not graded" is true is while the
+  // automatic submission is itself still in flight. This pins that window
+  // with a controllable promise rather than the describe block's default
+  // instantly-resolving mock.
+  it('offers no coaching while the automatic submission is still in flight', async () => {
+    let resolveSubmit!: (value: SubmitShadowingAttemptResult) => void;
+    (submitShadowingAttempt as ReturnType<typeof vi.fn>).mockImplementation(
+      () =>
+        new Promise<SubmitShadowingAttemptResult>((resolve) => {
+          resolveSubmit = resolve;
+        }),
+    );
     renderPanel();
-    await recordAndStop();
+    await completeSetup();
+    await pressRecord();
+    await clickAndFlush(/stop/i);
 
     expect(
       screen.queryByRole('button', { name: /ask ai about my pronunciation/i }),
     ).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveSubmit(VERDICT);
+      await flush();
+    });
+
+    expect(
+      screen.getByRole('button', { name: /ask ai about my pronunciation/i }),
+    ).toBeInTheDocument();
   });
 
   it('asks nothing of the server until the student presses the button', async () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(requestShadowingFeedback).not.toHaveBeenCalled();
     expect(
@@ -1205,7 +1371,6 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     renderPanel();
     await recordAndStop();
 
-    await clickAndFlush(/check my speaking/i);
 
     expect(screen.getByText(/sent again for this and deleted immediately/i))
       .toBeInTheDocument();
@@ -1217,7 +1382,6 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
 
     await clickAndFlush(/ask ai about my pronunciation/i);
 
@@ -1236,7 +1400,6 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
 
     await clickAndFlush(/ask ai about my pronunciation/i);
 
@@ -1252,7 +1415,6 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
 
     await clickAndFlush(/ask ai about my pronunciation/i);
 
@@ -1270,7 +1432,6 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     );
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
 
     await clickAndFlush(/ask ai about my pronunciation/i);
 
@@ -1287,7 +1448,6 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     );
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
 
     await clickAndFlush(/ask ai about my pronunciation/i);
 
@@ -1300,7 +1460,6 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockResolvedValue(FEEDBACK);
     renderPanel();
     await recordAndStop();
-    await clickAndFlush(/check my speaking/i);
     await clickAndFlush(/ask ai about my pronunciation/i);
     expect(screen.getByTestId('ai-pronunciation-feedback')).toBeInTheDocument();
 
@@ -1309,5 +1468,131 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     expect(
       screen.queryByTestId('ai-pronunciation-feedback'),
     ).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sprint 11 Phase 3.4 — Next, and completion that is earned, not positional.
+//
+// Reaching the last segment must never, by itself, read as "done" — only
+// every segment having actually PASSED does. The fixture below deliberately
+// fails segment 1's first attempt, so segment 2 completing first (while
+// segment 1 is still outstanding) is the exact "reached the end but earlier
+// work is undone" case Next must not treat as complete.
+// ---------------------------------------------------------------------------
+
+describe('ShadowingModePanel — Next and session completion', () => {
+  const FAILING_VERDICT: SubmitShadowingAttemptResult = {
+    ...VERDICT,
+    accuracyPercent: 20,
+    wordsCorrect: 1,
+    wordsTotal: 4,
+    passed: false,
+  };
+
+  // The microphone is set up ONCE per render — a second `completeSetup()`
+  // call on the same panel instance finds no "Set up microphone" button,
+  // because access is already READY. Every recording after the first one in
+  // these tests (a Next click, a manual retake) uses this instead.
+  const recordAgainAndStop = async () => {
+    await pressRecord();
+    await clickAndFlush(/stop/i);
+    await act(async () => {
+      await flush();
+    });
+  };
+
+  it('offers a Next button that is not the old listen-and-repeat card', () => {
+    renderPanel();
+
+    expect(
+      screen.getByRole('button', { name: /^next/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/listen and repeat/i)).not.toBeInTheDocument();
+  });
+
+  it('does not treat reaching the last segment as completion when an earlier one never passed', async () => {
+    const mockedSubmit = submitShadowingAttempt as ReturnType<typeof vi.fn>;
+    // seg-1 fails, seg-2 passes — segment 2 finishing does not clear segment 1.
+    mockedSubmit.mockResolvedValueOnce(FAILING_VERDICT);
+    mockedSubmit.mockResolvedValueOnce(VERDICT);
+
+    renderPanel();
+    await recordAndStop(); // seg-1, fails
+
+    await clickAndFlush(/^next/i);
+    expect(screen.getByText(SEGMENTS[1].text)).toBeInTheDocument();
+
+    await recordAgainAndStop(); // seg-2, passes — but seg-1 is still outstanding
+
+    await clickAndFlush(/^next/i);
+
+    // Reached the end of the list, seg-2 just passed — and Next must still
+    // send the student BACK to seg-1 rather than declaring the lesson done.
+    expect(screen.queryByText('Listening Complete')).not.toBeInTheDocument();
+    expect(screen.getByText(SEGMENTS[0].text)).toBeInTheDocument();
+  });
+
+  it('shows the completion summary only once every segment has actually passed', async () => {
+    const mockedSubmit = submitShadowingAttempt as ReturnType<typeof vi.fn>;
+    mockedSubmit.mockResolvedValueOnce(FAILING_VERDICT);
+    mockedSubmit.mockResolvedValueOnce(VERDICT);
+    mockedSubmit.mockResolvedValueOnce(VERDICT);
+
+    renderPanel();
+    await recordAndStop(); // seg-1, fails
+    await clickAndFlush(/^next/i);
+    await recordAgainAndStop(); // seg-2, passes
+    await clickAndFlush(/^next/i);
+    expect(screen.getByText(SEGMENTS[0].text)).toBeInTheDocument();
+
+    await recordAgainAndStop(); // seg-1, passes this time — everything is now done
+    await clickAndFlush(/^next/i);
+
+    expect(screen.getByText('Listening Complete')).toBeInTheDocument();
+  });
+
+  it('the completion summary reflects the BEST attempt per segment, not a sum of every retake', async () => {
+    const mockedSubmit = submitShadowingAttempt as ReturnType<typeof vi.fn>;
+    // seg-1 retaken three times: 1/4, then 4/4 PASS — must count as 4/4 once,
+    // never 1+4=5/8.
+    mockedSubmit.mockResolvedValueOnce(FAILING_VERDICT);
+    mockedSubmit.mockResolvedValueOnce({ ...VERDICT, wordsCorrect: 4, wordsTotal: 4 });
+    // seg-2 passes on the first try.
+    mockedSubmit.mockResolvedValueOnce(VERDICT);
+
+    renderPanel();
+    await recordAndStop(); // seg-1, fails (1/4)
+    await clickAndFlush(/record again/i);
+    await recordAgainAndStop(); // seg-1, retaken, passes (4/4)
+
+    await clickAndFlush(/^next/i);
+    await recordAgainAndStop(); // seg-2, passes on the first try (VERDICT's own shape: 1/4)
+    await clickAndFlush(/^next/i);
+
+    const summary = screen.getByText('Listening Complete').closest(
+      '.practice-fade-in',
+    ) as HTMLElement;
+    // Best of seg-1's two attempts (4/4) + seg-2 (1/4) = 5/8 — NOT the sum of
+    // every attempt (1 + 4 + 1 = 6 / 4 + 4 + 4 = 12), which is what a naive
+    // running accumulator would have produced instead.
+    expect(within(summary).getByText('5/8')).toBeInTheDocument();
+  });
+
+  it('replaying the lesson from the summary re-arms completion from scratch', async () => {
+    const mockedSubmit = submitShadowingAttempt as ReturnType<typeof vi.fn>;
+    mockedSubmit.mockResolvedValue(VERDICT);
+
+    renderPanel();
+    await recordAndStop();
+    await clickAndFlush(/^next/i);
+    await recordAgainAndStop();
+    await clickAndFlush(/^next/i);
+    expect(screen.getByText('Listening Complete')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /replay lesson/i }));
+
+    expect(screen.getByText(SEGMENTS[0].text)).toBeInTheDocument();
+    expect(screen.queryByText('Listening Complete')).not.toBeInTheDocument();
   });
 });

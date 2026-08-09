@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   classifyMicrophoneError,
   enumerateAudioInputs,
+  probeGrantedMicrophonePermission,
   requestMicrophoneStream,
   stopStream,
   subscribeToDeviceChange,
@@ -28,6 +29,13 @@ import {
 // platform protecting the student from a page fingerprinting their hardware on
 // load. So the order is fixed and cannot be optimised: gesture, then prompt,
 // then enumerate. A chooser full of "Microphone 2" is not a chooser.
+//
+// Sprint 11 Phase 3.2 — EXCEPT `enumerateDevices` ITSELF IS SAFE TO CALL FIRST.
+// It cannot raise a prompt or open a stream on any browser, by spec, so a
+// silent mount-time call answers "has this origin already been granted
+// access?" for free — a non-empty label IS that grant, from an earlier visit.
+// `getUserMedia` is still never called until the student presses Record; only
+// the read that was always safe moved one call earlier.
 //
 // THE PERMISSION STREAM IS OPENED AND IMMEDIATELY CLOSED. It exists only to
 // unlock the labels. Holding it would light the OS recording indicator while
@@ -59,6 +67,10 @@ export interface MicrophonesApi {
   preferenceWasStale: boolean;
   /** True once the device list has been read at least once. */
   enumerated: boolean;
+  /** True while the silent mount-time permission probe is still in flight. */
+  detecting: boolean;
+  /** True once `access` reached READY via the silent probe, not a click on "Set up microphone". */
+  autoInitialized: boolean;
   /** Raise the permission prompt (must be called from a user gesture) and enumerate. */
   requestAccess: () => void;
   select: (deviceId: string) => void;
@@ -73,6 +85,8 @@ export const useMicrophones = (userId: string): MicrophonesApi => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [preferenceWasStale, setPreferenceWasStale] = useState(false);
   const [enumerated, setEnumerated] = useState(false);
+  const [detecting, setDetecting] = useState(true);
+  const [autoInitialized, setAutoInitialized] = useState(false);
 
   // Unmounting mid-prompt must not push state into a dead component, and the
   // prompt is the one thing here that can outlive the panel by seconds.
@@ -133,6 +147,45 @@ export const useMicrophones = (userId: string): MicrophonesApi => {
     if (fallback) setSelectedId(fallback.deviceId);
   }, []);
 
+  // Sprint 11 Phase 3.2 — a silent, gesture-free check of standing permission.
+  //
+  // SAFE BY CONSTRUCTION: `probeGrantedMicrophonePermission` only ever calls
+  // `enumerateDevices`, which the platform guarantees cannot raise a prompt.
+  // `getUserMedia` is not called here under any circumstance — if the probe
+  // says "not granted", this effect does nothing further and `access` stays
+  // UNKNOWN, exactly today's starting state. The button is kept hidden while
+  // `detecting` is true (see the caller), which is what makes this race-free
+  // against a click landing mid-probe.
+  useEffect(() => {
+    let settled = false;
+    // A defensive ceiling: if `enumerateDevices` never settles, the button
+    // must still appear rather than being silently unreachable forever.
+    const giveUp = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      if (mountedRef.current) setDetecting(false);
+    }, 1500);
+
+    void (async () => {
+      const granted = await probeGrantedMicrophonePermission();
+      if (settled) return;
+      settled = true;
+      clearTimeout(giveUp);
+      if (!mountedRef.current) return;
+      if (!granted) {
+        setDetecting(false);
+        return;
+      }
+      await loadDevices();
+      if (!mountedRef.current) return;
+      setAccess('READY');
+      setAutoInitialized(true);
+      setDetecting(false);
+    })();
+
+    return () => clearTimeout(giveUp);
+  }, [loadDevices]);
+
   const requestAccess = useCallback(() => {
     setAccess('REQUESTING');
     setErrorKind(null);
@@ -189,6 +242,8 @@ export const useMicrophones = (userId: string): MicrophonesApi => {
     selected,
     preferenceWasStale,
     enumerated,
+    detecting,
+    autoInitialized,
     requestAccess,
     select,
     refresh,

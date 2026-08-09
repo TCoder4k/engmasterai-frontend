@@ -15,6 +15,7 @@ import StudentLayout from '../../user/StudentLayout';
 import EmptyState from '../../shared/EmptyState';
 import ErrorState from '../../shared/ErrorState';
 import Skeleton from '../../shared/Skeleton';
+import { useTheme } from '../../../theme/ThemeProvider';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { CefrLevel } from '../../../types';
 import { PATH_BY_MODE } from './ListeningContentPage';
@@ -52,6 +53,17 @@ import {
 // for and never a lie by omission.
 
 const PAGE_SIZE = 12;
+/**
+ * The overview (no category/search filter) groups ONE fetched page into
+ * per-category sections — see `overviewSections` below. At `PAGE_SIZE` a
+ * category with, say, 4 total items could have only 3 of them land inside
+ * that one page (the other 3+ categories on the page take the rest), so the
+ * section would show "(4)" with 3 cards and a "View all" link to nowhere new.
+ * The backend caps `limit` at 100 (`MAX_LIMIT` in listening-content.service.ts)
+ * — asking for that much up front means every section's preview is actually
+ * complete whenever the real catalog fits in it, which is the common case.
+ */
+const OVERVIEW_PAGE_SIZE = 100;
 const LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 /** How many cards an unfiltered topic section shows before "View all". */
 const SECTION_PREVIEW_SIZE = 4;
@@ -85,7 +97,9 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
   mode = 'DICTATION',
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const isShadowing = mode === 'SHADOWING';
+  const isLightTheme = theme === 'light';
 
   const [response, setResponse] = useState<ListeningCatalogResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -114,13 +128,17 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
     setLoading(true);
     setError(null);
     try {
+      // Same rule `overviewSections` uses below: level alone still groups by
+      // category (just pre-filtered to that level), only categoryId/search
+      // collapse to a single flat, paginated grid.
+      const isOverview = !categoryId && !search;
       const data = await getListeningCatalog({
         categoryId: categoryId ?? undefined,
         level: level ?? undefined,
         mode,
         q: search || undefined,
         page,
-        limit: PAGE_SIZE,
+        limit: isOverview ? OVERVIEW_PAGE_SIZE : PAGE_SIZE,
       });
       setResponse(data);
 
@@ -220,6 +238,46 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
   }, [items, isFiltered]);
 
   const ModeIcon = isShadowing ? Mic : Headphones;
+
+  const heroShellClass = isLightTheme
+    ? 'rounded-[28px] border border-slate-100 bg-white px-4 py-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:px-6 sm:py-5'
+    : 'rounded-[28px] border border-slate-800 bg-[#0A1020] px-4 py-4 shadow-[0_12px_35px_rgba(0,0,0,0.35)] sm:px-6 sm:py-5';
+
+  const heroIconClass = isLightTheme
+    ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]'
+    : 'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/15 text-cyan-400';
+
+  const heroTitleClass = isLightTheme
+    ? 'truncate text-lg font-extrabold leading-tight text-slate-900 sm:text-xl'
+    : 'truncate text-lg font-extrabold leading-tight text-white sm:text-xl';
+
+  const heroSubtitleClass = isLightTheme
+    ? 'truncate text-sm text-slate-500 sm:text-[15px]'
+    : 'truncate text-sm text-slate-400 sm:text-[15px]';
+
+  const dictationButtonClass = isLightTheme
+    ? `inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-colors sm:min-w-[238px] ${
+        !isShadowing
+          ? 'border-blue-500/30 bg-blue-50 text-blue-600 shadow-[0_1px_0_rgba(255,255,255,0.9)]'
+          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+      }`
+    : `inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-colors sm:min-w-[238px] ${
+        !isShadowing
+          ? 'border-cyan-500/30 bg-[#0E1730] text-cyan-400'
+          : 'border-slate-700 bg-[#0B1326] text-slate-200 hover:border-slate-600 hover:bg-[#101A37]'
+      }`;
+
+  const shadowingButtonClass = isLightTheme
+    ? `inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-colors sm:min-w-[210px] ${
+        isShadowing
+          ? 'border-violet-500/30 bg-violet-50 text-violet-600 shadow-[0_1px_0_rgba(255,255,255,0.9)]'
+          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
+      }`
+    : `inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-colors sm:min-w-[210px] ${
+        isShadowing
+          ? 'border-violet-500/30 bg-[#0E1730] text-violet-400'
+          : 'border-slate-700 bg-[#0B1326] text-slate-200 hover:border-slate-600 hover:bg-[#101A37]'
+      }`;
 
   const cardHref = (card: ListeningCard) =>
     isShadowing
@@ -358,10 +416,10 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
     <StudentLayout>
       <div className="max-w-7xl mx-auto space-y-8">
         {/* ============ Hero banner ============ */}
-        <div className="rounded-[28px] border border-slate-800 bg-[#0A1020] px-4 py-4 shadow-[0_12px_35px_rgba(0,0,0,0.35)] sm:px-6 sm:py-5">
+        <div className={heroShellClass}>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-500/20 bg-blue-500/15 text-cyan-400">
+              <div className={heroIconClass}>
                 <div className="grid grid-cols-2 gap-1">
                   <span className="h-2.5 w-2.5 rounded-sm border border-current" aria-hidden="true" />
                   <span className="h-2.5 w-2.5 rounded-sm border border-current" aria-hidden="true" />
@@ -371,10 +429,10 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
               </div>
 
               <div className="min-w-0 space-y-0.5">
-                <h1 className="truncate text-lg font-extrabold leading-tight text-white sm:text-xl">
+                <h1 className={heroTitleClass}>
                   {t.practice.catalogHeroTitle}
                 </h1>
-                <p className="truncate text-sm text-slate-400 sm:text-[15px]">
+                <p className={heroSubtitleClass}>
                   {t.practice.catalogHeroSubtitle}
                 </p>
               </div>
@@ -383,11 +441,7 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
               <Link
                 to="/practice/listening"
-                className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-colors sm:min-w-[238px] ${
-                  !isShadowing
-                    ? 'border-cyan-500/30 bg-[#0E1730] text-cyan-400'
-                    : 'border-slate-700 bg-[#0B1326] text-slate-200 hover:border-slate-600 hover:bg-[#101A37]'
-                }`}
+                className={dictationButtonClass}
               >
                 <Headphones size={18} aria-hidden="true" />
                 <span>{t.practice.listeningModeDictation}</span>
@@ -395,11 +449,7 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
 
               <Link
                 to="/practice/shadowing"
-                className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-2xl border px-5 py-2.5 text-sm font-bold transition-colors sm:min-w-[210px] ${
-                  isShadowing
-                    ? 'border-violet-500/30 bg-[#0E1730] text-violet-400'
-                    : 'border-slate-700 bg-[#0B1326] text-slate-200 hover:border-slate-600 hover:bg-[#101A37]'
-                }`}
+                className={shadowingButtonClass}
               >
                 <Mic size={18} aria-hidden="true" />
                 <span>{t.practice.listeningModeShadowing}</span>

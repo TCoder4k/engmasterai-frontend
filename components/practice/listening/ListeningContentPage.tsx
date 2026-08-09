@@ -68,10 +68,36 @@ interface ListeningContentContextValue {
   pauseMedia: () => void;
   /** False whenever the media cannot be driven — a broken video must not block practice. */
   mediaAvailable: boolean;
+  /**
+   * Sprint 11 Phase 4C — the SAME loop/rate state `SegmentTransportBar` already
+   * drives, exposed here so Shadowing's own "listen and repeat" control acts on
+   * the real segment player instead of standing up a second, decorative one.
+   * One controller, two surfaces — never two sources of truth for what the
+   * media is doing.
+   */
+  loop: boolean;
+  setLoop: (loop: boolean) => void;
+  playbackRate: number;
+  availableRates: number[];
+  setPlaybackRate: (rate: number) => void;
   solvedSegmentIds: Set<string>;
   setSolvedSegmentIds: React.Dispatch<React.SetStateAction<Set<string>>>;
   assistedSegmentIds: Set<string>;
   setAssistedSegmentIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  /**
+   * Sprint 11 Phase 3.4 — Shadowing's OWN completed set, separate from
+   * Dictation's `solvedSegmentIds`. The two modes grade the same segment ids
+   * independently; sharing one Set would mark a segment done in Shadowing
+   * just because Dictation solved it, or vice versa.
+   */
+  shadowingCompletedSegmentIds: Set<string>;
+  setShadowingCompletedSegmentIds: React.Dispatch<React.SetStateAction<Set<string>>>;
+  /**
+   * Move to a sentence AND play it — what Next means in both modes. Distinct
+   * from `goToSegment` (select only), which the sentence list still uses for
+   * some flows (e.g. replaying mistakes) where audio would interrupt.
+   */
+  goToSegmentAndPlay: (index: number) => void;
   /** Lets a mode panel stop study-time accrual once its session is over. */
   setStudyActive: (active: boolean) => void;
 }
@@ -112,6 +138,9 @@ const ListeningContentPage: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [solvedSegmentIds, setSolvedSegmentIds] = useState<Set<string>>(new Set());
   const [assistedSegmentIds, setAssistedSegmentIds] = useState<Set<string>>(new Set());
+  const [shadowingCompletedSegmentIds, setShadowingCompletedSegmentIds] = useState<
+    Set<string>
+  >(new Set());
   const [studyActive, setStudyActive] = useState(true);
   // Lives here rather than in a mode panel because it controls the sentence
   // list, which this layout owns and every mode shares.
@@ -144,6 +173,14 @@ const ListeningContentPage: React.FC = () => {
       );
       setAssistedSegmentIds(
         new Set(rows.filter((row) => row.assisted).map((row) => row.segmentId)),
+      );
+
+      // Shadowing's own progress, seeded the same way — `completedAt` is only
+      // ever set server-side once an attempt passed (shadowing.service.ts),
+      // never for a merely-attempted-but-failed segment.
+      const shadowingRows = data.shadowingProgress ?? [];
+      setShadowingCompletedSegmentIds(
+        new Set(shadowingRows.filter((row) => row.completedAt).map((row) => row.segmentId)),
       );
 
       // Land on the first unfinished sentence rather than always on the first
@@ -191,6 +228,7 @@ const ListeningContentPage: React.FC = () => {
     setCurrentIndex(0);
     setSolvedSegmentIds(new Set());
     setAssistedSegmentIds(new Set());
+    setShadowingCompletedSegmentIds(new Set());
     setStudyActive(true);
     setController(null);
     setMediaPlaying(false);
@@ -397,10 +435,18 @@ const ListeningContentPage: React.FC = () => {
     replaySegment,
     pauseMedia: pause,
     mediaAvailable: controller !== null,
+    loop,
+    setLoop,
+    playbackRate,
+    availableRates,
+    setPlaybackRate: handlePlaybackRateChange,
     solvedSegmentIds,
     setSolvedSegmentIds,
     assistedSegmentIds,
     setAssistedSegmentIds,
+    shadowingCompletedSegmentIds,
+    setShadowingCompletedSegmentIds,
+    goToSegmentAndPlay: selectAndPlaySegment,
     setStudyActive,
   };
 
@@ -500,7 +546,9 @@ const ListeningContentPage: React.FC = () => {
             <SegmentListPanel
               segments={segments}
               currentIndex={currentIndex}
-              revealedSegmentIds={solvedSegmentIds}
+              revealedSegmentIds={
+                currentMode === 'SHADOWING' ? shadowingCompletedSegmentIds : solvedSegmentIds
+              }
               assistedSegmentIds={assistedSegmentIds}
               // Dictation is the only mode that must hide the sentence: it IS
               // the answer. Shadowing shows it, because reading it aloud is the

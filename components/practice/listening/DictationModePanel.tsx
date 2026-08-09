@@ -46,6 +46,8 @@ const DictationModePanel: React.FC = () => {
     content,
     currentIndex,
     goToSegment,
+    goToSegmentAndPlay,
+    pauseMedia,
     togglePlay,
     replaySegment,
     solvedSegmentIds,
@@ -131,6 +133,15 @@ const DictationModePanel: React.FC = () => {
     return -1;
   };
 
+  // Sprint 11 Phase 3.4 — Next now plays the sentence it lands on. `pauseMedia`
+  // runs first and synchronously, not left to incidental effect ordering: the
+  // previous sentence's audio must be silent before the new one is asked to
+  // play, never briefly overlapping it.
+  const advanceTo = (index: number) => {
+    pauseMedia();
+    goToSegmentAndPlay(index);
+  };
+
   const handleAdvance = () => {
     clearAutoAdvanceTimer();
     // A manual click is always a later, separate event than whatever effect
@@ -141,7 +152,7 @@ const DictationModePanel: React.FC = () => {
     if (target === -1) {
       finish(assistedSegmentIds.size, wordStats.correct, wordStats.total);
     } else {
-      goToSegment(target);
+      advanceTo(target);
     }
   };
 
@@ -201,7 +212,7 @@ const DictationModePanel: React.FC = () => {
           if (target === -1) {
             finish(assistedCountAfter, wordsCorrectAfter, wordsTotalAfter);
           } else {
-            goToSegment(target);
+            advanceTo(target);
           }
         }, 1200);
       }

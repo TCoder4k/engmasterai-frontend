@@ -50,17 +50,17 @@ const RecordingPlayback: React.FC<RecordingPlaybackProps> = ({
   if (!url) return null;
 
   return (
-    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 space-y-2">
+    <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[11px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+        <p className="text-[11px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-500">
           {t.practice.shadowingYourRecording}
         </p>
         <button
           type="button"
           onClick={replay}
-          className="px-3.5 py-2 min-h-[44px] rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          className="px-3.5 py-2 min-h-[44px] rounded-xl bg-white dark:bg-[#0B132B] border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          <RotateCcw size={14} aria-hidden="true" />
+          <RotateCcw size={14} aria-hidden="true" className="text-blue-600 dark:text-[#00A3FF]" />
           <span>{t.practice.shadowingReplayAction}</span>
         </button>
       </div>
@@ -81,7 +81,7 @@ const RecordingPlayback: React.FC<RecordingPlaybackProps> = ({
 
       {/* Measured facts about the file, useful in QA and honest in production:
           every value here comes from the blob or the clock, never a guess. */}
-      <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-500">
         {durationMs !== null && <>{formatAudioTime(durationMs / 1000)} · </>}
         {blob && <>{formatBlobSize(blob.size)}</>}
         {mimeType && <> · {mimeType}</>}
