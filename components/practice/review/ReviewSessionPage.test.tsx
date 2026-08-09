@@ -17,8 +17,16 @@ vi.mock('../../../services/learningService', async () => {
   return { ...actual, getDueReviews: vi.fn(), submitReview: vi.fn() };
 });
 
+// speakText/cancelSpeech mocked so the auto-play tests below can assert on
+// them directly — same partial-mock shape as FlashcardSession's spec.
+vi.mock('../../../services/tts', async () => {
+  const actual = await vi.importActual<typeof import('../../../services/tts')>('../../../services/tts');
+  return { ...actual, speakText: vi.fn(() => true), cancelSpeech: vi.fn() };
+});
+
 import { getWord } from '../../../services/vocabWordService';
 import { getDueReviews, submitReview } from '../../../services/learningService';
+import { speakText, cancelSpeech } from '../../../services/tts';
 
 interface QueueWord {
   id: string;
@@ -369,5 +377,31 @@ describe('ReviewSessionPage', () => {
     await waitFor(() => expect(getDueReviews).toHaveBeenCalledTimes(2));
     await findWordShown('alpha');
     expect(screen.queryByText('Review session complete!')).not.toBeInTheDocument();
+  });
+});
+
+describe('ReviewSessionPage — auto-play on card change', () => {
+  it('speaks the very first due word on mount, with no click required', async () => {
+    (getDueReviews as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [queueItem('w1', 'alpha')] });
+    renderPage();
+
+    await findWordShown('alpha');
+    expect(speakText).toHaveBeenCalledWith('alpha');
+  });
+
+  it('speaks the next due word the moment a rating advances the queue, stopping the previous one', async () => {
+    (getDueReviews as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: [queueItem('w1', 'alpha'), queueItem('w2', 'beta')],
+    });
+    renderPage();
+    await findWordShown('alpha');
+    expect(speakText).toHaveBeenCalledWith('alpha');
+    await reveal();
+
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
+
+    await findWordShown('beta');
+    await waitFor(() => expect(speakText).toHaveBeenCalledWith('beta'));
+    expect(cancelSpeech).toHaveBeenCalled();
   });
 });

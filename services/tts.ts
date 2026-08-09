@@ -10,9 +10,13 @@
 //    return value, never a silent no-op.
 //  - Browser TTS output is a listening-practice aid, never a canonical
 //    pronunciation reference for any future scoring feature.
-//  - Callers must only invoke speakText() from an explicit user gesture
-//    (e.g. a play-button click) — never from a mount/segment-change effect,
-//    per browser autoplay-restriction policy.
+//  - Default: callers invoke speakText() from an explicit user gesture (e.g.
+//    a play-button click), never from a bare mount effect with no prior
+//    interaction, per browser autoplay-restriction policy. The one
+//    deliberate exception is FlashcardSession/ReviewSessionPage's per-card
+//    auto-play: a card only ever becomes current in response to a rating
+//    click, so calling speakText() from that card-change effect still runs
+//    inside a user-activated session — see their own comments for why.
 
 export interface SpeakOptions {
   rate?: number;

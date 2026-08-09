@@ -11,9 +11,26 @@ import RatingButtons from '../vocab/RatingButtons';
 import ReviewSessionSummary from './ReviewSessionSummary';
 import { useReviewSession } from './useReviewSession';
 import { useTranslation } from '../../../i18n/useTranslation';
-import { isTtsSupported, speakText } from '../../../services/tts';
+import { isTtsSupported, speakText, cancelSpeech } from '../../../services/tts';
 import { getWord } from '../../../services/vocabWordService';
 import { VocabWordExample } from '../../../types';
+
+// Single source of truth for "how a word's pronunciation is produced" —
+// shared by the manual play button and the automatic playback below, so the
+// two can never disagree about audioUrl-vs-TTS fallback. Returns a stop
+// function so a caller (the auto-play effect) can cut a still-playing word
+// off cleanly instead of letting it bleed into the next one. Deliberately
+// re-declared rather than imported from FlashcardSession — same precedent as
+// this file's own renderHighlightedSentence, kept independently maintained.
+const playWordAudio = (word: { audioUrl: string | null; text: string }): (() => void) => {
+  if (word.audioUrl) {
+    const audio = new Audio(word.audioUrl);
+    void audio.play().catch(() => {});
+    return () => audio.pause();
+  }
+  speakText(word.text);
+  return () => cancelSpeech();
+};
 import { ReviewRating } from '../../../services/learningService';
 
 const RATING_KEYS: Record<string, ReviewRating> = { '1': 'AGAIN', '2': 'HARD', '3': 'GOOD', '4': 'EASY' };
@@ -103,6 +120,17 @@ const ReviewSessionPage: React.FC = () => {
     };
   }, [currentItem?.word.id]);
 
+  // Every word the student lands on — the first one and every one a rating
+  // (or, on a retrain card, Continue) advances to — speaks itself
+  // immediately, same as FlashcardSession's identical effect. A word only
+  // ever becomes current in response to a click, so this still runs inside
+  // that user-activated session, not on a cold page load. The cleanup stops
+  // a word still playing when the NEXT one arrives.
+  useEffect(() => {
+    if (!currentItem) return;
+    return playWordAudio(currentItem.word);
+  }, [currentItem?.word.id]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Never intercept a modified combination — matches the discipline
@@ -145,11 +173,7 @@ const ReviewSessionPage: React.FC = () => {
 
   const handlePlayAudio = () => {
     if (!currentItem) return;
-    if (currentItem.word.audioUrl) {
-      new Audio(currentItem.word.audioUrl).play().catch(() => {});
-    } else {
-      speakText(currentItem.word.text);
-    }
+    playWordAudio(currentItem.word);
   };
 
   return (

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Volume2 } from 'lucide-react';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { VocabWordListItem, VocabWordExample } from '../../../types';
-import { isTtsSupported, speakText } from '../../../services/tts';
+import { isTtsSupported, speakText, cancelSpeech } from '../../../services/tts';
 import { getWord } from '../../../services/vocabWordService';
 import { playCorrect, playIncorrect } from '../../../services/feedbackSounds';
 import {
@@ -43,6 +43,21 @@ const renderHighlightedSentence = (sentence: string, word: string): React.ReactN
       {after}
     </>
   );
+};
+
+// Single source of truth for "how a word's pronunciation is produced" —
+// shared by the manual play button and the automatic playback below, so the
+// two can never disagree about audioUrl-vs-TTS fallback. Returns a stop
+// function so a caller (the auto-play effect) can cut a still-playing word
+// off cleanly instead of letting it bleed into the next one.
+const playWordAudio = (word: Pick<VocabWordListItem, 'audioUrl' | 'text'>): (() => void) => {
+  if (word.audioUrl) {
+    const audio = new Audio(word.audioUrl);
+    void audio.play().catch(() => {});
+    return () => audio.pause();
+  }
+  speakText(word.text);
+  return () => cancelSpeech();
 };
 
 // Real per-user, per-word SRS ratings (Sprint 04) — Again/Hard/Good/Easy
@@ -110,6 +125,20 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
     };
   }, [currentWord?.id]);
 
+  // Every card the student lands on — the first one and every one a rating
+  // click advances to, in both fresh-deck practice and (see ReviewSessionPage)
+  // review — speaks itself immediately. This reverses Sprint 03A's "TTS only
+  // from an explicit gesture" rule for this one call site, per an explicit
+  // later request: a card only ever becomes current in response to a rating
+  // click, so playback here still runs inside that same user-activated
+  // session, not on a cold page load. The cleanup stops a word that's still
+  // playing when the NEXT card arrives (also what keeps React StrictMode's
+  // dev-only double-invoke from audibly overlapping a word with itself).
+  useEffect(() => {
+    if (!currentWord) return;
+    return playWordAudio(currentWord);
+  }, [currentWord?.id]);
+
   if (!currentWord) return null;
 
   const handleRate = async (rating: ReviewRating) => {
@@ -153,14 +182,8 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
     }
   };
 
-  // Only ever fires from this explicit button click — never on mount or
-  // card-change — per the locked TTS autoplay-restriction discipline.
   const handlePlayAudio = () => {
-    if (currentWord.audioUrl) {
-      new Audio(currentWord.audioUrl).play().catch(() => {});
-    } else {
-      speakText(currentWord.text);
-    }
+    playWordAudio(currentWord);
   };
 
   const primaryPartOfSpeech = currentWord.meanings[0]?.partOfSpeech ?? null;
