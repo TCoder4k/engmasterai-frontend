@@ -20,6 +20,11 @@ interface DictationSessionProps {
 const normalize = (value: string): string =>
   value.trim().toLowerCase().replace(/[^a-z0-9'\s-]/g, '');
 
+// Same shortcut map as ReviewSessionPage.tsx's RATING_KEYS — deliberately
+// re-declared rather than shared, matching this file's own precedent of
+// keeping independently-maintained components decoupled.
+const RATING_KEYS: Record<string, ReviewRating> = { '1': 'AGAIN', '2': 'HARD', '3': 'GOOD', '4': 'EASY' };
+
 // Real audioUrl (Cloudinary) is preferred; browser TTS is a fallback only.
 // Sprint 03E: finite-session orientation (Question X of N + a real
 // progress bar), real currentTime/duration playback progress for recorded
@@ -42,6 +47,10 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { resolve: resolveClientReviewId, clear: clearReviewIntent } = useReviewIntentKey();
   const inputRef = useRef<HTMLInputElement>(null);
+  // "Latest ref" for handleRate (defined below, after the early return) so
+  // the keydown effect above can invoke the current word's rate handler
+  // without needing it in a dependency array or reordering its definition.
+  const handleRateRef = useRef<(rating: ReviewRating) => void>(() => {});
 
   const audio = useAudioPlayback(currentWord?.audioUrl ?? null);
 
@@ -55,8 +64,59 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
     setFeedback(null);
     setIsSpeaking(false);
     setSubmitError(null);
-    inputRef.current?.focus();
   }, [currentWord?.id]);
+
+  // Deliberately a SEPARATE effect from the reset above, not a trailing
+  // call inside it. The input is `disabled` (not readOnly, unlike
+  // GuessWordSession's input) while `feedback` is set, and a disabled
+  // element cannot receive focus — calling focus() in the same tick that
+  // also clears `feedback` races the DOM, since the `disabled` attribute
+  // hasn't actually been removed yet at that point. Keying on `feedback`
+  // itself (rather than currentWord?.id) means this only fires once the
+  // input has genuinely become enabled again, on the next commit.
+  useEffect(() => {
+    if (!feedback) inputRef.current?.focus();
+  }, [feedback]);
+
+  // Chép chính tả requires hearing the word before typing it — unlike
+  // Flashcard/Review, where audio accompanies a reveal, this fires
+  // immediately on every new word, since listening first is the whole
+  // point of the exercise. Same audioUrl-vs-TTS switch as handlePlay below.
+  useEffect(() => {
+    if (!currentWord) return;
+    if (currentWord.audioUrl) {
+      audio.play();
+    } else {
+      speakText(currentWord.text, {
+        onStart: () => setIsSpeaking(true),
+        onEnd: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentWord?.id]);
+
+  // Enter confirms the suggested rating; 1-4 pick a specific one directly —
+  // same shape as ReviewSessionPage.tsx's keydown handler. Active only once
+  // the answer has been checked (feedback set) and the rating row is shown.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!feedback || isSubmitting) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleRateRef.current(feedback === 'correct' ? 'GOOD' : 'AGAIN');
+        return;
+      }
+      const rating = RATING_KEYS[e.key];
+      if (rating) {
+        e.preventDefault();
+        handleRateRef.current(rating);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [feedback, isSubmitting]);
 
   if (!currentWord) return null;
 
@@ -118,6 +178,7 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
       setIsSubmitting(false);
     }
   };
+  handleRateRef.current = handleRate;
 
   const audioProgressPercent =
     audio.duration > 0 ? Math.min(100, (audio.currentTime / audio.duration) * 100) : 0;
@@ -292,6 +353,9 @@ const DictationSession: React.FC<DictationSessionProps> = ({ words, onComplete }
                 {t.practice.suggestedRatingHint}
               </p>
               <RatingButtons previewIntervals={null} suggested={suggestedRating} disabled={isSubmitting} onRate={handleRate} />
+              <p className="text-center text-[10px] font-semibold text-slate-300 dark:text-slate-600">
+                {t.practice.ratingKeyboardHint}
+              </p>
             </div>
           )}
         </form>

@@ -77,6 +77,16 @@ const renderSessionPage = (path: string) =>
 describe('VocabPracticeSessionPage — canonical initial mode', () => {
   beforeEach(() => {
     const fetchMock = vi.fn((url: string) => {
+      // Guess-the-Word's own persisted progress fetch (useGuessWordQueue) —
+      // matched BEFORE the generic '/vocab/decks/deck-1' branch below, since
+      // this URL contains that substring too. A shallow "nothing learned
+      // yet" response is enough for this file's mechanism-level (tab-
+      // selection) checks.
+      if (url.includes('/guess-progress')) {
+        return Promise.resolve(
+          jsonResponse(200, { deckId: 'deck-1', totalWords: MOCK_WORDS.length, learnedWordIds: [] }),
+        );
+      }
       if (url.includes('/vocab/decks/deck-1/words')) {
         return Promise.resolve(jsonResponse(200, { data: MOCK_WORDS }));
       }

@@ -207,6 +207,21 @@ describe('GrammarRoadmapPage — data', () => {
     const link = await screen.findByRole('link', { name: /Grammar Fundamentals/ });
     expect(link).toHaveAttribute('href', '/courses/c-1');
   });
+
+  it('links an IN_PROGRESS card to the lesson list, never straight into continueLessonId', async () => {
+    // The roadmap grid is an overview surface — even a "Học tiếp" card must
+    // land on the course's lesson list so the learner can pick freely,
+    // rather than being dropped straight into whichever lesson is next.
+    global.fetch = buildFetch(MOCK_COURSES, [
+      courseSummary('c-1', 2, 1, { status: 'IN_PROGRESS' }),
+      courseSummary('c-2', 1, 0),
+      courseSummary('c-3', 1, 0),
+    ]) as unknown as typeof fetch;
+    renderPage();
+
+    const link = await screen.findByRole('link', { name: /Grammar Fundamentals/ });
+    expect(link).toHaveAttribute('href', '/courses/c-1');
+  });
 });
 
 describe('GrammarRoadmapPage — no search input (Sprint 06 decision)', () => {

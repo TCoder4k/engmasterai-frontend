@@ -93,6 +93,26 @@ describe('DictationSession finite progress', () => {
     expect(onComplete).toHaveBeenCalledWith({ totalCards: 2, correctCount: 2 });
   });
 
+  it('focuses the input on mount and again after advancing to the next word', async () => {
+    renderSession([word('w1', 'alpha'), word('w2', 'alpha')]);
+    const input = screen.getByLabelText('Type what you hear');
+    expect(input).toHaveFocus();
+
+    await userEvent.type(input, 'alpha');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    // The input is `disabled` while feedback is shown — focus is expected
+    // to move away (a disabled element cannot hold it).
+    expect(input).not.toHaveFocus();
+
+    await userEvent.click(screen.getByRole('button', { name: /^Good/ }));
+
+    // Real regression: focusing in the same tick that clears `feedback`
+    // used to race the DOM (the input was still disabled at that instant),
+    // silently failing — this pins that it actually receives focus once
+    // re-enabled for the new word, with no click required.
+    await waitFor(() => expect(screen.getByLabelText('Type what you hear')).toHaveFocus());
+  });
+
   it('an incorrect answer reveals the expected word, suggests Again, and does not count as correct', async () => {
     const onComplete = renderSession([word('w1', 'alpha')]);
 
@@ -113,16 +133,76 @@ describe('DictationSession finite progress', () => {
     expect(onComplete).toHaveBeenCalledWith({ totalCards: 1, correctCount: 0 });
   });
 
-  it('requires an explicit rating click to advance — pressing Enter again after checking does nothing', async () => {
+  it('before checking, Enter submits the typed answer rather than a rating', async () => {
     renderSession([word('w1', 'alpha')]);
+
+    await userEvent.type(screen.getByLabelText('Type what you hear'), 'alpha');
+    await userEvent.keyboard('{Enter}');
+
+    expect(screen.getByText('Correct!')).toBeInTheDocument();
+    expect(submitReview).not.toHaveBeenCalled();
+  });
+});
+
+describe('DictationSession keyboard shortcuts (Enter confirms suggestion, 1-4 pick a rating)', () => {
+  it('Enter confirms the suggested Good rating after a correct check', async () => {
+    const onComplete = renderSession([word('w1', 'alpha')]);
 
     await userEvent.type(screen.getByLabelText('Type what you hear'), 'alpha');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
     expect(screen.getByText('Correct!')).toBeInTheDocument();
 
     await userEvent.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(submitReview).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({ rating: 'GOOD', practiceMode: 'DICTATION' }),
+      ),
+    );
+    expect(onComplete).toHaveBeenCalledWith({ totalCards: 1, correctCount: 1 });
+  });
+
+  it('Enter confirms the suggested Again rating after an incorrect check', async () => {
+    renderSession([word('w1', 'alpha')]);
+
+    await userEvent.type(screen.getByLabelText('Type what you hear'), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+
+    await userEvent.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(submitReview).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({ rating: 'AGAIN', practiceMode: 'DICTATION' }),
+      ),
+    );
+  });
+
+  it('digit keys 1-4 pick a specific rating directly, bypassing the suggestion', async () => {
+    renderSession([word('w1', 'alpha')]);
+
+    await userEvent.type(screen.getByLabelText('Type what you hear'), 'alpha');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+
+    await userEvent.keyboard('4'); // EASY, even though Good was suggested
+
+    await waitFor(() =>
+      expect(submitReview).toHaveBeenCalledWith(
+        'w1',
+        expect.objectContaining({ rating: 'EASY', practiceMode: 'DICTATION' }),
+      ),
+    );
+  });
+
+  it('digit keys and Enter-as-rating are inert before an answer has been checked', async () => {
+    renderSession([word('w1', 'alpha')]);
+
+    await userEvent.type(screen.getByLabelText('Type what you hear'), 'alpha');
+    await userEvent.keyboard('3'); // no feedback yet — must not rate
+
     expect(submitReview).not.toHaveBeenCalled();
-    expect(screen.getByText('Correct!')).toBeInTheDocument(); // still on the same card
+    expect(screen.queryByText('Correct!')).not.toBeInTheDocument();
   });
 });
 
