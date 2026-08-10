@@ -6,14 +6,17 @@ import { getWord } from '../../../services/vocabWordService';
 import { speakText, cancelSpeech } from '../../../services/tts';
 import { playCorrect, playIncorrect } from '../../../services/feedbackSounds';
 import CelebrationBurst from '../../shared/CelebrationBurst';
+import Skeleton from '../../shared/Skeleton';
+import ErrorState from '../../shared/ErrorState';
 import { blankSentence } from './wordBlanking';
 import { pickHintPositions, buildHintMask } from './hintMask';
-import { useVocabSession } from './useVocabSession';
-import { SessionResult } from '../types';
+import { useGuessWordQueue } from './useGuessWordQueue';
+import GuessWordSessionSummary from './GuessWordSessionSummary';
 
 interface GuessWordSessionProps {
+  deckId: string;
   words: VocabWordListItem[];
-  onComplete: (result: SessionResult) => void;
+  onExit: () => void;
 }
 
 // The prompt is VI -> EN: the headline shows the word's Vietnamese meaning
@@ -56,9 +59,23 @@ const playWordAudio = (word: Pick<VocabWordListItem, 'audioUrl' | 'text'>): (() 
 // not worth extracting for this.
 const normalize = (value: string): string => value.trim().toLowerCase().replace(/[^a-z0-9'\s-]/g, '');
 
-const GuessWordSession: React.FC<GuessWordSessionProps> = ({ words, onComplete }) => {
+const GuessWordSession: React.FC<GuessWordSessionProps> = ({ deckId, words, onExit }) => {
   const { t } = useTranslation();
-  const { currentWord, index, total, correctCount, isComplete, answer } = useVocabSession(words);
+  const {
+    currentWord,
+    totalWords,
+    remainingCount,
+    learnedThisSessionCount,
+    struggledCount,
+    isLoading,
+    error,
+    isComplete,
+    answerCorrect,
+    answerWrongOrSkip,
+    restartStruggled,
+    restartFull,
+    retry,
+  } = useGuessWordQueue(deckId, words);
   const [example, setExample] = useState<VocabWordExample | null>(null);
   const [typedText, setTypedText] = useState('');
   // 'correct'/'gaveup' are the two FINAL, locked outcomes — the round ends,
@@ -75,11 +92,6 @@ const GuessWordSession: React.FC<GuessWordSessionProps> = ({ words, onComplete }
   // (audio.pause or cancelSpeech) — stopped on card change/unmount so a
   // late-arriving pronunciation never bleeds into the next card.
   const stopAudioRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    if (isComplete) onComplete({ totalCards: total, correctCount });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isComplete]);
 
   // Same lazy per-card fetch FlashcardSession already uses — examples live
   // only on the student word-detail endpoint, not the deck word-list shape.
@@ -118,6 +130,38 @@ const GuessWordSession: React.FC<GuessWordSessionProps> = ({ words, onComplete }
     if (feedback) inputRef.current?.focus();
   }, [feedback]);
 
+  if (isLoading) {
+    return (
+      <div className="max-w-md mx-auto space-y-4">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-80 w-full" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-md mx-auto">
+        <ErrorState message={error} onRetry={retry} />
+      </div>
+    );
+  }
+
+  if (isComplete) {
+    return (
+      <div className="max-w-md mx-auto">
+        <GuessWordSessionSummary
+          totalWords={totalWords}
+          learnedThisSessionCount={learnedThisSessionCount}
+          struggledCount={struggledCount}
+          onReviewStruggled={restartStruggled}
+          onRestartFull={restartFull}
+          onExit={onExit}
+        />
+      </div>
+    );
+  }
+
   if (!currentWord) return null;
 
   const primaryPartOfSpeech = currentWord.meanings[0]?.partOfSpeech ?? null;
@@ -138,8 +182,11 @@ const GuessWordSession: React.FC<GuessWordSessionProps> = ({ words, onComplete }
   if (hintLevel >= 2) revealedIndices.add(hintIndex2);
   const displayWord = feedback ? currentWord.text : buildHintMask(currentWord.text, revealedIndices);
   const wordIsHidden = !feedback;
-  const answeredCount = Math.min(index, total);
-  const progressPercent = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+  // Persisted progress, not position in a shuffled order: `learnedCount`
+  // already includes words learned in EARLIER sessions (excluded from the
+  // queue on load), matching the product owner's literal "2/50 đã học" spec.
+  const learnedCount = totalWords - remainingCount;
+  const progressPercent = totalWords > 0 ? Math.round((learnedCount / totalWords) * 100) : 0;
 
   const handleHint = () => {
     if (feedback) return;
@@ -168,6 +215,12 @@ const GuessWordSession: React.FC<GuessWordSessionProps> = ({ words, onComplete }
       setFeedback('correct');
       playCorrect();
       setBurstKey((k) => k + 1);
+      // Confirmed correctness is exactly when the word's pronunciation
+      // should be heard — same audio source (real audioUrl, TTS fallback)
+      // as the level-3 hint, stopped first in case that hint audio is
+      // still playing.
+      stopAudioRef.current?.();
+      stopAudioRef.current = playWordAudio(currentWord);
     } else {
       // Deliberately NOT a final state: no reveal, no lock — the round stays
       // open so the learner can retry. Revealing the answer is Skip's job
@@ -185,33 +238,51 @@ const GuessWordSession: React.FC<GuessWordSessionProps> = ({ words, onComplete }
     setFeedback('gaveup');
     setWrongAttempt(false);
     playIncorrect();
+    // Skipping reveals the word, so it should be heard too — same source
+    // and stop-first discipline as the correct-answer path above.
+    stopAudioRef.current?.();
+    stopAudioRef.current = playWordAudio(currentWord);
   };
 
   const handleContinue = () => {
     if (!feedback) return;
-    // Taking a hint never affects scoring — a correct answer after a hint
-    // still counts as correct. There's no SRS here (session-score-only,
-    // same posture as GamesSession), so this is the entire advance mechanism.
-    answer(feedback === 'correct');
+    // Reset the round's UI state explicitly here, rather than relying only
+    // on the currentWord?.id-keyed effect above — a requeued word on a
+    // small (or single-word) deck can land back at the SAME queue position,
+    // meaning currentWord's identity never changes and that effect would
+    // never re-fire, leaving a stale locked "Not quite: ..." screen forever.
+    const wasCorrect = feedback === 'correct';
+    setTypedText('');
+    setFeedback(null);
+    setWrongAttempt(false);
+    setHintLevel(0);
+    // Taking a hint never affects whether this counts as "learned" — a
+    // correct answer after a hint still marks the word learned. Only a
+    // confirmed-correct answer persists anything (see
+    // vocabGuessProgressService); giving up requeues the word locally with
+    // no backend call, same as a wrong Check.
+    if (wasCorrect) {
+      answerCorrect(currentWord.id);
+    } else {
+      answerWrongOrSkip(currentWord.id);
+    }
   };
 
   return (
     <div className="max-w-md mx-auto space-y-4">
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs font-bold text-slate-400 dark:text-slate-500">
+          <span>{t.practice.guessLearnedOfTotal(learnedCount, totalWords)}</span>
           <span>
-            {t.practice.questionLabel} {Math.min(index + 1, total)}/{total}
-          </span>
-          <span>
-            {t.practice.correctLabel}: {correctCount}
+            {t.practice.reviewRemainingLabel}: {remainingCount}
           </span>
         </div>
         <div
           role="progressbar"
           aria-label={t.practice.sessionProgress}
           aria-valuemin={0}
-          aria-valuemax={total}
-          aria-valuenow={answeredCount}
+          aria-valuemax={totalWords}
+          aria-valuenow={learnedCount}
           className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"
         >
           <div

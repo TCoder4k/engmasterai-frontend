@@ -28,10 +28,15 @@ const VALID_PRACTICE_MODES: VocabPracticeMode[] = ['flashcard', 'guess', 'dictat
 // ratings are real, persisted per-user SRS progress (POST
 // /learning/words/:wordId/review) — Dictation submits a suggested rating
 // the user must confirm; Games stays session-score-only, no SRS mutation
-// (see each component's own header comment). The `sessionKey`/`result`
-// state on this page itself (mode switching, session completion/restart)
-// remains purely local, unrelated to that persisted progress. The ?mode=
-// search param keeps back-button/deep links sane without a route per mode.
+// (see each component's own header comment). Guess-the-Word has its OWN
+// persisted, per-deck progress (VocabGuessProgress, deliberately NOT the
+// SRS engine) and therefore owns its full completion/summary/restart
+// lifecycle internally — it does not use this page's `sessionKey`/`result`/
+// onComplete/SessionSummary plumbing at all, unlike the other four modes.
+// The `sessionKey`/`result` state on this page itself (mode switching,
+// session completion/restart) remains purely local, unrelated to that
+// persisted progress. The ?mode= search param keeps back-button/deep links
+// sane without a route per mode.
 const VocabPracticeSessionPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -175,7 +180,7 @@ const VocabPracticeSessionPage: React.FC = () => {
         ) : mode === 'flashcard' ? (
           <FlashcardSession key={sessionKey} words={words} onComplete={handleComplete} />
         ) : mode === 'guess' ? (
-          <GuessWordSession key={sessionKey} words={words} onComplete={handleComplete} />
+          <GuessWordSession key={sessionKey} deckId={deckId!} words={words} onExit={handleExit} />
         ) : mode === 'dictation' ? (
           <DictationSession key={sessionKey} words={words} onComplete={handleComplete} />
         ) : mode === 'games' ? (

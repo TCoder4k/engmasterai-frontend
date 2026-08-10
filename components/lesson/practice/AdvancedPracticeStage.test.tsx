@@ -232,6 +232,63 @@ describe('AdvancedPracticeStage — answering', () => {
   });
 });
 
+describe('AdvancedPracticeStage — Enter checks and advances, not just a mouse click', () => {
+  // Regression: QuizQuestionCard only wires its onEnter prop through to
+  // FILL_BLANK; Multiple Choice, True/False and Ordering have no text input
+  // of their own to catch a keypress, so they depend entirely on a wrapping
+  // onKeyDown the stage previously never had. This deck of fixtures is
+  // MULTIPLE_CHOICE, exactly the case that silently did nothing before.
+  it('pressing Enter after selecting an option checks the answer, same as clicking Check answer', async () => {
+    const user = userEvent.setup();
+    mocked.answerPracticeQuestion.mockResolvedValue({
+      questionId: 'q1',
+      isCorrect: true,
+      correctAnswer: { optionId: 'a' },
+      explanation: null,
+      answeredCount: 1,
+      totalCount: 2,
+      currentStreak: 1,
+      allAnswered: false,
+    });
+
+    renderStage();
+    await user.click(await screen.findByRole('button', { name: /start practice/i }));
+    await user.click(await screen.findByText('Alpha'));
+
+    await user.keyboard('{Enter}');
+
+    expect(mocked.answerPracticeQuestion).toHaveBeenCalledWith(
+      'lesson-1',
+      expect.objectContaining({ questionId: 'q1' }),
+    );
+  });
+
+  it('pressing Enter again after grading advances to the next question, without clicking Next', async () => {
+    const user = userEvent.setup();
+    mocked.answerPracticeQuestion.mockResolvedValue({
+      questionId: 'q1',
+      isCorrect: true,
+      correctAnswer: { optionId: 'a' },
+      explanation: null,
+      answeredCount: 1,
+      totalCount: 2,
+      currentStreak: 1,
+      allAnswered: false,
+    });
+
+    renderStage();
+    await user.click(await screen.findByRole('button', { name: /start practice/i }));
+    await user.click(await screen.findByText('Alpha'));
+    await user.click(screen.getByRole('button', { name: /check answer/i }));
+    // Grading complete once the primary button has switched from Check to Next.
+    await screen.findByRole('button', { name: /^next/i });
+
+    await user.keyboard('{Enter}');
+
+    expect(await screen.findByText('Question q2')).toBeInTheDocument();
+  });
+});
+
 describe('AdvancedPracticeStage — resume', () => {
   it('restores an in-flight attempt instead of showing the intro', async () => {
     mocked.getPractice.mockResolvedValue(overview({ attempt: attempt() }));

@@ -3,10 +3,7 @@ import { Link } from 'react-router-dom';
 import { BookOpen, CheckCircle2, ChevronRight, Clock, Layers } from 'lucide-react';
 import { Course } from '../../types';
 import { GrammarCategory, deriveCourseLevel, deriveGrammarCategory } from './grammarCategory';
-import {
-  continuePath,
-  CourseProgressSummary,
-} from '../../services/courseProgressService';
+import { CourseProgressSummary } from '../../services/courseProgressService';
 import { statusPresentation } from '../../services/courseStatus';
 import { useTranslation } from '../../i18n/useTranslation';
 
@@ -57,12 +54,12 @@ const GrammarCourseCard: React.FC<GrammarCourseCardProps> = ({ course, progress 
   const showProgress = progress !== null && progress.completedLessons > 0;
   const isComplete = progress?.status === 'COMPLETED';
 
-  // Resume where they left off, rather than sending them back to the top of a
-  // course they are half-way through.
-  const target =
-    progress && progress.status === 'IN_PROGRESS'
-      ? (continuePath(progress) ?? `/courses/${course.id}`)
-      : `/courses/${course.id}`;
+  // Always the course's lesson list, never a specific lesson — the roadmap
+  // grid is an overview surface, and jumping straight into "Học tiếp"'s
+  // lesson skipped that overview for a student who might want a different
+  // lesson than the one they left off on. `CourseDetailPage` (at this route)
+  // already shows real per-lesson status and its own "Học tiếp" per row.
+  const target = `/courses/${course.id}`;
 
   const categoryLabels: Record<GrammarCategory, string> = {
     TOEIC: t.grammar.categoryTOEIC,

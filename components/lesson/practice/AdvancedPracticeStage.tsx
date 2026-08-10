@@ -256,8 +256,29 @@ const AdvancedPracticeStage: React.FC<AdvancedPracticeStageProps> = ({
   const currentGrade = current ? graded[current.id] : undefined;
   const answeredCurrent = current ? answers[current.id] !== undefined : false;
 
+  // Same shape as QuizStage.tsx's own handleKeyDown, mirroring the primary
+  // button's exact disabled conditions so Enter can never do something the
+  // visible button wouldn't allow. QuizQuestionCard only wires its `onEnter`
+  // prop through to FILL_BLANK (whose own input claims Enter via
+  // stopPropagation() before it would reach here) — Multiple Choice, True/
+  // False and Ordering have no text input to catch a keypress at all, so
+  // without this wrapper Enter silently does nothing for those three types,
+  // and every check/next had to be a mouse click.
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+    if (isImmediate && !currentGrade) {
+      if (!answeredCurrent) return;
+      e.preventDefault();
+      void handleGrade();
+      return;
+    }
+    if (submitting || (!isImmediate && !answeredCurrent)) return;
+    e.preventDefault();
+    goNext();
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" onKeyDown={handleKeyDown}>
       <QuizProgressBar
         current={index}
         total={questions.length}
