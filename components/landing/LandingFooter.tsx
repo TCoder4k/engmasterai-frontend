@@ -132,7 +132,7 @@ const LandingFooter: React.FC = () => {
                   required
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  placeholder="ban@gmail.com"
+                  placeholder="DuyTu@gmail.com"
                   className="w-full px-3.5 py-2.5 bg-slate-900 dark:bg-ink-900 border border-slate-800 dark:border-ink-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
                 <button

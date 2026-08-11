@@ -32,6 +32,10 @@ export interface Course {
   thumbnail: string | null;
   isPublished: boolean;
   createdAt: string;
+  // Personalized Onboarding & Placement Test — admin-settable, optional. Lets
+  // the roadmap algorithm match a placement result's weak sections to an
+  // appropriately-leveled course.
+  level: CefrLevel | null;
   // Sprint 05 — PUBLISHED lessons only (CourseService.PUBLIC_SELECT filters
   // the relation count). Not the same number as ManagedCourse's below.
   _count: { lessons: number };
@@ -87,6 +91,16 @@ export interface ManagedLesson extends Lesson {
 }
 
 export type CefrLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+
+// Personalized Onboarding & Placement Test — the six goal choices on the
+// onboarding wizard's first step. Mirrors the backend's LearningGoal enum.
+export type LearningGoal =
+  | 'FOUNDATION'
+  | 'TOEIC_450'
+  | 'TOEIC_650'
+  | 'TOEIC_800'
+  | 'GENERAL_ENGLISH'
+  | 'REGULAR_PRACTICE';
 
 export interface VocabLibrary {
   id: string;

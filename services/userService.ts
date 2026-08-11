@@ -1,5 +1,6 @@
 import { throwApiError } from './apiError';
 import { apiFetch } from './apiFetch';
+import { LearningGoal } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -14,6 +15,14 @@ export interface User {
   createdAt: string;
   // Sprint 02B — derived server-side from emailVerifiedAt !== null.
   emailVerified: boolean;
+  // Personalized Onboarding & Placement Test — derived server-side from
+  // onboardedAt !== null, same pattern as emailVerified above. This is what
+  // OnboardingGateBoundary reads SYNCHRONOUSLY (no network call) to decide
+  // whether to redirect to /onboarding: the value already arrives on this
+  // same GET /users/me response the app fetches at every login, via
+  // authService's enterSession -> getProfile -> updateStoredUser chain.
+  onboarded: boolean;
+  learningGoal: LearningGoal | null;
 }
 
 export interface UserListResponse {

@@ -54,6 +54,18 @@ export interface AuthResponse {
     // Sprint 02B — derived server-side from emailVerifiedAt !== null; the
     // raw timestamp itself is never sent to the client.
     emailVerified: boolean;
+    // Personalized Onboarding & Placement Test — optional here on purpose:
+    // register()/login()/googleLogin() responses don't carry it (same
+    // "AuthResponse.user doesn't carry every field" gap avatarUrl already
+    // has above); it arrives moments later via the awaited getProfile() ->
+    // updateStoredUser() call every sign-in flow already makes
+    // (LoginForm/RegisterForm's enterSession). OnboardingGateBoundary reads
+    // this as `!== true` specifically so the brief undefined window before
+    // that call resolves is treated the same as "needs onboarding" — the
+    // safe default, since the wizard's own status check self-corrects a
+    // wrong guess in that direction but a wrong guess the other way would
+    // silently skip onboarding for a genuinely new user.
+    onboarded?: boolean;
   };
   accessToken: string;
   // Only ever present on register()'s response — omitted (undefined) for
