@@ -12,19 +12,26 @@ import {
   unpublishCourse,
   deleteCourse,
 } from '../../services/courseService';
-import { ManagedCourse, CourseType } from '../../types';
+import { ManagedCourse, CourseType, CefrLevel } from '../../types';
 import { Plus, Pencil, Trash2, Eye, EyeOff, BookText, Layers } from 'lucide-react';
 
 const COURSE_TYPES: CourseType[] = ['GRAMMAR', 'VOCABULARY', 'LISTENING'];
+
+// Personalized Onboarding & Placement Test — lets the roadmap algorithm match
+// a placement result's weak sections to an appropriately-leveled course.
+// '' in form state means "not set" (Course.level is optional); mapped to
+// undefined at submit time so create/update never sends an empty string.
+const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 interface CourseFormState {
   title: string;
   type: CourseType;
   description: string;
   thumbnail: string;
+  level: CefrLevel | '';
 }
 
-const emptyForm: CourseFormState = { title: '', type: 'GRAMMAR', description: '', thumbnail: '' };
+const emptyForm: CourseFormState = { title: '', type: 'GRAMMAR', description: '', thumbnail: '', level: '' };
 
 const AdminCourses: React.FC = () => {
   const navigate = useNavigate();
@@ -68,6 +75,7 @@ const AdminCourses: React.FC = () => {
       type: course.type,
       description: course.description,
       thumbnail: course.thumbnail || '',
+      level: course.level || '',
     });
     setFormError(null);
   };
@@ -82,6 +90,7 @@ const AdminCourses: React.FC = () => {
         type: form.type,
         description: form.description,
         thumbnail: form.thumbnail || undefined,
+        level: form.level || undefined,
       });
       setIsCreateOpen(false);
       loadCourses();
@@ -103,6 +112,7 @@ const AdminCourses: React.FC = () => {
         type: form.type,
         description: form.description,
         thumbnail: form.thumbnail || undefined,
+        level: form.level || undefined,
       });
       setEditingCourse(null);
       loadCourses();
@@ -319,6 +329,19 @@ const AdminCourses: React.FC = () => {
               >
                 {COURSE_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Trình độ (CEFR, tùy chọn)</label>
+              <select
+                value={form.level}
+                onChange={(e) => setForm((f) => ({ ...f, level: e.target.value as CefrLevel | '' }))}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
+              >
+                <option value="">Chưa đặt</option>
+                {CEFR_LEVELS.map((lvl) => (
+                  <option key={lvl} value={lvl}>{lvl}</option>
                 ))}
               </select>
             </div>
