@@ -8,6 +8,7 @@ import {
   Library,
   BookMarked,
   Headphones,
+  ListChecks,
   Gamepad2,
   LineChart,
   Wallet,
@@ -118,6 +119,16 @@ const AdminSidebar: React.FC = () => {
         <NavLink to="/admin/listening" className={({ isActive }) => navLinkClass(isActive)}>
           <Headphones size={20} />
           <span>Listening (Nội dung)</span>
+        </NavLink>
+
+        {/* Personalized Onboarding & Placement Test — the dedicated question
+            bank (Phase 2). No `end`: this is the only route under this
+            section today, but kept consistent with the other content-bank
+            nav items above in case a coverage/preview sub-route is added
+            later. */}
+        <NavLink to="/admin/placement/questions" className={({ isActive }) => navLinkClass(isActive)}>
+          <ListChecks size={20} />
+          <span>Kiểm tra đầu vào</span>
         </NavLink>
 
         {comingSoonItems.map((item, index) => (
