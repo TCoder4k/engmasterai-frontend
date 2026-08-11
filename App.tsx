@@ -23,6 +23,7 @@ import AdminVocabDeckWords from './components/admin/AdminVocabDeckWords';
 import AdminListeningContents from './components/admin/AdminListeningContents';
 import AdminListeningCategories from './components/admin/AdminListeningCategories';
 import AdminListeningEditor from './components/admin/AdminListeningEditor';
+import AdminPlacementQuestions from './components/admin/AdminPlacementQuestions';
 import VocabLibraryPage from './components/vocab/VocabLibraryPage';
 import LibraryDetailPage from './components/vocab/LibraryDetailPage';
 import DeckDetailPage from './components/vocab/DeckDetailPage';
@@ -221,6 +222,11 @@ const App: React.FC = () => {
           <Route path="/admin/vocab/words/new" element={<AdminVocabWordEditor />} />
           <Route path="/admin/vocab/words/:wordId/edit" element={<AdminVocabWordEditor />} />
           <Route path="/admin/vocab/decks/:deckId/words" element={<AdminVocabDeckWords />} />
+          {/* Personalized Onboarding & Placement Test, Phase 2 — the
+              dedicated question bank. Standalone (not nested under
+              /admin/courses or /admin/vocab): PlacementQuestion has no
+              parent course/lesson/library, it is its own flat bank. */}
+          <Route path="/admin/placement/questions" element={<AdminPlacementQuestions />} />
         </Route>
       </Routes>
     </BrowserRouter>
