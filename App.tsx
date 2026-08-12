@@ -43,6 +43,8 @@ import ShadowingModePanel from './components/practice/listening/ShadowingModePan
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
+import OnboardingGateBoundary from './components/shared/OnboardingGateBoundary';
+import OnboardingPage from './components/onboarding/OnboardingPage';
 import GamificationBoundary from './components/shared/GamificationProvider';
 import StudyTimeBoundary from './components/shared/StudyTimeBoundary';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -101,6 +103,32 @@ const App: React.FC = () => {
             this wrapper now does that job (and does it before the page's
             own JSX ever renders, not one tick after). */}
         <Route element={<ProtectedRoute />}>
+          {/* Personalized Onboarding & Placement Test — the APP-WIDE
+              onboarding gate, wrapping every other student route below it
+              (including the GamificationBoundary/StudyTimeBoundary pair) so
+              a not-yet-onboarded USER is redirected to /onboarding before
+              ANY of those boundaries' own requests fire — no gamification
+              profile fetch, no study-time heartbeat, nothing, until
+              onboarding is actually done. /onboarding itself sits INSIDE
+              this gate but OUTSIDE both of those boundaries: the wizard has
+              no use for either while it runs. See
+              OnboardingGateBoundary.tsx's header note for why this check is
+              purely synchronous (no network call). */}
+          <Route element={<OnboardingGateBoundary />}>
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          {/* Phase 7 — the retake entry point (RoadmapCard on /home links
+              here). A SIBLING path, not a query param on /onboarding: the
+              gate's own rule only ever compares pathname === '/onboarding'
+              exactly, so '/onboarding/retake' falls through BOTH of its
+              special cases untouched — not-yet-onboarded users still get
+              redirected to the real /onboarding (correct: they cannot
+              "retake" a test they never took), and already-onboarded users
+              reach this route instead of being bounced home, with zero
+              changes to OnboardingGateBoundary.tsx or its tests. Left
+              OUTSIDE Gamification/StudyTime, same as /onboarding itself:
+              the placement test earns no XP and tracks no study time either
+              way (see the backend's own "diagnostic, not graded" note). */}
+          <Route path="/onboarding/retake" element={<OnboardingPage retake />} />
           {/* Sprint 10 — GamificationBoundary wraps the STUDENT routes only, so
               the XP profile is fetched once per session and survives every
               navigation inside this group. It is nested here rather than folded
@@ -180,6 +208,7 @@ const App: React.FC = () => {
           </Route>
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
+          </Route>
           </Route>
           </Route>
         </Route>

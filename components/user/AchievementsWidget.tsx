@@ -61,10 +61,12 @@ const AchievementsWidget: React.FC = () => {
       className="p-6 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-3xl shadow-sm dark:shadow-xl space-y-4"
     >
       <div className="flex items-center gap-2">
-        <Trophy
-          className="w-4 h-4 text-amber-500 dark:text-amber-400"
+        <div
+          className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center flex-shrink-0"
           aria-hidden="true"
-        />
+        >
+          <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        </div>
         <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
           {t.widgets.achievements}
         </span>

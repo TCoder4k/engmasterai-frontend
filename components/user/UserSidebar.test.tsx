@@ -41,6 +41,7 @@ const analytics = (
     currentStreakDays: 3,
     streakCapped: false,
   },
+  recentAccuracyPercent: 82,
   ...overrides,
 });
 
