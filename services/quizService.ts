@@ -49,6 +49,10 @@ export interface StudentQuizQuestion {
   content: string;
   options: QuizQuestionOption[] | null;
   audioUrl: string | null;
+  // Optional — only ever set for placement's Listening questions (see
+  // StudentPlacementQuestion.transcript). Every other caller of this shared
+  // type (lesson quizzes, AdvancedPracticeStage) leaves it undefined.
+  transcript?: string | null;
   imageUrl: string | null;
   orderIndex: number;
   // Null for every question the student has not answered yet — those carry

@@ -78,8 +78,13 @@ type Resolved = {
 // destination comes from the server's continuation rule either way. The card
 // used to render nothing at all in that case, which is bug 7 on the dashboard.
 //
-// The design reference shows a 65% progress bar here. It is reproduced with a
-// REAL, server-derived figure, and is simply absent when there isn't one.
+// A REAL, server-derived progress percentage is shown when there is one, and
+// simply absent when there isn't.
+//
+// Restyled to a single compact "resume" row rather than a hero banner: this
+// card sits between the vocabulary banner and the roadmap, and giving it the
+// same visual weight as either would make every section fight for attention
+// instead of establishing which one is primary.
 const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
   dueTotal = null,
   progressPercent = null,
@@ -103,7 +108,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
         detail: null,
         // The server's next-lesson target wins over the last page opened.
         path: grammarContinuePath ?? grammar?.path ?? '/grammar',
-        icon: <BookOpen className="w-8 h-8" aria-hidden="true" />,
+        icon: <BookOpen className="w-6 h-6" aria-hidden="true" />,
       };
     }
 
@@ -113,7 +118,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
         title: t.dashboard.continueReviewTitle,
         detail: `${dueTotal} ${t.dashboard.continueWordsDue}`,
         path: '/practice/review',
-        icon: <BookMarked className="w-8 h-8" aria-hidden="true" />,
+        icon: <BookMarked className="w-6 h-6" aria-hidden="true" />,
       };
     }
 
@@ -124,7 +129,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
         title: listening.title,
         detail: listeningDetail ?? null,
         path: listening.path,
-        icon: <Headphones className="w-8 h-8" aria-hidden="true" />,
+        icon: <Headphones className="w-6 h-6" aria-hidden="true" />,
       };
     }
 
@@ -135,7 +140,7 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
         title: recent.title,
         detail: null,
         path: recent.path,
-        icon: <BookOpen className="w-8 h-8" aria-hidden="true" />,
+        icon: <BookOpen className="w-6 h-6" aria-hidden="true" />,
       };
     }
 
@@ -161,66 +166,36 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
         </Link>
       </div>
 
-      <div className="group relative overflow-hidden rounded-3xl p-6 shadow-lg dark:shadow-2xl space-y-4 border transition-all bg-gradient-to-r from-blue-50 via-white to-blue-50/60 border-blue-200 hover:border-blue-300 dark:from-blue-950 dark:via-ink-900 dark:to-ink-850 dark:border-blue-500/30 dark:hover:border-blue-500/50">
-        <div
-          className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"
+      <div className="rounded-2xl border border-slate-200 dark:border-ink-700 bg-white dark:bg-ink-900 p-4 flex items-center gap-4 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors">
+        <span
+          className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"
           aria-hidden="true"
-        />
+        >
+          {resolved ? resolved.icon : <BookOpen className="w-6 h-6" />}
+        </span>
 
-        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div className="flex items-center gap-4 min-w-0">
-            <span
-              className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 p-0.5 shadow-xl shrink-0 group-hover:scale-105 transition-transform duration-300"
-              aria-hidden="true"
-            >
-              <span className="w-full h-full bg-white dark:bg-ink-950 rounded-[14px] flex flex-col items-center justify-center gap-1 p-2 text-blue-600 dark:text-blue-400">
-                {resolved ? resolved.icon : <BookOpen className="w-8 h-8" />}
-                <span className="text-[9px] font-black text-blue-500 dark:text-blue-300 tracking-wider uppercase truncate max-w-full">
-                  {resolved ? resolved.moduleLabel : t.tracks.grammar.label}
-                </span>
+        <div className="min-w-0 flex-1">
+          {resolved ? (
+            <>
+              <span className="inline-block px-2.5 py-0.5 bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30 text-[10px] font-bold rounded-full mb-1">
+                {resolved.moduleLabel}
               </span>
-            </span>
-
-            {resolved ? (
-              <div className="space-y-1.5 min-w-0">
-                <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30 text-[10px] font-bold rounded-full">
-                  {resolved.moduleLabel}
-                </span>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors truncate">
-                  {resolved.title}
-                </h3>
-                {resolved.detail && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    {resolved.detail}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-1.5 min-w-0">
-                <span className="inline-block px-2.5 py-0.5 bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30 text-[10px] font-bold rounded-full">
-                  {t.common.comingSoon}
-                </span>
-                <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                  {t.dashboard.noLearningActivity}
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                  {t.dashboard.continueLearningHint}
+              <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                {resolved.title}
+              </h3>
+              {resolved.detail && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                  {resolved.detail}
                 </p>
-              </div>
-            )}
-          </div>
-
-          {resolved && (
-            <div className="w-full sm:w-auto flex flex-col items-stretch sm:items-end gap-3 shrink-0">
+              )}
               {/* Rendered only when a true percentage exists. */}
               {showProgress && (
-                <div className="w-full sm:w-44 space-y-1">
-                  <div className="flex items-center justify-between text-xs font-bold">
-                    <span className="text-slate-500 dark:text-slate-400">{t.dashboard.progress}</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-black">{progressPercent}%</span>
-                  </div>
+                <div className="flex items-center gap-2 mt-1.5 max-w-[220px]">
+                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
+                    {t.dashboard.progress}
+                  </span>
                   <div
-                    className="w-full h-2.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-ink-700"
+                    className="flex-1 h-1.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden"
                     role="progressbar"
                     aria-valuenow={progressPercent ?? 0}
                     aria-valuemin={0}
@@ -228,23 +203,40 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
                     aria-label={t.dashboard.progress}
                   >
                     <div
-                      className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
+                  <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                    {progressPercent}%
+                  </span>
                 </div>
               )}
-
-              <Link
-                to={resolved.path}
-                className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-              >
-                {t.dashboard.continue}
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </Link>
-            </div>
+            </>
+          ) : (
+            <>
+              <span className="inline-block px-2.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 dark:bg-ink-800 dark:text-slate-300 dark:border-ink-700 text-[10px] font-bold rounded-full mb-1">
+                {t.common.comingSoon}
+              </span>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                {t.dashboard.noLearningActivity}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                {t.dashboard.continueLearningHint}
+              </p>
+            </>
           )}
         </div>
+
+        {resolved && (
+          <Link
+            to={resolved.path}
+            className="flex-shrink-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          >
+            {t.dashboard.continue}
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+          </Link>
+        )}
       </div>
     </section>
   );

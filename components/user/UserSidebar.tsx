@@ -40,10 +40,18 @@ interface UserSidebarProps {
 
 const WidgetCard: React.FC<{
   icon: React.ReactNode;
+  // Full static Tailwind classes for the icon's tile background, e.g.
+  // "bg-blue-100 dark:bg-blue-500/15" — matching the icon-in-colored-tile
+  // pattern already established this session (RoadmapCard, PlacementTestStep,
+  // DashboardStatCards). Dynamic string interpolation would not work here:
+  // Tailwind's JIT scans source for literal class names, so each caller
+  // passes its own complete class string rather than an accent-name to
+  // template.
+  iconTileClass: string;
   title: string;
   trailing?: React.ReactNode;
   children: React.ReactNode;
-}> = ({ icon, title, trailing, children }) => (
+}> = ({ icon, iconTileClass, title, trailing, children }) => (
   // Labelled group: each widget is an independently meaningful chunk, so a
   // screen-reader user can move between them and always know which set of
   // numbers they are in. It also gives tests a stable handle, which matters
@@ -54,7 +62,12 @@ const WidgetCard: React.FC<{
   >
     <div className="flex items-center justify-between gap-2">
       <div className="flex items-center gap-2 min-w-0">
-        {icon}
+        <div
+          className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconTileClass}`}
+          aria-hidden="true"
+        >
+          {icon}
+        </div>
         <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider truncate">
           {title}
         </span>
@@ -177,7 +190,8 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
   return (
     <aside className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 lg:gap-6">
       <WidgetCard
-        icon={<Target className="w-4 h-4 text-blue-500 dark:text-blue-400" aria-hidden="true" />}
+        icon={<Target className="w-4 h-4 text-blue-600 dark:text-blue-400" aria-hidden="true" />}
+        iconTileClass="bg-blue-100 dark:bg-blue-500/15"
         title={t.widgets.dailyGoal}
         trailing={
           // No percentage while loading or after a failure — a bare "0%" beside
@@ -259,7 +273,8 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
 
       {/* ---- REAL: rolling seven-day activity and streak ---- */}
       <WidgetCard
-        icon={<Flame className="w-4 h-4 text-amber-500 fill-amber-400" aria-hidden="true" />}
+        icon={<Flame className="w-4 h-4 text-amber-600 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" aria-hidden="true" />}
+        iconTileClass="bg-amber-100 dark:bg-amber-500/15"
         title={t.widgets.weeklyStreak}
         trailing={
           streakDays !== null ? (
@@ -291,7 +306,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
                   <span
                     className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
                       day.active
-                        ? 'bg-gradient-to-tr from-amber-500 to-orange-500 text-white font-black shadow-lg shadow-amber-500/20'
+                        ? 'bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-black shadow-lg shadow-emerald-500/20'
                         : 'bg-slate-100 dark:bg-ink-950 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-ink-700'
                     }`}
                     // The tick is decorative; the date and its state are carried
@@ -313,7 +328,8 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
 
       {/* ---- REAL: today's counts ---- */}
       <WidgetCard
-        icon={<TrendingUp className="w-4 h-4 text-emerald-500 dark:text-emerald-400" aria-hidden="true" />}
+        icon={<TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />}
+        iconTileClass="bg-emerald-100 dark:bg-emerald-500/15"
         title={t.widgets.todaysProgress}
       >
         {isLoading && <StatSkeleton />}

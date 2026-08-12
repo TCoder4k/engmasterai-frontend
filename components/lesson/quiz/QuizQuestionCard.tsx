@@ -18,6 +18,18 @@ interface QuizQuestionCardProps {
   // Sprint 06B.5 — the server's verdict for this question, once it has one.
   // Null while the student is still deciding.
   graded?: { isCorrect: boolean; correctAnswer: unknown } | null;
+  // Onboarding placement redesign — opt-in only, defaults to today's look
+  // for every existing caller (lesson quizzes, AdvancedPracticeStage, etc.).
+  // Only affects MultipleChoiceInput's option styling (lettered badges,
+  // blue accent instead of numbered/violet) — the rest of this card's shell
+  // is unchanged under either variant.
+  variant?: 'default' | 'placement';
+  // Lets a caller swap in its own audio player (e.g. PlacementAudioPlayer)
+  // instead of the bare native <audio> element below, without this shared
+  // component importing anything feature-specific. Called whenever either
+  // audioUrl or transcript is present — transcript-only (no real recording
+  // yet) is a valid, expected case for placement's Listening questions.
+  renderAudio?: (audio: { audioUrl: string | null; transcript: string | null }) => React.ReactNode;
 }
 
 // One question at a time. Dispatches to the per-type input purely on
@@ -31,6 +43,8 @@ const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
   onChange,
   onEnter,
   graded = null,
+  variant = 'default',
+  renderAudio,
 }) => {
   const { t } = useTranslation();
   const fillBlankId = `quiz-fill-blank-${question.id}`;
@@ -76,10 +90,14 @@ const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
           className="w-full max-h-64 object-contain rounded-2xl border border-slate-100 dark:border-ink-700 my-4"
         />
       )}
-      {question.audioUrl && (
-        <audio controls src={question.audioUrl} className="w-full my-4">
-          Your browser does not support the audio element.
-        </audio>
+      {(question.audioUrl || question.transcript) && (
+        renderAudio ? (
+          renderAudio({ audioUrl: question.audioUrl, transcript: question.transcript ?? null })
+        ) : question.audioUrl ? (
+          <audio controls src={question.audioUrl} className="w-full my-4">
+            Your browser does not support the audio element.
+          </audio>
+        ) : null
       )}
 
       <div className="mt-5">
@@ -90,6 +108,7 @@ const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
             onChange={(optionId) => onChange({ optionId })}
             disabled={locked}
             correctOptionId={locked ? ((answer?.optionId as string) ?? null) : null}
+            variant={variant}
           />
         )}
 

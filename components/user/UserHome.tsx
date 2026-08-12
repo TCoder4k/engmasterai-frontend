@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Compass, Sparkles } from 'lucide-react';
+import { ArrowRight, BarChart3, Compass, Sparkles, Target } from 'lucide-react';
 import StudentLayout from './StudentLayout';
 import { EmailVerificationBanner } from '../auth/EmailVerificationBanner';
 import ReviewDueCard from './ReviewDueCard';
 import ContinueLearningCard from './ContinueLearningCard';
+import RoadmapCard from './RoadmapCard';
+import DashboardStatCards from './DashboardStatCards';
 import LearningTrackCard from './LearningTrackCard';
 import UserSidebar from './UserSidebar';
 import CourseCard from './CourseCard';
@@ -20,6 +22,7 @@ import {
   DashboardAnalytics,
   getDashboardAnalytics,
 } from '../../services/analyticsService';
+import { getPlacementRoadmap } from '../../services/placementService';
 import { getMostRecentActivityOfType } from '../../services/recentActivity';
 import {
   getListeningCatalog,
@@ -76,6 +79,12 @@ const UserHome: React.FC = () => {
   // is why the card used to say 23 and the session 38.
   const [newTotal, setNewTotal] = useState<number | null>(null);
   const [deckCount, setDeckCount] = useState<number | null>(null);
+  // Tertiary stat folded into ReviewDueCard — same libraries-progress request
+  // as above, so no extra fetch. `masteredPercent` stays null (not 0%) when
+  // totalWords is 0: "no library" and "library with nothing mastered yet" are
+  // different states, and only the second is a real 0%.
+  const [masteredWords, setMasteredWords] = useState<number | null>(null);
+  const [masteredPercent, setMasteredPercent] = useState<number | null>(null);
   // Null until the catalog answers, and null forever if it fails — never 0.
   const [listeningTotal, setListeningTotal] = useState<number | null>(null);
   // Sprint 11 Phase 4A. Null means "no honest figure" — never rendered as 0.
@@ -87,6 +96,17 @@ const UserHome: React.FC = () => {
     string,
     CourseProgressSummary
   > | null>(null);
+
+  // Dashboard redesign — the "X% lộ trình" subtitle needs to know WHICH
+  // course ids belong to the roadmap specifically (progressByCourse above
+  // already covers every published course, not just roadmap ones). A second,
+  // independent GET /placement/roadmap alongside RoadmapCard's own — cheap,
+  // and keeps RoadmapCard's documented self-containment intact rather than
+  // lifting its fetch up into this component. Stays null (no subtitle
+  // shown) on 404 (no roadmap yet) or any other failure — same silent-degrade
+  // convention as ReviewDueCard/ContinueLearningCard's own supplementary
+  // fetches.
+  const [roadmapCourseIds, setRoadmapCourseIds] = useState<string[] | null>(null);
 
   // Sprint 09 — the right-rail stat widgets. THREE states, deliberately:
   // `undefined` while in flight, `null` when the request failed, a payload when
@@ -118,6 +138,10 @@ const UserHome: React.FC = () => {
         setDueTotal(res.data.reduce((sum, library) => sum + library.dueWords, 0));
         setNewTotal(res.dailyNewWords.availableNow);
         setDeckCount(res.data.reduce((sum, library) => sum + library.deckCount, 0));
+        const mastered = res.data.reduce((sum, library) => sum + library.masteredWords, 0);
+        const totalWords = res.data.reduce((sum, library) => sum + library.totalWords, 0);
+        setMasteredWords(mastered);
+        setMasteredPercent(totalWords > 0 ? Math.round((mastered / totalWords) * 100) : null);
       })
       .catch(() => {
         // Intentionally silent — see the comment above.
@@ -177,6 +201,25 @@ const UserHome: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courses, user?.id]);
 
+  // Independent of everything else on this page — fires on mount, feeds only
+  // the stat row's "X% lộ trình" subtitle (see roadmapCourseIds' own comment
+  // above for why this is a second roadmap fetch rather than sharing
+  // RoadmapCard's).
+  useEffect(() => {
+    let cancelled = false;
+    getPlacementRoadmap()
+      .then((view) => {
+        if (!cancelled) setRoadmapCourseIds(view.items.map((item) => item.courseId));
+      })
+      .catch(() => {
+        // Stays null — no roadmap yet, or this supplementary fetch failed;
+        // either way the subtitle is simply omitted.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Independent of the courses request, so it starts immediately rather than
   // waiting behind the courses -> progress waterfall beside it.
   useEffect(() => {
@@ -227,6 +270,40 @@ const UserHome: React.FC = () => {
       null)
     : null;
 
+  // Dashboard redesign — the stat row's "Tổng bài hoàn thành" number. Summed
+  // across EVERY course on this page, not just roadmap ones — broader and
+  // more representative of the student's whole learning journey than the
+  // roadmap-scoped percentage beside it.
+  const totalCompletedLessons = useMemo(
+    () =>
+      progressByCourse
+        ? [...progressByCourse.values()].reduce(
+            (sum, summary) => sum + summary.completedLessons,
+            0,
+          )
+        : null,
+    [progressByCourse],
+  );
+
+  // The stat row's "X% lộ trình" subtitle — deliberately roadmap-scoped
+  // (unlike totalCompletedLessons above), filtering the SAME already-fetched
+  // progressByCourse map down to just the roadmap's own course ids rather
+  // than issuing a second progress-summary request.
+  const roadmapCompletionPercent = useMemo(() => {
+    if (!roadmapCourseIds || roadmapCourseIds.length === 0 || !progressByCourse) {
+      return null;
+    }
+    let totalLessons = 0;
+    let completedLessons = 0;
+    for (const courseId of roadmapCourseIds) {
+      const summary = progressByCourse.get(courseId);
+      if (!summary) continue;
+      totalLessons += summary.totalLessons;
+      completedLessons += summary.completedLessons;
+    }
+    return totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : null;
+  }, [roadmapCourseIds, progressByCourse]);
+
   const trackCounts: Record<CourseType, number | null> = useMemo(
     () => ({
       GRAMMAR: courses
@@ -245,20 +322,82 @@ const UserHome: React.FC = () => {
       <EmailVerificationBanner />
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-6 lg:items-start max-w-[1400px]">
         {/* ---- Content ---- */}
-        <div className="flex-1 min-w-0 space-y-8">
+        <div className="flex-1 min-w-0 space-y-6">
           <div className="space-y-4">
-            <div className="space-y-1">
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                {t.dashboard.welcomeBack}, {firstName}! 👋
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-                {t.dashboard.keepLearning}
-              </p>
+            <div className="flex items-center justify-between gap-6">
+              <div className="space-y-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {t.dashboard.welcomeBack}, {firstName}! 👋
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                  {t.dashboard.keepLearning}
+                </p>
+              </div>
+              {/* mascot2-transparent.png — same Engy-at-a-laptop artwork
+                  already approved for this exact header slot in the
+                  onboarding wizard's RoadmapStep, background removed AND its
+                  two baked-in decorative icon glyphs erased (they read as
+                  flat illustration, not the crisp elevated UI chips the
+                  mockup calls for) so the two badges below can be real DOM
+                  chips instead. Reserved box sized from the asset's own real
+                  730x342 aspect ratio, so there is no layout shift whether
+                  the image is cached or still loading. object-contain
+                  (never cover) keeps its natural proportions exactly as
+                  authored. Purely decorative — the heading and subtitle
+                  already carry the same information in text. */}
+              <div className="hidden sm:block relative flex-shrink-0 w-40 sm:w-48 md:w-56 max-w-full">
+                <div className="w-full overflow-hidden" style={{ aspectRatio: '730 / 342' }}>
+                  <img
+                    src="/mascot/mascot2-transparent.png"
+                    alt=""
+                    aria-hidden="true"
+                    className="w-full h-full object-contain select-none pointer-events-none"
+                  />
+                </div>
+
+                {/* Floating stat-chip badges — real elevated UI, matching the
+                    mockup's two white icon cards above the illustration. */}
+                <div
+                  className="absolute -top-1 left-2 sm:left-4 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <BarChart3 className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-blue-500" />
+                </div>
+                <Sparkles
+                  className="absolute -top-1 left-0 w-3 h-3 text-blue-300 dark:text-blue-400/60"
+                  aria-hidden="true"
+                />
+
+                <div
+                  className="absolute -top-1 right-2 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
+                  aria-hidden="true"
+                >
+                  <Target className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-teal-500" />
+                </div>
+                <Sparkles
+                  className="absolute top-2 right-0 w-2.5 h-2.5 text-teal-300 dark:text-teal-400/60"
+                  aria-hidden="true"
+                />
+              </div>
             </div>
 
-            {/* First actionable thing on the page — one click to reviewing. */}
-            <ReviewDueCard dueTotal={dueTotal} newTotal={newTotal} />
+            {/* First actionable thing on the page — one click to reviewing.
+                Vocabulary mastery rides along as a compact tertiary stat
+                inside this same card rather than a separate row. */}
+            <ReviewDueCard
+              dueTotal={dueTotal}
+              newTotal={newTotal}
+              masteredWords={masteredWords}
+              masteredPercent={masteredPercent}
+            />
           </div>
+
+          <DashboardStatCards
+            masteredWords={masteredWords}
+            analytics={analytics}
+            totalCompletedLessons={totalCompletedLessons}
+            roadmapCompletionPercent={roadmapCompletionPercent}
+          />
 
           <ContinueLearningCard
             dueTotal={dueTotal}
@@ -275,6 +414,15 @@ const UserHome: React.FC = () => {
                 : null
             }
           />
+
+          {/* Personalized Onboarding & Placement Test, Phase 7 — the
+              deterministic roadmap + optional AI narrative, and the retake
+              entry point (both live in this one card). Self-contained: it
+              issues its own GET /placement/roadmap, nothing else on this
+              page shares that data. Its own empty state ("no roadmap yet")
+              is one branch of this same component, so placing it here also
+              puts that prompt after Continue Learning rather than before. */}
+          <RoadmapCard />
 
           {/* Learning Tracks — the three module entry points. Horizontal snap
               carousel on phones, 3-col grid from sm up. The carousel's own

@@ -62,6 +62,12 @@ export interface DashboardAnalytics {
   effectiveTimeZone: string;
   today: TodayAnalytics;
   activity: ActivityAnalytics;
+  /**
+   * Average accuracyPercent across the student's most recent graded quiz/
+   * practice attempts — a rolling figure, not a "today" one. `null` for a
+   * student with no graded attempts ever; never a fabricated 0%.
+   */
+  recentAccuracyPercent: number | null;
 }
 
 // GET /analytics/dashboard

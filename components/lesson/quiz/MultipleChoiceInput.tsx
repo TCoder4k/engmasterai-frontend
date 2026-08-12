@@ -23,6 +23,12 @@ interface MultipleChoiceInputProps {
   // the ruled-out options as plain text, so a screen-reader user gets the
   // same hint without depending on a line-through.
   eliminatedOptionIds?: string[];
+  // Onboarding placement redesign — opt-in, defaults to today's numbered/
+  // violet look for every existing caller. Under 'placement': lettered
+  // (A/B/C/D) badges instead of numbered ones, blue/indigo accent instead
+  // of violet. All interaction logic below (roving tabindex, digit-key
+  // shortcuts, ripple, ARIA radiogroup) is identical under either variant.
+  variant?: 'default' | 'placement';
 }
 
 // role="radiogroup" with roving tabindex (WAI-ARIA radio pattern): Tab
@@ -37,6 +43,7 @@ const MultipleChoiceInput: React.FC<MultipleChoiceInputProps> = ({
   disabled = false,
   correctOptionId = null,
   eliminatedOptionIds,
+  variant = 'default',
 }) => {
   const eliminated = new Set(eliminatedOptionIds ?? []);
   const selectedIndex = Math.max(
@@ -90,6 +97,11 @@ const MultipleChoiceInput: React.FC<MultipleChoiceInputProps> = ({
       }
       return 'border-slate-200 dark:border-ink-700 opacity-60';
     }
+    if (variant === 'placement') {
+      return isSelected
+        ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 dark:border-blue-400 shadow-md shadow-blue-500/15'
+        : 'border-slate-200 hover:border-blue-300 dark:border-ink-700 dark:hover:border-blue-500/60';
+    }
     return isSelected
       ? 'border-violet-500 bg-violet-50 dark:bg-violet-500/10 dark:border-violet-400 shadow-md shadow-violet-500/15'
       : 'border-slate-200 hover:border-blue-300 dark:border-ink-700 dark:hover:border-blue-500/60';
@@ -103,19 +115,29 @@ const MultipleChoiceInput: React.FC<MultipleChoiceInputProps> = ({
       if (isSelected) return 'bg-rose-500 border-rose-500 text-white';
       return 'border-slate-300 text-slate-400 dark:border-ink-600 dark:text-slate-500';
     }
+    if (variant === 'placement') {
+      return isSelected
+        ? 'bg-blue-600 border-blue-600 text-white'
+        : 'border-slate-300 text-slate-400 dark:border-ink-600 dark:text-slate-500';
+    }
     return isSelected
       ? 'bg-violet-600 border-violet-600 text-white'
       : 'border-slate-300 text-slate-400 dark:border-ink-600 dark:text-slate-500';
   };
+
+  // A/B/C/D under 'placement' (matches the mockup); 1/2/3/4 everywhere else
+  // (unchanged, existing exam-style convention).
+  const idleGlyph = (index: number) =>
+    variant === 'placement' ? String.fromCharCode(65 + index) : index + 1;
 
   const badgeGlyph = (option: QuizQuestionOption, index: number) => {
     const isSelected = value === option.id;
     if (revealed) {
       if (option.id === correctOptionId) return <Check size={13} strokeWidth={3} />;
       if (isSelected) return <X size={13} strokeWidth={3} />;
-      return index + 1;
+      return idleGlyph(index);
     }
-    return isSelected ? <Check size={13} strokeWidth={3} /> : index + 1;
+    return isSelected ? <Check size={13} strokeWidth={3} /> : idleGlyph(index);
   };
 
   return (

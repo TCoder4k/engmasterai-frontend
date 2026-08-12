@@ -1,5 +1,6 @@
 import { clearRecentActivity } from './recentActivity';
 import { clearAllQuizDrafts } from './quizDraft';
+import { clearPlacementDraft } from './placementDraft';
 import { fetchWithTimeout } from './fetchTimeout';
 // Deliberate circular import (refreshCoordinator.ts imports authService for
 // authService.refresh(); authService.ts imports refreshCoordinator here for
@@ -393,6 +394,9 @@ export const authService = {
       // Sprint 06B — an in-progress quiz draft is still per-user session
       // state; a shared device must never resume it under the next account.
       clearAllQuizDrafts(user.id);
+      // Personalized Onboarding & Placement Test — same reasoning, for the
+      // placement wizard's own draft.
+      clearPlacementDraft(user.id);
     }
 
     emitAuthChanged();

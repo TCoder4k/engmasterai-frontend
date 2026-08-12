@@ -59,7 +59,7 @@ const en = {
   },
   dashboard: {
     welcomeBack: "Welcome back",
-    keepLearning: "Keep learning every day. Small steps, big progress.",
+    keepLearning: "Keep learning every day. Small steps, big goals.",
     continueLearning: "Continue Learning",
     noLearningActivity: "No learning activity yet",
     continueLearningHint:
@@ -71,21 +71,92 @@ const en = {
     noCoursesYet: "No published courses yet.",
     // Sprint 05 — due-review card. Every number here comes from
     // GET /learning/libraries/progress; nothing is fabricated.
-    reviewDueTitle: "Review",
-    wordsWaiting: "words to review",
-    // Named separately from the due count, never summed into it: a due word is
-    // fading from memory, a new word is optional progress. Folding them into
-    // one number is what made the card promise 23 and the session show 38.
-    newWordsInSession: "new words in this session",
-    oneWordWaiting: "word to review",
-    reviewNow: "Review now",
-    nothingDueToday: "Nothing due for review today.",
+    //
+    // The card adapts its whole copy to which of the two counts (due,
+    // available-new) are nonzero, rather than reusing one title/body for every
+    // combination — a brand-new account with 0 due words was showing "0 words
+    // to review" beside a review CTA, which reads as broken to someone who
+    // has never studied anything yet.
+    reviewCard: {
+      // dueTotal === 0 && newTotal > 0 — nothing has ever been rated.
+      newOnly: {
+        title: "Start learning vocabulary",
+        countLabel: "{count} new words waiting for you",
+        countLabelOne: "1 new word waiting for you",
+        subtitle: "Start building your vocabulary today.",
+        cta: "Learn new words",
+      },
+      // dueTotal > 0 && newTotal > 0
+      both: {
+        title: "Learn & Review Vocabulary",
+        dueLabel: "{count} words to review",
+        dueLabelOne: "1 word to review",
+        newLabel: "{count} new words available to learn",
+        newLabelOne: "1 new word available to learn",
+        cta: "Start session",
+      },
+      // dueTotal > 0 && newTotal === 0 — the daily new-word quota is spent.
+      dueOnly: {
+        title: "Review today",
+        countLabel: "{count} words to review",
+        countLabelOne: "1 word to review",
+        subtitle: "Timely review helps you remember longer.",
+        cta: "Review now",
+      },
+      // dueTotal === 0 && newTotal === 0 — genuinely nothing left today.
+      done: {
+        title: "All done for today",
+        body: "You've cleared all due reviews and available new words.",
+        cta: "View word sets",
+      },
+      // Compact tertiary stat folded into the bottom of this card — real
+      // vocabulary mastery, from the same libraries-progress request as
+      // dueTotal/newTotal above. `{percent}` is only appended when a mastery
+      // percent is known (totalWords > 0); see UserHome.tsx.
+      masterySummary: "{count} words mastered",
+      masteryPercent: "{percent}%",
+    },
+    // Dashboard redesign — the 3-card stat row below the vocabulary CTA.
+    // Every value is real: masteredWords/recentAccuracyPercent/completed
+    // lesson counts already exist elsewhere in this app.
+    statCards: {
+      masteredWordsLabel: "Words mastered",
+      accuracyLabel: "Accuracy",
+      completedLessonsLabel: "Lessons completed",
+      roadmapPercent: (percent: number) => `${percent}% of roadmap`,
+    },
     // Continue Learning variants (see ContinueLearningCard's priority order)
     continueReviewTitle: "Vocabulary review",
     continueWordsDue: "words due today",
     viewRoadmap: "View roadmap",
     progress: "Progress",
     curatedCourses: "Curated TOEIC courses",
+    // Phase 7 — the PERSONALIZED roadmap card (Placement Test output), not
+    // to be confused with `viewRoadmap` above, which is Continue Learning's
+    // link to the GRAMMAR module's own course sequence — same word, two
+    // unrelated features, kept in separate keys on purpose.
+    roadmapCard: {
+      title: "Your Learning Roadmap",
+      estimatedLevel: "Estimated level",
+      // Shown instead of the phase list when GET /placement/roadmap 404s —
+      // true for any pre-migration account (backfilled to onboarded: true
+      // with no Roadmap row) as well as anyone who somehow reached /home
+      // without ever generating one.
+      emptyTitle: "No personalized roadmap yet",
+      emptyBody:
+        "Take a short placement test to get a learning plan built around your level and goal.",
+      createCta: "Create my roadmap",
+      retakeCta: "Retake the placement test",
+      aiSummaryCta: "Get AI insights on my roadmap",
+      aiSummaryLoading: "Generating insights…",
+      aiSummaryFailed: "Could not generate insights.",
+      viewAllCta: "View all",
+      collapseCta: "Collapse",
+      // An ESTIMATE, never presented as exact — derived client-side from
+      // real per-course estimatedStudyMinutes ÷ the daily-goal pace. See
+      // RoadmapCard.tsx's estimatedWeeks computation for why it's a "~".
+      estimatedWeeks: (weeks: number) => `~${weeks} weeks`,
+    },
   },
   tracks: {
     grammar: {
@@ -583,7 +654,8 @@ const en = {
     sessionComplete: "Session complete!",
     scoreLabel: "Score",
     backToDecks: "Back to decks",
-    guessLearnedOfTotal: (learned: number, total: number) => `${learned}/${total} learned`,
+    guessLearnedOfTotal: (learned: number, total: number) =>
+      `${learned}/${total} learned`,
     guessDeckComplete: "Deck complete!",
     guessAlreadyComplete: "You already know every word in this deck.",
     guessLearnedThisSession: "Learned this session",
@@ -922,9 +994,123 @@ const en = {
     catalogLevelLabel: "Level:",
     catalogClearSearch: "Clear search",
   },
+  // Personalized Onboarding & Placement Test (Phase 5). Rendered by
+  // OnboardingPage and its step components, gated by OnboardingGateBoundary.
+  onboarding: {
+    goalStepTitle: "What's your learning goal?",
+    goalStepSubtitle:
+      "Pick the goal that matches you best — you can change this anytime.",
+    goalFoundation: "Build a strong foundation",
+    goalFoundationDescription:
+      "Start from the basics and build every skill step by step.",
+    goalToeic450: "Reach TOEIC 450",
+    goalToeic450Description: "Aim for a solid starting TOEIC score.",
+    goalToeic650: "Reach TOEIC 650",
+    goalToeic650Description: "Aim for an intermediate TOEIC score.",
+    goalToeic800: "Reach TOEIC 800",
+    goalToeic800Description: "Aim for an advanced TOEIC score.",
+    goalGeneralEnglish: "General English",
+    goalGeneralEnglishDescription:
+      "Improve everyday English for work and life.",
+    goalRegularPractice: "Just keep practicing",
+    goalRegularPracticeDescription:
+      "No specific target — stay consistent and improve steadily.",
+    goalContinue: "Continue",
+    goalSaveFailed: "Could not save your goal. Please try again.",
+
+    methodStepTitle: "Find your starting point",
+    methodStepSubtitle: "Choose how you'd like to begin.",
+    methodBeginnerTitle: "Start from the basics",
+    methodBeginnerDescription:
+      "Skip the test — we'll build your roadmap from the beginning.",
+    methodPlacementTitle: "Find out my current level",
+    methodPlacementDescription:
+      "Take a short 12-question test (about 5 minutes) so we can personalize your roadmap.",
+    methodStartFailed: "Could not start. Please try again.",
+
+    testSectionGrammar: "Grammar",
+    testSectionVocabulary: "Vocabulary",
+    testSectionListening: "Listening",
+    testSectionGrammarSubtitle: "Read carefully and choose the correct answer",
+    testSectionVocabularySubtitle: "Choose the word that fits best",
+    testSectionListeningSubtitle: "Listen and choose the correct answer",
+    testTimeRemaining: "Time remaining",
+    testTimeUp: "Time's up — submitting your answers…",
+    testSubmit: "Submit",
+    testAnswerFailed: "Could not save your answer. Please try again.",
+    testSubmitFailed: "Could not submit your test. Please try again.",
+    testReplayAudio: "Replay",
+    testAudioPlay: "Play",
+    testAudioPause: "Pause",
+    testAudioUnsupported:
+      "Your browser does not support audio playback for this question.",
+    testProgressLabel: (current: number, total: number) =>
+      `${current}/${total} questions`,
+
+    resultTitle: "Here's your result",
+    resultSubtitle: "Let's see how well you did!",
+    resultOverallScore: "Overall score",
+    resultEstimatedLevel: "Estimated level",
+    resultGrammarScore: "Grammar",
+    resultVocabularyScore: "Vocabulary",
+    resultListeningScore: "Listening",
+    resultCorrectCount: (correct: number, total: number) =>
+      `${correct} / ${total} correct`,
+    resultContinue: "View roadmap analysis",
+    resultViewDetails: "View test details",
+    reviewTitle: "Test details",
+    reviewBack: "Back to results",
+    reviewLoadFailed: "Could not load your test details. Please try again.",
+    reviewUnanswered: "Not answered",
+    levelNameA1: "Beginner",
+    levelNameA2: "Elementary",
+    levelNameB1: "Intermediate",
+    levelNameB2: "Upper-Intermediate",
+    levelNameC1: "Advanced",
+    levelNameC2: "Proficient",
+    levelEncouragementA1:
+      "You're just getting started. No worries — every English journey begins with small steps!",
+    levelEncouragementA2:
+      "You've got the basics down. Keep building on them one lesson at a time.",
+    levelEncouragementB1:
+      "Solid progress! You can already handle everyday English — let's sharpen it further.",
+    levelEncouragementB2:
+      "You're communicating with real confidence. A focused push will take you further.",
+    levelEncouragementC1:
+      "Impressive level! Fine-tuning the details will get you to full fluency.",
+    levelEncouragementC2:
+      "Outstanding! You're operating at a near-native level already.",
+
+    roadmapTitle: "Your personalized roadmap",
+    roadmapSubtitle: "Follow each step to reach your English goal",
+    roadmapPhaseLabel: "Step",
+    roadmapEmpty:
+      "We don't have enough courses to build a full roadmap yet — check back soon.",
+    roadmapGoToHome: "Go to my dashboard",
+    roadmapLoadFailed: "Could not load your roadmap.",
+    roadmapStatGoal: "Goal",
+    roadmapStatProgress: "Current progress",
+    roadmapStatStreak: "Day streak",
+    roadmapStreakDays: (days: number) => `${days} day${days === 1 ? "" : "s"}`,
+    roadmapPhasesHeading: "Your roadmap",
+    roadmapCollapse: "Collapse",
+    roadmapExpand: "Expand",
+  },
 };
 
 export type TranslationDict = typeof en;
+
+// Some namespaces (e.g. `onboarding`) mix plain string copy with
+// parameterized formatter functions (e.g. `roadmapStreakDays(days)`).
+// `keyof TranslationDict['onboarding']` alone spans both, so indexing with
+// it widens to a function|string union even when a caller only ever picks
+// from a fixed set of plain-string keys (goal labels, level names, etc.).
+// This narrows a namespace's keys down to the ones whose value is actually
+// a string, so a `Record<SomeEnum, StringKeys<TranslationDict['onboarding']>>`
+// lookup map stays exactly `string` when read back through `t`.
+export type StringKeys<T> = {
+  [K in keyof T]: T[K] extends string ? K : never;
+}[keyof T];
 
 const vi: TranslationDict = {
   common: {
@@ -967,7 +1153,7 @@ const vi: TranslationDict = {
   },
   dashboard: {
     welcomeBack: "Chào mừng trở lại",
-    keepLearning: "Học đều mỗi ngày. Tiến bộ từng bước nhỏ.",
+    keepLearning: "Học đều mỗi ngày. Tiến bộ từng bước nhỏ, đạt mục tiêu lớn!",
     continueLearning: "Tiếp tục học",
     noLearningActivity: "Chưa có hoạt động học tập",
     continueLearningHint:
@@ -977,20 +1163,63 @@ const vi: TranslationDict = {
     coreModules: "3 học phần chính",
     recommendedForYou: "Đề xuất cho bạn",
     noCoursesYet: "Chưa có khóa học nào được xuất bản.",
-    reviewDueTitle: "Ôn tập",
-    wordsWaiting: "từ đến hạn ôn",
-    // Tách riêng khỏi số từ đến hạn, không bao giờ cộng gộp: từ đến hạn là từ
-    // đang phai trong trí nhớ, còn từ mới là tiến bộ tuỳ chọn. Gộp hai số vào
-    // làm một chính là thứ khiến card ghi 23 còn phiên ôn hiện 38.
-    newWordsInSession: "từ mới trong phiên này",
-    oneWordWaiting: "từ đến hạn ôn",
-    reviewNow: "Ôn ngay",
-    nothingDueToday: "Hôm nay không có từ nào đến hạn ôn tập.",
+    reviewCard: {
+      newOnly: {
+        title: "Bắt đầu học từ vựng",
+        countLabel: "{count} từ mới đang chờ bạn",
+        countLabelOne: "1 từ mới đang chờ bạn",
+        subtitle: "Bắt đầu xây dựng vốn từ của bạn hôm nay.",
+        cta: "Học từ mới",
+      },
+      both: {
+        title: "Học & Ôn từ vựng",
+        dueLabel: "{count} từ cần ôn",
+        dueLabelOne: "1 từ cần ôn",
+        newLabel: "{count} từ mới có thể học",
+        newLabelOne: "1 từ mới có thể học",
+        cta: "Bắt đầu phiên học",
+      },
+      dueOnly: {
+        title: "Ôn tập hôm nay",
+        countLabel: "{count} từ cần ôn",
+        countLabelOne: "1 từ cần ôn",
+        subtitle: "Ôn lại đúng lúc để ghi nhớ lâu hơn.",
+        cta: "Ôn ngay",
+      },
+      done: {
+        title: "Hoàn thành hôm nay",
+        body: "Bạn đã xử lý hết từ cần ôn và từ mới hiện có.",
+        cta: "Xem bộ từ",
+      },
+      masterySummary: "{count} từ đã thành thạo",
+      masteryPercent: "{percent}%",
+    },
+    statCards: {
+      masteredWordsLabel: "Từ đã thành thạo",
+      accuracyLabel: "Độ chính xác",
+      completedLessonsLabel: "Bài học hoàn thành",
+      roadmapPercent: (percent: number) => `${percent}% lộ trình`,
+    },
     continueReviewTitle: "Ôn tập từ vựng",
     continueWordsDue: "từ đến hạn hôm nay",
     viewRoadmap: "Xem lộ trình",
     progress: "Tiến độ",
     curatedCourses: "Khóa học TOEIC chọn lọc",
+    roadmapCard: {
+      title: "Lộ Trình Học Tập Của Bạn",
+      estimatedLevel: "Trình độ ước tính",
+      emptyTitle: "Chưa có lộ trình cá nhân hoá",
+      emptyBody:
+        "Làm bài kiểm tra ngắn để nhận lộ trình học được xây dựng theo đúng trình độ và mục tiêu của bạn.",
+      createCta: "Tạo lộ trình ngay",
+      retakeCta: "Làm lại bài kiểm tra",
+      aiSummaryCta: "Xem phân tích AI về lộ trình",
+      aiSummaryLoading: "Đang tạo phân tích…",
+      aiSummaryFailed: "Không thể tạo phân tích.",
+      viewAllCta: "Xem tất cả",
+      collapseCta: "Thu gọn",
+      estimatedWeeks: (weeks: number) => `~${weeks} tuần`,
+    },
   },
   tracks: {
     grammar: {
@@ -1421,7 +1650,8 @@ const vi: TranslationDict = {
     sessionComplete: "Hoàn thành phiên luyện tập!",
     scoreLabel: "Điểm số",
     backToDecks: "Quay lại danh sách bộ từ",
-    guessLearnedOfTotal: (learned: number, total: number) => `${learned}/${total} từ đã học`,
+    guessLearnedOfTotal: (learned: number, total: number) =>
+      `${learned}/${total} từ đã học`,
     guessDeckComplete: "Hoàn thành bộ từ!",
     guessAlreadyComplete: "Bạn đã thuộc hết các từ trong bộ này.",
     guessLearnedThisSession: "Đã học trong phiên này",
@@ -1438,7 +1668,8 @@ const vi: TranslationDict = {
     easy: "Dễ nhớ",
     daysUnit: "ng",
     suggestedRatingHint: "Gợi ý — nhấn để xác nhận, hoặc chọn mức khác:",
-    ratingKeyboardHint: "Enter để xác nhận gợi ý · phím 1-4 chọn nhanh mức khác",
+    ratingKeyboardHint:
+      "Enter để xác nhận gợi ý · phím 1-4 chọn nhanh mức khác",
     reviewAllCaughtUp: "Bạn đã ôn tập hết — hiện không có từ nào cần ôn lại.",
     reviewSessionComplete: "Hoàn thành phiên ôn tập!",
     reviewedUnit: "Đã ôn",
@@ -1713,6 +1944,107 @@ const vi: TranslationDict = {
     catalogClearFilter: "Bỏ lọc",
     catalogLevelLabel: "Trình độ:",
     catalogClearSearch: "Xóa tìm kiếm",
+  },
+  onboarding: {
+    goalStepTitle: "Mục tiêu học tập của bạn là gì?",
+    goalStepSubtitle:
+      "Chọn mục tiêu phù hợp nhất với bạn — bạn có thể thay đổi bất cứ lúc nào.",
+    goalFoundation: "Lấy lại gốc",
+    goalFoundationDescription:
+      "Bắt đầu từ cơ bản và xây dựng từng kỹ năng một.",
+    goalToeic450: "Đạt TOEIC 450",
+    goalToeic450Description: "Hướng đến mức điểm TOEIC khởi đầu.",
+    goalToeic650: "Đạt TOEIC 650",
+    goalToeic650Description: "Hướng đến mức điểm TOEIC trung cấp.",
+    goalToeic800: "Đạt TOEIC 800",
+    goalToeic800Description: "Hướng đến mức điểm TOEIC nâng cao.",
+    goalGeneralEnglish: "Tiếng Anh giao tiếp",
+    goalGeneralEnglishDescription:
+      "Cải thiện tiếng Anh cho công việc và cuộc sống hàng ngày.",
+    goalRegularPractice: "Luyện tập đều đặn",
+    goalRegularPracticeDescription:
+      "Không có mục tiêu cụ thể — chỉ cần duy trì đều đặn mỗi ngày.",
+    goalContinue: "Tiếp tục",
+    goalSaveFailed: "Không thể lưu mục tiêu. Vui lòng thử lại.",
+
+    methodStepTitle: "Tìm điểm khởi đầu phù hợp",
+    methodStepSubtitle: "Chọn cách bạn muốn bắt đầu.",
+    methodBeginnerTitle: "Bắt đầu từ cơ bản",
+    methodBeginnerDescription:
+      "Bỏ qua bài kiểm tra — hệ thống sẽ xây lộ trình từ đầu cho bạn.",
+    methodPlacementTitle: "Xác định trình độ hiện tại",
+    methodPlacementDescription:
+      "Làm bài kiểm tra ngắn gồm 12 câu (khoảng 5 phút) để cá nhân hóa lộ trình học của bạn.",
+    methodStartFailed: "Không thể bắt đầu. Vui lòng thử lại.",
+
+    testSectionGrammar: "Ngữ pháp",
+    testSectionVocabulary: "Từ vựng",
+    testSectionListening: "Nghe",
+    testSectionGrammarSubtitle: "Đọc kỹ và chọn đáp án đúng",
+    testSectionVocabularySubtitle: "Chọn từ phù hợp nhất",
+    testSectionListeningSubtitle: "Lắng nghe và chọn đáp án đúng",
+    testTimeRemaining: "Thời gian còn lại",
+    testTimeUp: "Hết giờ — đang nộp bài của bạn…",
+    testSubmit: "Nộp bài",
+    testAnswerFailed: "Không thể lưu câu trả lời. Vui lòng thử lại.",
+    testSubmitFailed: "Không thể nộp bài. Vui lòng thử lại.",
+    testReplayAudio: "Nghe lại",
+    testAudioPlay: "Phát",
+    testAudioPause: "Tạm dừng",
+    testAudioUnsupported:
+      "Trình duyệt của bạn không hỗ trợ phát âm thanh cho câu hỏi này.",
+    testProgressLabel: (current: number, total: number) =>
+      `${current}/${total} câu`,
+
+    resultTitle: "Kết quả của bạn",
+    resultSubtitle: "Cùng xem bạn đã làm tốt như thế nào nhé!",
+    resultOverallScore: "Điểm tổng thể",
+    resultEstimatedLevel: "Trình độ ước tính",
+    resultGrammarScore: "Ngữ pháp",
+    resultVocabularyScore: "Từ vựng",
+    resultListeningScore: "Nghe",
+    resultCorrectCount: (correct: number, total: number) =>
+      `${correct} / ${total} câu đúng`,
+    resultContinue: "Xem phân tích lộ trình",
+    resultViewDetails: "Xem chi tiết bài làm",
+    reviewTitle: "Chi tiết bài làm",
+    reviewBack: "Quay lại kết quả",
+    reviewLoadFailed: "Không thể tải chi tiết bài làm. Vui lòng thử lại.",
+    reviewUnanswered: "Chưa trả lời",
+    levelNameA1: "Sơ cấp",
+    levelNameA2: "Sơ cấp cao",
+    levelNameB1: "Trung cấp",
+    levelNameB2: "Trung cấp cao",
+    levelNameC1: "Cao cấp",
+    levelNameC2: "Thành thạo",
+    levelEncouragementA1:
+      "Bạn đang ở mức khởi đầu. Đừng nản nhé, hành trình chinh phục tiếng Anh bắt đầu từ những bước nhỏ!",
+    levelEncouragementA2:
+      "Bạn đã nắm được nền tảng cơ bản. Hãy tiếp tục xây dựng từng chút một nhé!",
+    levelEncouragementB1:
+      "Tiến bộ rất tốt! Bạn đã có thể dùng tiếng Anh hàng ngày — cùng mài giũa thêm nào.",
+    levelEncouragementB2:
+      "Bạn giao tiếp khá tự tin rồi đấy! Chỉ cần thêm một chút nỗ lực để bứt phá.",
+    levelEncouragementC1:
+      "Trình độ rất ấn tượng! Chỉ cần trau chuốt thêm chi tiết là đạt độ thành thạo.",
+    levelEncouragementC2:
+      "Xuất sắc! Bạn đang ở trình độ gần như người bản xứ rồi.",
+
+    roadmapTitle: "Lộ trình cá nhân hóa của bạn",
+    roadmapSubtitle:
+      "Thực hiện theo từng bước để đạt mục tiêu tiếng Anh của bạn",
+    roadmapPhaseLabel: "Giai đoạn",
+    roadmapEmpty:
+      "Chưa đủ khóa học để xây dựng lộ trình đầy đủ — vui lòng quay lại sau.",
+    roadmapGoToHome: "Đến trang chủ của tôi",
+    roadmapLoadFailed: "Không thể tải lộ trình của bạn.",
+    roadmapStatGoal: "Mục tiêu",
+    roadmapStatProgress: "Tiến độ hiện tại",
+    roadmapStatStreak: "Chuỗi ngày học",
+    roadmapStreakDays: (days: number) => `${days} ngày`,
+    roadmapPhasesHeading: "Lộ trình của bạn",
+    roadmapCollapse: "Thu gọn",
+    roadmapExpand: "Mở rộng",
   },
 };
 
