@@ -30,21 +30,39 @@ const mockGetAnalytics = vi.mocked(getDashboardAnalytics);
 
 const item = (phase: number, courseId: string): RoadmapItemView => ({
   phase,
-  courseType: 'GRAMMAR',
-  courseId,
-  courseTitle: `Course ${phase}`,
-  courseThumbnail: null,
+  pillar: 'GRAMMAR',
+  resourceType: 'COURSE',
+  resourceId: courseId,
+  resourceTitle: `Course ${phase}`,
+  resourceThumbnail: null,
   reason: `Reason ${phase}`,
   totalEstimatedMinutes: 240,
 });
 
-const roadmap = (items: RoadmapItemView[]): RoadmapView => ({
+const libraryItem = (phase: number, resourceId: string): RoadmapItemView => ({
+  phase,
+  pillar: 'VOCABULARY',
+  resourceType: 'VOCAB_LIBRARY',
+  resourceId,
+  resourceTitle: `Library ${phase}`,
+  resourceThumbnail: null,
+  reason: `Reason ${phase}`,
+  totalEstimatedMinutes: 0,
+});
+
+const roadmap = (
+  items: RoadmapItemView[],
+  overrides: Partial<RoadmapView> = {},
+): RoadmapView => ({
   goal: 'TOEIC_450',
   estimatedLevel: 'B1',
+  levelSource: 'TEST_GRADED',
   placementAttemptId: 'attempt-1',
   generatedAt: new Date().toISOString(),
   aiSummary: null,
+  aiPlanningUsed: false,
   items,
+  ...overrides,
 });
 
 const summary = (courseId: string, overrides: Partial<CourseProgressSummary> = {}): CourseProgressSummary => ({
@@ -185,6 +203,49 @@ describe('RoadmapStep', () => {
 
     expect(await screen.findByText('50%')).toBeInTheDocument();
     expect(await screen.findByText('9 days')).toBeInTheDocument();
+  });
+
+  it('renders a VOCAB_LIBRARY item with a plain "View" link and no fabricated progress bar', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(roadmap([item(1, 'c1'), libraryItem(2, 'lib-1')]));
+    mockGetProgress.mockResolvedValueOnce(
+      new Map([['c1', summary('c1', { totalLessons: 10, completedLessons: 5 })]]),
+    );
+    mockGetAnalytics.mockResolvedValueOnce(analytics(0));
+
+    renderStep();
+
+    expect(await screen.findByText('Library 2')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'View' }),
+    ).toHaveAttribute('href', '/vocab/libraries/lib-1');
+  });
+
+  it('shows the AI planner\'s overall summary as soon as the roadmap loads, with no separate fetch', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(
+      roadmap([item(1, 'c1')], { aiSummary: 'Ưu tiên Nghe và Ngữ pháp trước khi tới TOEIC 450.' }),
+    );
+    mockGetProgress.mockResolvedValueOnce(new Map());
+    mockGetAnalytics.mockResolvedValueOnce(analytics(0));
+
+    renderStep();
+
+    expect(
+      await screen.findByText('Ưu tiên Nghe và Ngữ pháp trước khi tới TOEIC 450.'),
+    ).toBeInTheDocument();
+  });
+
+  it('renders no AI-summary section at all when aiSummary is null', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(roadmap([item(1, 'c1')], { aiSummary: null }));
+    mockGetProgress.mockResolvedValueOnce(new Map());
+    mockGetAnalytics.mockResolvedValueOnce(analytics(0));
+
+    renderStep();
+
+    await screen.findByText('Course 1');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // The heading/subtitle text is the only place "roadmap" copy exists —
+    // no orphaned summary paragraph should appear.
+    expect(screen.queryByText(/Ưu tiên/)).not.toBeInTheDocument();
   });
 
   it('calls onFinished when the bottom CTA is clicked', async () => {

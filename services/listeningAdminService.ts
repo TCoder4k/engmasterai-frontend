@@ -1,4 +1,4 @@
-import { CefrLevel } from '../types';
+import { CefrLevel, LearningGoal } from '../types';
 import { throwApiError } from './apiError';
 import { apiFetch } from './apiFetch';
 
@@ -30,6 +30,9 @@ export interface ManagedListeningCategory {
   orderIndex: number;
   isPublished: boolean;
   contentCount: number;
+  // Personalized Roadmap — mirrors Course.level/suitableGoals.
+  level: CefrLevel | null;
+  suitableGoals: LearningGoal[];
 }
 
 export interface ManagedListeningSegment {
@@ -96,12 +99,16 @@ export interface CreateListeningCategoryPayload {
   name: string;
   nameVi: string;
   orderIndex?: number;
+  level?: CefrLevel;
+  suitableGoals?: LearningGoal[];
 }
 
 export interface UpdateListeningCategoryPayload {
   name?: string;
   nameVi?: string;
   orderIndex?: number;
+  level?: CefrLevel;
+  suitableGoals?: LearningGoal[];
 }
 
 export interface CreateListeningContentPayload {

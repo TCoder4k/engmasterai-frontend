@@ -36,6 +36,9 @@ export interface Course {
   // the roadmap algorithm match a placement result's weak sections to an
   // appropriately-leveled course.
   level: CefrLevel | null;
+  // Personalized Onboarding & Placement Test — which goals this course is a
+  // roadmap candidate for. Empty means "eligible for every goal".
+  suitableGoals: LearningGoal[];
   // Sprint 05 — PUBLISHED lessons only (CourseService.PUBLIC_SELECT filters
   // the relation count). Not the same number as ManagedCourse's below.
   _count: { lessons: number };
@@ -102,6 +105,12 @@ export type LearningGoal =
   | 'GENERAL_ENGLISH'
   | 'REGULAR_PRACTICE';
 
+// How Roadmap.estimatedLevel was arrived at — mirrors the backend's
+// LevelSource enum. BEGINNER_ASSUMED: the student chose to skip the
+// placement test, so the level is an assumed baseline, not a measured one.
+// TEST_GRADED: real section scores exist behind it.
+export type LevelSource = 'BEGINNER_ASSUMED' | 'TEST_GRADED';
+
 export interface VocabLibrary {
   id: string;
   name: string;
@@ -111,6 +120,9 @@ export interface VocabLibrary {
   orderIndex: number;
   createdAt: string;
   updatedAt: string;
+  // Personalized Roadmap — mirrors Course.level/suitableGoals.
+  level: CefrLevel | null;
+  suitableGoals: LearningGoal[];
 }
 
 export interface ManagedVocabLibrary extends VocabLibrary {

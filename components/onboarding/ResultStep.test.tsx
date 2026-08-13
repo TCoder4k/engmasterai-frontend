@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LanguageProvider } from '../../i18n/LanguageProvider';
 import ResultStep from './ResultStep';
@@ -13,11 +13,29 @@ vi.mock('../../services/placementService', async () => {
   return {
     ...actual,
     getPlacementAttemptReview: vi.fn(),
+    requestPlacementRoadmapPlan: vi.fn(),
   };
 });
 
-import { getPlacementAttemptReview } from '../../services/placementService';
+import {
+  getPlacementAttemptReview,
+  requestPlacementRoadmapPlan,
+} from '../../services/placementService';
 const mockGetReview = vi.mocked(getPlacementAttemptReview);
+const mockRequestPlan = vi.mocked(requestPlacementRoadmapPlan);
+
+beforeEach(() => {
+  mockRequestPlan.mockResolvedValue({
+    goal: 'FOUNDATION',
+    estimatedLevel: 'A1',
+    levelSource: 'BEGINNER_ASSUMED',
+    placementAttemptId: null,
+    generatedAt: new Date().toISOString(),
+    aiSummary: null,
+    aiPlanningUsed: false,
+    items: [],
+  });
+});
 
 afterEach(() => {
   cleanup();
@@ -110,13 +128,66 @@ describe('ResultStep', () => {
     expect(screen.getByText('58%')).toBeInTheDocument();
   });
 
-  it('the primary button calls onContinue and is enabled', async () => {
+  // Auto-fired on mount, no click required — the student never needs to
+  // know AI was involved.
+  it('fires AI roadmap planning automatically on mount, without any click', async () => {
+    renderResult(result());
+    await waitFor(() => expect(mockRequestPlan).toHaveBeenCalledTimes(1));
+  });
+
+  // Navigation is HELD until planning resolves — never fire-and-forget — so
+  // RoadmapStep can't render a pre-AI-planning roadmap that then silently
+  // changes a moment later.
+  it('shows a loading state and disables both buttons while the AI plan is in flight, then enables once ready', async () => {
+    let resolvePlan!: (value: Awaited<ReturnType<typeof requestPlacementRoadmapPlan>>) => void;
+    mockRequestPlan.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolvePlan = resolve;
+      }),
+    );
+    const onContinue = vi.fn();
+    renderResult(result(), onContinue);
+
+    expect(await screen.findByText(/preparing your roadmap/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /view test details/i })).toBeDisabled();
+    expect(onContinue).not.toHaveBeenCalled();
+
+    resolvePlan({
+      goal: 'FOUNDATION',
+      estimatedLevel: 'A1',
+      levelSource: 'BEGINNER_ASSUMED',
+      placementAttemptId: null,
+      generatedAt: new Date().toISOString(),
+      aiSummary: null,
+      aiPlanningUsed: true,
+      items: [],
+    });
+
+    expect(await screen.findByRole('button', { name: /view my personal roadmap/i })).toBeEnabled();
+    expect(onContinue).not.toHaveBeenCalled(); // navigation is a separate click now
+  });
+
+  it('clicking the primary button navigates once ready, without re-calling the planning API', async () => {
     const onContinue = vi.fn();
     const user = userEvent.setup();
     renderResult(result(), onContinue);
 
-    await user.click(screen.getByRole('button', { name: /view roadmap analysis/i }));
+    const button = await screen.findByRole('button', { name: /view my personal roadmap/i });
+    await user.click(button);
+
     expect(onContinue).toHaveBeenCalledTimes(1);
+    expect(mockRequestPlan).toHaveBeenCalledTimes(1);
+  });
+
+  // Onboarding must not trap the student: the backend's own guarantee is
+  // that a deterministic roadmap already exists regardless of AI planning's
+  // outcome, so even a network/auth error here must still let the CTA
+  // become available (navigation itself still requires the click).
+  it('still enables the primary button when the planning request itself fails', async () => {
+    mockRequestPlan.mockRejectedValueOnce(new Error('network error'));
+    renderResult(result());
+
+    expect(await screen.findByRole('button', { name: /view my personal roadmap/i })).toBeEnabled();
   });
 
   it('renders a different friendly level name and encouragement for a higher level', () => {

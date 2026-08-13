@@ -1,4 +1,4 @@
-import { CefrLevel, Course, CourseType, ManagedCourse } from '../types';
+import { CefrLevel, Course, CourseType, LearningGoal, ManagedCourse } from '../types';
 import { throwApiError } from './apiError';
 import { apiFetch } from './apiFetch';
 
@@ -30,6 +30,7 @@ export interface CreateCourseDto {
   description: string;
   thumbnail?: string;
   level?: CefrLevel;
+  suitableGoals?: LearningGoal[];
 }
 
 export interface UpdateCourseDto {
@@ -38,6 +39,7 @@ export interface UpdateCourseDto {
   description?: string;
   thumbnail?: string;
   level?: CefrLevel;
+  suitableGoals?: LearningGoal[];
 }
 
 // Get published courses (public, no auth required)

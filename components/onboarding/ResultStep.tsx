@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { Trophy, BookOpen, Type, Headphones } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Trophy, BookOpen, Type, Headphones, Loader2 } from 'lucide-react';
 import { CefrLevel } from '../../types';
-import { PlacementResult } from '../../services/placementService';
+import {
+  PlacementResult,
+  requestPlacementRoadmapPlan,
+} from '../../services/placementService';
 import { useTranslation } from '../../i18n/useTranslation';
 import { StringKeys, TranslationDict } from '../../i18n/translations';
 import PlacementReviewPanel from './PlacementReviewPanel';
@@ -45,6 +48,30 @@ const QUESTIONS_PER_SECTION = 4;
 const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
   const { t } = useTranslation();
   const [showReview, setShowReview] = useState(false);
+  const [planningState, setPlanningState] = useState<'planning' | 'ready'>('planning');
+
+  // POST /placement/roadmap/plan — hybrid AI-assisted, multi-pillar resource
+  // selection. Fired automatically on mount, not on a click — the student
+  // never needs to know AI was involved. Always resolves with a valid
+  // roadmap either way (AI-selected or the deterministic fallback — see the
+  // backend's requestRoadmapPlan), so a genuine network/auth error is safe
+  // to swallow: the deterministic roadmap from finalizeNow already exists,
+  // and the primary button below simply stays enabled either way. The
+  // backend itself is idempotent per roadmap generation (aiPlanningUsedAt),
+  // so no de-duplication is needed here even across a refresh/remount.
+  useEffect(() => {
+    let cancelled = false;
+    requestPlacementRoadmapPlan()
+      .catch(() => {
+        // Swallowed deliberately — see the comment above.
+      })
+      .finally(() => {
+        if (!cancelled) setPlanningState('ready');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (showReview) {
     return (
@@ -196,16 +223,23 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
         <button
           type="button"
           onClick={() => setShowReview(true)}
-          className="flex-1 py-3.5 border-2 border-slate-200 dark:border-ink-700 text-slate-700 dark:text-slate-200 font-extrabold rounded-2xl hover:border-blue-300 dark:hover:border-blue-600/50 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
+          disabled={planningState === 'planning'}
+          className="flex-1 py-3.5 border-2 border-slate-200 dark:border-ink-700 text-slate-700 dark:text-slate-200 font-extrabold rounded-2xl hover:border-blue-300 dark:hover:border-blue-600/50 hover:text-blue-700 dark:hover:text-blue-300 transition-colors disabled:opacity-60"
         >
           {t.onboarding.resultViewDetails}
         </button>
         <button
           type="button"
           onClick={onContinue}
-          className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl shadow-blue-200 dark:shadow-none transition-all"
+          disabled={planningState === 'planning'}
+          className="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl shadow-blue-200 dark:shadow-none transition-all disabled:opacity-80 flex items-center justify-center gap-2"
         >
-          {t.onboarding.resultContinue}
+          {planningState === 'planning' && (
+            <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+          )}
+          {planningState === 'planning'
+            ? t.onboarding.resultPreparingRoadmap
+            : t.onboarding.resultViewRoadmap}
         </button>
       </div>
     </div>

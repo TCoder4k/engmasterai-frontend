@@ -12,7 +12,7 @@ import {
   unpublishCourse,
   deleteCourse,
 } from '../../services/courseService';
-import { ManagedCourse, CourseType, CefrLevel } from '../../types';
+import { ManagedCourse, CourseType, CefrLevel, LearningGoal } from '../../types';
 import { Plus, Pencil, Trash2, Eye, EyeOff, BookText, Layers } from 'lucide-react';
 
 const COURSE_TYPES: CourseType[] = ['GRAMMAR', 'VOCABULARY', 'LISTENING'];
@@ -23,15 +23,38 @@ const COURSE_TYPES: CourseType[] = ['GRAMMAR', 'VOCABULARY', 'LISTENING'];
 // undefined at submit time so create/update never sends an empty string.
 const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
+// Personalized Onboarding & Placement Test — which onboarding goals this
+// course is a roadmap candidate for. Labels mirror the student-facing
+// GoalStep copy (i18n/translations.ts) so an admin recognizes the same six
+// choices a student sees. Unchecked/empty means "eligible for every goal" —
+// Course.suitableGoals's own default — so leaving every box unchecked is a
+// valid, intentional choice, not an error state.
+const GOAL_OPTIONS: { value: LearningGoal; label: string }[] = [
+  { value: 'FOUNDATION', label: 'Lấy lại gốc' },
+  { value: 'TOEIC_450', label: 'Đạt TOEIC 450' },
+  { value: 'TOEIC_650', label: 'Đạt TOEIC 650' },
+  { value: 'TOEIC_800', label: 'Đạt TOEIC 800' },
+  { value: 'GENERAL_ENGLISH', label: 'Tiếng Anh giao tiếp' },
+  { value: 'REGULAR_PRACTICE', label: 'Luyện tập đều đặn' },
+];
+
 interface CourseFormState {
   title: string;
   type: CourseType;
   description: string;
   thumbnail: string;
   level: CefrLevel | '';
+  suitableGoals: LearningGoal[];
 }
 
-const emptyForm: CourseFormState = { title: '', type: 'GRAMMAR', description: '', thumbnail: '', level: '' };
+const emptyForm: CourseFormState = {
+  title: '',
+  type: 'GRAMMAR',
+  description: '',
+  thumbnail: '',
+  level: '',
+  suitableGoals: [],
+};
 
 const AdminCourses: React.FC = () => {
   const navigate = useNavigate();
@@ -76,8 +99,18 @@ const AdminCourses: React.FC = () => {
       description: course.description,
       thumbnail: course.thumbnail || '',
       level: course.level || '',
+      suitableGoals: course.suitableGoals,
     });
     setFormError(null);
+  };
+
+  const toggleGoal = (goal: LearningGoal) => {
+    setForm((f) => ({
+      ...f,
+      suitableGoals: f.suitableGoals.includes(goal)
+        ? f.suitableGoals.filter((g) => g !== goal)
+        : [...f.suitableGoals, goal],
+    }));
   };
 
   const submitCreate = async (e: React.FormEvent) => {
@@ -91,6 +124,7 @@ const AdminCourses: React.FC = () => {
         description: form.description,
         thumbnail: form.thumbnail || undefined,
         level: form.level || undefined,
+        suitableGoals: form.suitableGoals,
       });
       setIsCreateOpen(false);
       loadCourses();
@@ -113,6 +147,7 @@ const AdminCourses: React.FC = () => {
         description: form.description,
         thumbnail: form.thumbnail || undefined,
         level: form.level || undefined,
+        suitableGoals: form.suitableGoals,
       });
       setEditingCourse(null);
       loadCourses();
@@ -344,6 +379,30 @@ const AdminCourses: React.FC = () => {
                   <option key={lvl} value={lvl}>{lvl}</option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
+                Phù hợp với mục tiêu (tùy chọn)
+              </label>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+                Không chọn mục nào nghĩa là khóa học phù hợp với mọi mục tiêu.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {GOAL_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.suitableGoals.includes(opt.value)}
+                      onChange={() => toggleGoal(opt.value)}
+                      className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-400"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Mô tả</label>

@@ -1,4 +1,4 @@
-import { VocabLibrary, ManagedVocabLibrary } from '../types';
+import { VocabLibrary, ManagedVocabLibrary, CefrLevel, LearningGoal } from '../types';
 import { throwApiError } from './apiError';
 import { apiFetch } from './apiFetch';
 
@@ -28,12 +28,16 @@ export interface CreateVocabLibraryDto {
   name: string;
   description: string;
   thumbnail?: string;
+  level?: CefrLevel;
+  suitableGoals?: LearningGoal[];
 }
 
 export interface UpdateVocabLibraryDto {
   name?: string;
   description?: string;
   thumbnail?: string;
+  level?: CefrLevel;
+  suitableGoals?: LearningGoal[];
 }
 
 // Get published libraries (public, no auth required — the anonymous-browsable shelf).

@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight, ChevronUp, Map, MapPin, RotateCw, Sparkles } from 'lucide-react';
 import { LearningGoal } from '../../types';
 import {
+  RoadmapItemView,
   RoadmapView,
   getPlacementRoadmap,
-  requestPlacementRoadmapAnalysis,
 } from '../../services/placementService';
 import {
   CourseProgressSummary,
   continuePath,
   getCourseProgressSummaries,
 } from '../../services/courseProgressService';
-import { ApiError, handleAuthError } from '../../services/apiError';
+import { ApiError } from '../../services/apiError';
 import { useTranslation } from '../../i18n/useTranslation';
 import { StringKeys, TranslationDict } from '../../i18n/translations';
 import Skeleton from '../shared/Skeleton';
@@ -74,14 +74,36 @@ const estimatedWeeksFor = (totalEstimatedMinutes: number): number =>
     Math.ceil(totalEstimatedMinutes / (DEFAULT_DAILY_TARGETS.studyMinutes * 7)),
   );
 
+// Resource-type-aware navigation target. COURSE keeps the existing
+// progress-aware "continue where you left off" behavior; VOCAB_LIBRARY and
+// LISTENING_CATEGORY route to their own real, already-shipped browse pages
+// — LibraryDetailPage (/vocab/libraries/:id) and ListeningCatalogPage
+// (/practice/listening), the latter preselected via router `state` since no
+// URL/query-param deep-link exists for it.
+const targetFor = (
+  item: RoadmapItemView,
+  summary: CourseProgressSummary | null,
+): { to: string; state?: unknown } => {
+  switch (item.resourceType) {
+    case 'COURSE':
+      return {
+        to:
+          summary && summary.status === 'IN_PROGRESS'
+            ? (continuePath(summary) ?? `/courses/${item.resourceId}`)
+            : `/courses/${item.resourceId}`,
+      };
+    case 'VOCAB_LIBRARY':
+      return { to: `/vocab/libraries/${item.resourceId}` };
+    case 'LISTENING_CATEGORY':
+      return { to: '/practice/listening', state: { categoryId: item.resourceId } };
+  }
+};
+
 const RoadmapCard: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   const [state, setState] = useState<LoadState>('loading');
   const [roadmap, setRoadmap] = useState<RoadmapView | null>(null);
-  const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
   const [progressSummaries, setProgressSummaries] = useState<Map<
@@ -108,13 +130,19 @@ const RoadmapCard: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!roadmap || roadmap.items.length === 0) {
+    // Course-specific — VocabLibrary/ListeningCategory items have no
+    // equivalent progress signal yet (see targetFor's own comment) and are
+    // simply never included in this batch request.
+    const courseIds = (roadmap?.items ?? [])
+      .filter((item) => item.resourceType === 'COURSE')
+      .map((item) => item.resourceId);
+    if (courseIds.length === 0) {
       setProgressState('ready');
       return;
     }
     let cancelled = false;
     setProgressState('loading');
-    getCourseProgressSummaries(roadmap.items.map((item) => item.courseId))
+    getCourseProgressSummaries(courseIds)
       .then((summaries) => {
         if (cancelled) return;
         setProgressSummaries(summaries);
@@ -127,22 +155,6 @@ const RoadmapCard: React.FC = () => {
       cancelled = true;
     };
   }, [roadmap]);
-
-  const handleRequestAnalysis = async () => {
-    if (analysisLoading) return;
-    setAnalysisLoading(true);
-    setAnalysisError(null);
-    try {
-      const result = await requestPlacementRoadmapAnalysis();
-      setRoadmap((prev) => (prev ? { ...prev, aiSummary: result.summary } : prev));
-    } catch (err) {
-      setAnalysisError(
-        handleAuthError(err, navigate) || t.dashboard.roadmapCard.aiSummaryFailed,
-      );
-    } finally {
-      setAnalysisLoading(false);
-    }
-  };
 
   if (state === 'loading') {
     return <Skeleton className="h-48 w-full" />;
@@ -220,15 +232,12 @@ const RoadmapCard: React.FC = () => {
       {view.items.length > 0 && (
         <ol className="space-y-0">
           {visibleItems.map((item, index) => {
-            const summary = progressSummaries?.get(item.courseId) ?? null;
-            const target =
-              summary && summary.status === 'IN_PROGRESS'
-                ? (continuePath(summary) ?? `/courses/${item.courseId}`)
-                : `/courses/${item.courseId}`;
+            const summary = progressSummaries?.get(item.resourceId) ?? null;
+            const target = targetFor(item, summary);
             const isLast = index === visibleItems.length - 1;
 
             return (
-              <li key={`${item.phase}-${item.courseId}`} className="flex gap-3">
+              <li key={`${item.phase}-${item.resourceId}`} className="flex gap-3">
                 {/* The connecting line fills the flex column's remaining
                     height after the circle, so it always reaches exactly to
                     the next phase's circle regardless of this row's content
@@ -247,12 +256,13 @@ const RoadmapCard: React.FC = () => {
                 </div>
 
                 <Link
-                  to={target}
+                  to={target.to}
+                  state={target.state}
                   className="flex-1 min-w-0 flex items-center gap-4 rounded-xl p-3 mb-2 hover:bg-slate-50 dark:hover:bg-ink-800 transition-colors group"
                 >
-                  {item.courseThumbnail ? (
+                  {item.resourceThumbnail ? (
                     <img
-                      src={item.courseThumbnail}
+                      src={item.resourceThumbnail}
                       alt=""
                       className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
                     />
@@ -267,7 +277,7 @@ const RoadmapCard: React.FC = () => {
 
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                      {item.courseTitle}
+                      {item.resourceTitle}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
                       {item.reason}
@@ -338,31 +348,19 @@ const RoadmapCard: React.FC = () => {
         </button>
       )}
 
-      <div className="border-t border-slate-100 dark:border-ink-800 pt-3">
-        {view.aiSummary ? (
+      {/* No manual "Phân tích AI" trigger and no retry of any kind here —
+          aiSummary is populated automatically during onboarding (POST
+          /placement/roadmap/plan's single Gemini call). If it's still null
+          (that AI call failed or was never reached), the card simply omits
+          this block — never a button, never a visible error. */}
+      {view.aiSummary && (
+        <div className="border-t border-slate-100 dark:border-ink-800 pt-3">
           <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed flex gap-2">
             <Sparkles size={14} className="flex-shrink-0 mt-0.5 text-indigo-500" aria-hidden="true" />
             <span>{view.aiSummary}</span>
           </p>
-        ) : (
-          <div className="space-y-1.5">
-            <button
-              type="button"
-              onClick={() => void handleRequestAnalysis()}
-              disabled={analysisLoading}
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 rounded-lg"
-            >
-              <Sparkles size={14} aria-hidden="true" />
-              {analysisLoading ? copy.aiSummaryLoading : copy.aiSummaryCta}
-            </button>
-            {analysisError && (
-              <p role="alert" className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-                {analysisError}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 };

@@ -33,7 +33,7 @@ interface PlacementTestStepProps {
   onBack: () => void;
 }
 
-// Step 3 — the 12-question test itself. COMPOSED, NOT COPIED: the question
+// Step 3 — the 24-question test itself. COMPOSED, NOT COPIED: the question
 // card, the per-type inputs and the progress bar are the lesson quiz
 // engine's, reused verbatim — see AdvancedPracticeStage.tsx for the same
 // pattern applied to Advanced Practice. Placement never grades a question

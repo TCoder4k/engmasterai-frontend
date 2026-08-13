@@ -143,6 +143,23 @@ const LandingFooter: React.FC = () => {
                   <Send className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </form>
+              <div className="flex items-center gap-2 max-w-sm mt-4">
+  <a
+    href="https://zalo.me/0356481406" // thay bằng số Zalo thật
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-2 px-4 py-2.5 bg-blue-500 hover:bg-green-400 text-white font-bold rounded-xl text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
+  >
+    {/* Icon Zalo có thể dùng SVG hoặc ảnh */}
+    <img
+      src="https://hienlaptop.com/wp-content/uploads/2024/12/logo-zalo-vector-13.jpg" // đường dẫn icon Zalo
+      alt="Zalo"
+      className="w-4 h-4"
+    />
+    Góp ý qua Zalo: 0356481406
+  </a>
+</div>
+
 
               <p aria-live="polite" className="min-h-[1.25rem] mt-2">
                 {subscribed && (
