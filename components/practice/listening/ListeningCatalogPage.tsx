@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Clock,
   Flame,
@@ -100,6 +100,7 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
   const { theme } = useTheme();
   const isShadowing = mode === 'SHADOWING';
   const isLightTheme = theme === 'light';
+  const location = useLocation();
 
   const [response, setResponse] = useState<ListeningCatalogResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,7 +111,13 @@ const ListeningCatalogPage: React.FC<ListeningCatalogPageProps> = ({
   // started" for a recording the student may well have finished.
   const [progress, setProgress] = useState<Map<string, ModeSummary> | null>(null);
 
-  const [categoryId, setCategoryId] = useState<string | null>(null);
+  // Seeded ONCE from router `state` (e.g. RoadmapCard/RoadmapStep linking
+  // here for a LISTENING_CATEGORY phase) — there is no URL/query-param
+  // deep-link for this today, so `state` is the minimal-diff carrier. The
+  // existing pill-click flow (selectCategory) is untouched after this.
+  const [categoryId, setCategoryId] = useState<string | null>(
+    () => (location.state as { categoryId?: string } | null)?.categoryId ?? null,
+  );
   const [level, setLevel] = useState<CefrLevel | null>(null);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');

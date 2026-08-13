@@ -6,6 +6,7 @@ import {
   PlacementResult,
   getPlacementAttempt,
   getPlacementStatus,
+  requestPlacementRoadmapPlan,
 } from '../../services/placementService';
 import { authService } from '../../services/authService';
 import { handleAuthError } from '../../services/apiError';
@@ -18,7 +19,15 @@ import PlacementTestStep from './PlacementTestStep';
 import ResultStep from './ResultStep';
 import RoadmapStep from './RoadmapStep';
 
-type Step = 'loading' | 'error' | 'goal' | 'method' | 'test' | 'result' | 'roadmap';
+type Step =
+  | 'loading'
+  | 'error'
+  | 'goal'
+  | 'method'
+  | 'test'
+  | 'preparingRoadmap'
+  | 'result'
+  | 'roadmap';
 
 interface OnboardingPageProps {
   /**
@@ -121,8 +130,24 @@ const OnboardingPage: React.FC<OnboardingPageProps> = ({ retake = false }) => {
     setStep('method');
   };
 
-  const handleBeginnerStarted = () => {
+  // The beginner-skip path has no Result screen to host the auto-fired
+  // planning call ResultStep triggers on the graded path — so the same
+  // guarantee (AI planning is attempted, and awaited, before RoadmapStep
+  // ever renders) is applied here directly rather than skipped for this
+  // path. 'preparingRoadmap' is a distinct step (not the generic, textless
+  // 'loading' skeleton) with explicit copy shared with ResultStep's own —
+  // identical wording across both paths. A failed or unavailable planning
+  // call is swallowed: startBeginnerPlacement() already guarantees a valid
+  // deterministic roadmap exists, so this is purely a best-effort upgrade,
+  // never something that can block the wizard.
+  const handleBeginnerStarted = async () => {
     markOnboarded();
+    setStep('preparingRoadmap');
+    try {
+      await requestPlacementRoadmapPlan();
+    } catch {
+      // Swallowed deliberately — see the comment above.
+    }
     setStep('roadmap');
   };
 
@@ -166,6 +191,15 @@ const OnboardingPage: React.FC<OnboardingPageProps> = ({ retake = false }) => {
 
         {step === 'test' && attempt && (
           <PlacementTestStep attempt={attempt} onCompleted={handleTestCompleted} onBack={handleBackToMethod} />
+        )}
+
+        {step === 'preparingRoadmap' && (
+          <div>
+            <Skeleton className="h-96 w-full rounded-3xl" />
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-4">
+              {t.onboarding.resultPreparingRoadmap}
+            </p>
+          </div>
         )}
 
         {step === 'result' && result && (

@@ -12,16 +12,38 @@ import {
   unpublishLibrary,
   deleteLibrary,
 } from '../../services/vocabLibraryService';
-import { ManagedVocabLibrary } from '../../types';
+import { ManagedVocabLibrary, CefrLevel, LearningGoal } from '../../types';
 import { Plus, Pencil, Trash2, Eye, EyeOff, Library as LibraryIcon, Layers } from 'lucide-react';
+
+// Personalized Roadmap — lets the roadmap algorithm match a placement
+// result's weak Vocabulary section to an appropriately-leveled library.
+// Mirrors AdminCourses.tsx's own CEFR_LEVELS/GOAL_OPTIONS exactly.
+const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+const GOAL_OPTIONS: { value: LearningGoal; label: string }[] = [
+  { value: 'FOUNDATION', label: 'Lấy lại gốc' },
+  { value: 'TOEIC_450', label: 'Đạt TOEIC 450' },
+  { value: 'TOEIC_650', label: 'Đạt TOEIC 650' },
+  { value: 'TOEIC_800', label: 'Đạt TOEIC 800' },
+  { value: 'GENERAL_ENGLISH', label: 'Tiếng Anh giao tiếp' },
+  { value: 'REGULAR_PRACTICE', label: 'Luyện tập đều đặn' },
+];
 
 interface LibraryFormState {
   name: string;
   description: string;
   thumbnail: string;
+  level: CefrLevel | '';
+  suitableGoals: LearningGoal[];
 }
 
-const emptyForm: LibraryFormState = { name: '', description: '', thumbnail: '' };
+const emptyForm: LibraryFormState = {
+  name: '',
+  description: '',
+  thumbnail: '',
+  level: '',
+  suitableGoals: [],
+};
 
 const AdminVocabLibraries: React.FC = () => {
   const navigate = useNavigate();
@@ -64,6 +86,8 @@ const AdminVocabLibraries: React.FC = () => {
       name: library.name,
       description: library.description,
       thumbnail: library.thumbnail || '',
+      level: library.level || '',
+      suitableGoals: library.suitableGoals,
     });
     setFormError(null);
   };
@@ -71,6 +95,15 @@ const AdminVocabLibraries: React.FC = () => {
   const closeModals = () => {
     setIsCreateOpen(false);
     setEditingLibrary(null);
+  };
+
+  const toggleGoal = (goal: LearningGoal) => {
+    setForm((f) => ({
+      ...f,
+      suitableGoals: f.suitableGoals.includes(goal)
+        ? f.suitableGoals.filter((g) => g !== goal)
+        : [...f.suitableGoals, goal],
+    }));
   };
 
   const submitCreate = async (e: React.FormEvent) => {
@@ -82,6 +115,8 @@ const AdminVocabLibraries: React.FC = () => {
         name: form.name,
         description: form.description,
         thumbnail: form.thumbnail || undefined,
+        level: form.level || undefined,
+        suitableGoals: form.suitableGoals,
       });
       closeModals();
       loadLibraries();
@@ -102,6 +137,8 @@ const AdminVocabLibraries: React.FC = () => {
         name: form.name,
         description: form.description,
         thumbnail: form.thumbnail || undefined,
+        level: form.level || undefined,
+        suitableGoals: form.suitableGoals,
       });
       closeModals();
       loadLibraries();
@@ -321,6 +358,43 @@ const AdminVocabLibraries: React.FC = () => {
                 onChange={(e) => setForm((f) => ({ ...f, thumbnail: e.target.value }))}
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
               />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">Trình độ (CEFR, tùy chọn)</label>
+              <select
+                value={form.level}
+                onChange={(e) => setForm((f) => ({ ...f, level: e.target.value as CefrLevel | '' }))}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 focus:border-blue-300 dark:focus:border-blue-500"
+              >
+                <option value="">Chưa đặt</option>
+                {CEFR_LEVELS.map((lvl) => (
+                  <option key={lvl} value={lvl}>{lvl}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1.5">
+                Phù hợp với mục tiêu (tùy chọn)
+              </label>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-2">
+                Không chọn mục nào nghĩa là thư viện phù hợp với mọi mục tiêu.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {GOAL_OPTIONS.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={form.suitableGoals.includes(opt.value)}
+                      onChange={() => toggleGoal(opt.value)}
+                      className="rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-400"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="flex justify-end space-x-3 pt-2">
               <button

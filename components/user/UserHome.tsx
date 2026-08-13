@@ -209,7 +209,16 @@ const UserHome: React.FC = () => {
     let cancelled = false;
     getPlacementRoadmap()
       .then((view) => {
-        if (!cancelled) setRoadmapCourseIds(view.items.map((item) => item.courseId));
+        if (!cancelled) {
+          // Course-specific — VocabLibrary/ListeningCategory roadmap items
+          // have no entry in progressByCourse (a Course-only map) to cross-
+          // reference against.
+          setRoadmapCourseIds(
+            view.items
+              .filter((item) => item.resourceType === 'COURSE')
+              .map((item) => item.resourceId),
+          );
+        }
       })
       .catch(() => {
         // Stays null — no roadmap yet, or this supplementary fetch failed;

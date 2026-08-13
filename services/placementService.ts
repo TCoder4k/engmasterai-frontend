@@ -1,6 +1,6 @@
 import { throwApiError } from './apiError';
 import { apiFetch } from './apiFetch';
-import { CefrLevel, CourseType, LearningGoal } from '../types';
+import { CefrLevel, CourseType, LearningGoal, LevelSource } from '../types';
 import {
   QuestionType,
   QuestionDifficulty,
@@ -210,26 +210,34 @@ export interface PlacementStatus {
   hasRoadmap: boolean;
 }
 
+export type RoadmapPillar = CourseType;
+export type RoadmapResourceType = 'COURSE' | 'VOCAB_LIBRARY' | 'LISTENING_CATEGORY';
+
 export interface RoadmapItemView {
   phase: number;
-  courseType: CourseType;
-  courseId: string;
-  // Joined fresh from a LIVE Course row on every read — never a stale
-  // snapshot. See engmasterai-backend's roadmap-algorithm.ts.
-  courseTitle: string;
-  courseThumbnail: string | null;
+  pillar: RoadmapPillar;
+  resourceType: RoadmapResourceType;
+  resourceId: string;
+  // Joined fresh from a LIVE Course/VocabLibrary/ListeningCategory row on
+  // every read — never a stale snapshot. See engmasterai-backend's
+  // roadmap-algorithm.ts.
+  resourceTitle: string;
+  resourceThumbnail: string | null;
   reason: string;
   // Sum of estimatedStudyMinutes across the course's published lessons —
   // real, measured content-authoring data. NOT a promise about how long the
   // student will take; callers derive an explicitly-labeled "~X tuần"
-  // ESTIMATE from this, never present it as exact. 0 for a course with no
-  // lessons carrying a duration.
+  // ESTIMATE from this, never present it as exact. Always 0 for
+  // VOCAB_LIBRARY/LISTENING_CATEGORY items — no equivalent aggregate exists
+  // for those resource types.
   totalEstimatedMinutes: number;
 }
 
 export interface RoadmapView {
   goal: LearningGoal;
   estimatedLevel: CefrLevel | null;
+  // Null only for a roadmap generated before this field existed.
+  levelSource: LevelSource | null;
   // Null on the beginner-skip path — no test was ever taken.
   placementAttemptId: string | null;
   generatedAt: string;
@@ -237,6 +245,11 @@ export interface RoadmapView {
   // called, and cleared again whenever a retake regenerates the roadmap
   // (see the backend's finalizeNow/persistRoadmapAndMaybeOnboard).
   aiSummary: string | null;
+  // True only when POST /placement/roadmap/plan actually persisted an
+  // AI-selected `items`; false for the deterministic roadmap — whether AI
+  // planning was never asked for, failed, or returned an invalid selection.
+  // Both are equally real, valid roadmaps; this is purely informational.
+  aiPlanningUsed: boolean;
   items: RoadmapItemView[];
 }
 
@@ -373,6 +386,20 @@ export const requestPlacementRoadmapAnalysis = async (): Promise<RoadmapAnalysis
     method: 'POST',
   });
   if (!response.ok) return throwApiError(response, 'Failed to generate the AI roadmap analysis');
+  return response.json();
+};
+
+// POST /placement/roadmap/plan — hybrid AI-assisted course SELECTION (not
+// narration). No body, same reasoning as the analysis call above. Always
+// resolves with a valid RoadmapView, whether or not AI planning actually
+// ran — `aiPlanningUsed` says which; a rejected promise here means a real
+// error (network/auth/rate-limit), never "AI was unavailable" — that case
+// still resolves successfully with the deterministic roadmap.
+export const requestPlacementRoadmapPlan = async (): Promise<RoadmapView> => {
+  const response = await apiFetch(`${API_BASE_URL}/placement/roadmap/plan`, {
+    method: 'POST',
+  });
+  if (!response.ok) return throwApiError(response, 'Failed to build the AI-personalized roadmap');
   return response.json();
 };
 

@@ -13,6 +13,7 @@ import {
   unpublishListeningCategory,
   updateListeningCategory,
 } from '../../services/listeningAdminService';
+import { CefrLevel, LearningGoal } from '../../types';
 import {
   Plus,
   Pencil,
@@ -23,6 +24,20 @@ import {
   Layers,
   AlertTriangle,
 } from 'lucide-react';
+
+// Personalized Roadmap — lets the roadmap algorithm match a placement
+// result's weak Listening section to an appropriately-leveled category.
+// Mirrors AdminCourses.tsx's own CEFR_LEVELS/GOAL_OPTIONS exactly.
+const CEFR_LEVELS: CefrLevel[] = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+const GOAL_OPTIONS: { value: LearningGoal; label: string }[] = [
+  { value: 'FOUNDATION', label: 'Lấy lại gốc' },
+  { value: 'TOEIC_450', label: 'Đạt TOEIC 450' },
+  { value: 'TOEIC_650', label: 'Đạt TOEIC 650' },
+  { value: 'TOEIC_800', label: 'Đạt TOEIC 800' },
+  { value: 'GENERAL_ENGLISH', label: 'Tiếng Anh giao tiếp' },
+  { value: 'REGULAR_PRACTICE', label: 'Luyện tập đều đặn' },
+];
 
 // Sprint 11 — /admin/listening/categories.
 //
@@ -41,9 +56,16 @@ import {
 interface CategoryFormState {
   name: string;
   nameVi: string;
+  level: CefrLevel | '';
+  suitableGoals: LearningGoal[];
 }
 
-const emptyForm: CategoryFormState = { name: '', nameVi: '' };
+const emptyForm: CategoryFormState = {
+  name: '',
+  nameVi: '',
+  level: '',
+  suitableGoals: [],
+};
 
 const AdminListeningCategories: React.FC = () => {
   const navigate = useNavigate();
@@ -82,7 +104,12 @@ const AdminListeningCategories: React.FC = () => {
 
   const openEdit = (category: ManagedListeningCategory) => {
     setEditing(category);
-    setForm({ name: category.name, nameVi: category.nameVi });
+    setForm({
+      name: category.name,
+      nameVi: category.nameVi,
+      level: category.level || '',
+      suitableGoals: category.suitableGoals,
+    });
     setFormError(null);
   };
 
@@ -91,12 +118,26 @@ const AdminListeningCategories: React.FC = () => {
     setEditing(null);
   };
 
+  const toggleGoal = (goal: LearningGoal) => {
+    setForm((f) => ({
+      ...f,
+      suitableGoals: f.suitableGoals.includes(goal)
+        ? f.suitableGoals.filter((g) => g !== goal)
+        : [...f.suitableGoals, goal],
+    }));
+  };
+
   const submitCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setFormError(null);
     try {
-      await createListeningCategory({ name: form.name, nameVi: form.nameVi });
+      await createListeningCategory({
+        name: form.name,
+        nameVi: form.nameVi,
+        level: form.level || undefined,
+        suitableGoals: form.suitableGoals,
+      });
       closeModals();
       loadCategories();
     } catch (err) {
@@ -115,6 +156,8 @@ const AdminListeningCategories: React.FC = () => {
       await updateListeningCategory(editing.id, {
         name: form.name,
         nameVi: form.nameVi,
+        level: form.level || undefined,
+        suitableGoals: form.suitableGoals,
       });
       closeModals();
       loadCategories();
@@ -208,6 +251,45 @@ const AdminListeningCategories: React.FC = () => {
         <p className="text-[11px] text-slate-400 mt-1">
           Bắt buộc — giao diện học viên hiển thị song ngữ.
         </p>
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-slate-600 mb-1.5">
+          Trình độ (CEFR, tùy chọn)
+        </label>
+        <select
+          value={form.level}
+          onChange={(e) => setForm({ ...form, level: e.target.value as CefrLevel | '' })}
+          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+        >
+          <option value="">Chưa đặt</option>
+          {CEFR_LEVELS.map((lvl) => (
+            <option key={lvl} value={lvl}>{lvl}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-slate-600 mb-1.5">
+          Phù hợp với mục tiêu (tùy chọn)
+        </label>
+        <p className="text-[11px] text-slate-400 mb-2">
+          Không chọn mục nào nghĩa là danh mục phù hợp với mọi mục tiêu.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {GOAL_OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={form.suitableGoals.includes(opt.value)}
+                onChange={() => toggleGoal(opt.value)}
+                className="rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
       </div>
       {formError && (
         <p className="text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">

@@ -128,7 +128,15 @@ const RecordedAudioPlayer: React.FC<{ audioUrl: string }> = ({ audioUrl }) => {
       </button>
 
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-[3px] h-8" aria-hidden="true">
+        {/* min-w-0 lets this shrink below its 28-bar content width instead of
+            forcing the row to overflow into the time label/replay button
+            next to it (the row's gap alone needs 27*3=81px, more than this
+            div gets on a narrow phone) — overflow-hidden then clips the
+            excess bars cleanly rather than letting them spill out. */}
+        <div
+          className="flex-1 min-w-0 overflow-hidden flex items-center gap-[3px] h-8"
+          aria-hidden="true"
+        >
           {BAR_HEIGHTS.map((height, i) => (
             <span
               key={i}
@@ -257,7 +265,15 @@ const SpokenTranscriptPlayer: React.FC<{ transcript: string }> = ({ transcript }
       </button>
 
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-[3px] h-8" aria-hidden="true">
+        {/* min-w-0 lets this shrink below its 28-bar content width instead of
+            forcing the row to overflow into the time label/replay button
+            next to it (the row's gap alone needs 27*3=81px, more than this
+            div gets on a narrow phone) — overflow-hidden then clips the
+            excess bars cleanly rather than letting them spill out. */}
+        <div
+          className="flex-1 min-w-0 overflow-hidden flex items-center gap-[3px] h-8"
+          aria-hidden="true"
+        >
           {BAR_HEIGHTS.map((height, i) => (
             <span
               key={i}

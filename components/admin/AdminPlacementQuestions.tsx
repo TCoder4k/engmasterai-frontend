@@ -290,8 +290,8 @@ const AdminPlacementQuestions: React.FC = () => {
                 Đề kiểm tra đầu vào (Placement Test)
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Ngân hàng câu hỏi riêng cho bài kiểm tra đầu vào — 12 câu/lượt (4 Ngữ pháp, 4 Từ vựng, 4 Nghe),
-                mỗi phần cần 2 Dễ / 1 Trung bình / 1 Khó đã công khai.
+                Ngân hàng câu hỏi riêng cho bài kiểm tra đầu vào — 24 câu/lượt (8 Ngữ pháp, 8 Từ vựng, 8 Nghe),
+                mỗi phần cần 3 Dễ / 3 Trung bình / 2 Khó đã công khai.
               </p>
             </div>
             <button

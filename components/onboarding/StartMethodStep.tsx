@@ -18,7 +18,7 @@ interface StartMethodStepProps {
 type StartingMethod = 'beginner' | 'placement' | null;
 
 // Step 2 — "Find your starting point". Two doors: skip the test entirely
-// (start-beginner), or take the 12-question placement test.
+// (start-beginner), or take the 24-question placement test.
 const StartMethodStep: React.FC<StartMethodStepProps> = ({
   onBack,
   onBeginnerStarted,

@@ -6,10 +6,11 @@ import { LanguageProvider } from '../../i18n/LanguageProvider';
 import RoadmapCard from './RoadmapCard';
 import { ApiError } from '../../services/apiError';
 
-// Self-contained component (own GET /placement/roadmap fetch on mount, plus
-// an on-demand POST for the AI narrative) — mocked the same way
-// ReviewSessionPage.test.tsx mocks its own service module, rather than
-// passed as props like the sibling dashboard cards.
+// Self-contained component (own GET /placement/roadmap fetch on mount) —
+// mocked the same way ReviewSessionPage.test.tsx mocks its own service
+// module, rather than passed as props like the sibling dashboard cards.
+// NO requestPlacementRoadmapAnalysis mock: the dashboard never calls it —
+// aiSummary is populated automatically during onboarding, not on-demand.
 vi.mock('../../services/placementService', () => ({
   getPlacementRoadmap: vi.fn(),
   requestPlacementRoadmapAnalysis: vi.fn(),
@@ -38,16 +39,19 @@ const mockGetProgress = vi.mocked(getCourseProgressSummaries);
 const roadmap = (overrides: Record<string, unknown> = {}) => ({
   goal: 'TOEIC_450' as const,
   estimatedLevel: 'B1' as const,
+  levelSource: 'TEST_GRADED' as const,
   placementAttemptId: 'attempt-1',
   generatedAt: '2026-08-01T00:00:00.000Z',
   aiSummary: null,
+  aiPlanningUsed: false,
   items: [
     {
       phase: 1,
-      courseType: 'VOCABULARY' as const,
-      courseId: 'course-1',
-      courseTitle: 'Core TOEIC Vocabulary',
-      courseThumbnail: null,
+      pillar: 'VOCABULARY' as const,
+      resourceType: 'COURSE' as const,
+      resourceId: 'course-1',
+      resourceTitle: 'Core TOEIC Vocabulary',
+      resourceThumbnail: null,
       reason: 'Weakest section — recommended first.',
       // 420 / (30 min/day target * 7) = exactly 2 weeks — a clean, testable
       // round number for the "~X tuần" estimate tag.
@@ -78,6 +82,8 @@ const renderCard = () =>
           <Route path="/home" element={<RoadmapCard />} />
           <Route path="/onboarding/retake" element={<div>RETAKE_STUB</div>} />
           <Route path="/courses/:id" element={<div>COURSE_DETAIL_STUB</div>} />
+          <Route path="/vocab/libraries/:id" element={<div>LIBRARY_DETAIL_STUB</div>} />
+          <Route path="/practice/listening" element={<div>LISTENING_CATALOG_STUB</div>} />
         </Routes>
       </MemoryRouter>
     </LanguageProvider>,
@@ -132,7 +138,7 @@ describe('RoadmapCard', () => {
     ).toHaveAttribute('href', '/courses/course-1');
   });
 
-  it('shows a stored AI summary directly, with no button to fetch it again', async () => {
+  it('shows a stored AI summary directly, with no button of any kind to fetch it again', async () => {
     mockGetRoadmap.mockResolvedValueOnce(
       roadmap({ aiSummary: 'This is your personalized narrative.' }),
     );
@@ -146,53 +152,23 @@ describe('RoadmapCard', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('requests the AI analysis on click and displays the result once it resolves', async () => {
-    mockGetRoadmap.mockResolvedValueOnce(roadmap());
-    mockRequestAnalysis.mockResolvedValueOnce({
-      summary: 'Freshly generated insight.',
-      generatedAt: '2026-08-11T00:00:00.000Z',
-      model: 'gemini-2.5-flash',
-      cached: false,
-    });
+  it('never calls requestPlacementRoadmapAnalysis, even when aiSummary is null — no background retry', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(roadmap({ aiSummary: null }));
     renderCard();
 
-    const button = await screen.findByRole('button', { name: /ai insights/i });
-    await userEvent.click(button);
-
-    expect(await screen.findByText('Freshly generated insight.')).toBeInTheDocument();
-    expect(mockRequestAnalysis).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('button', { name: /ai insights/i })).not.toBeInTheDocument();
+    await screen.findByText('Core TOEIC Vocabulary');
+    // Give any stray background effect a tick to have fired.
+    await waitFor(() => expect(mockGetProgress).toHaveBeenCalled());
+    expect(mockRequestAnalysis).not.toHaveBeenCalled();
   });
 
-  it('shows an inline error and keeps the button available to retry when analysis generation fails', async () => {
-    mockGetRoadmap.mockResolvedValueOnce(roadmap());
-    // handleAuthError surfaces the backend's own message when there is one
-    // (see apiError.ts) — matching QuizStage's verified-correct
-    // `handleAuthError(err, navigate) || fallback` pattern, so the fallback
-    // copy is only what a message-less rejection would show.
-    mockRequestAnalysis.mockRejectedValueOnce(
-      new ApiError('AI roadmap analysis is unavailable. Please try again shortly.', 503),
-    );
+  it('renders no AI-narrative section at all when aiSummary is null', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(roadmap({ aiSummary: null }));
     renderCard();
 
-    const button = await screen.findByRole('button', { name: /ai insights/i });
-    await userEvent.click(button);
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'AI roadmap analysis is unavailable. Please try again shortly.',
-    );
-    expect(screen.getByRole('button', { name: /ai insights/i })).toBeInTheDocument();
-  });
-
-  it('falls back to generic copy when the rejection carries no usable message', async () => {
-    mockGetRoadmap.mockResolvedValueOnce(roadmap());
-    mockRequestAnalysis.mockRejectedValueOnce(new ApiError('', 503));
-    renderCard();
-
-    const button = await screen.findByRole('button', { name: /ai insights/i });
-    await userEvent.click(button);
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Could not generate insights.');
+    await screen.findByText('Core TOEIC Vocabulary');
+    expect(screen.queryByRole('button', { name: /ai/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('renders lesson count and progress bar percentage once course progress loads', async () => {
@@ -213,10 +189,11 @@ describe('RoadmapCard', () => {
         items: [
           {
             phase: 1,
-            courseType: 'VOCABULARY',
-            courseId: 'course-1',
-            courseTitle: 'Core TOEIC Vocabulary',
-            courseThumbnail: null,
+            pillar: 'VOCABULARY',
+            resourceType: 'COURSE',
+            resourceId: 'course-1',
+            resourceTitle: 'Core TOEIC Vocabulary',
+            resourceThumbnail: null,
             reason: 'reason',
             totalEstimatedMinutes: 420,
           },
@@ -234,10 +211,11 @@ describe('RoadmapCard', () => {
         items: [
           {
             phase: 1,
-            courseType: 'VOCABULARY',
-            courseId: 'course-1',
-            courseTitle: 'Core TOEIC Vocabulary',
-            courseThumbnail: null,
+            pillar: 'VOCABULARY',
+            resourceType: 'COURSE',
+            resourceId: 'course-1',
+            resourceTitle: 'Core TOEIC Vocabulary',
+            resourceThumbnail: null,
             reason: 'reason',
             totalEstimatedMinutes: 0,
           },
@@ -281,10 +259,11 @@ describe('RoadmapCard', () => {
         items: [
           {
             phase: 1,
-            courseType: 'VOCABULARY',
-            courseId: 'course-1',
-            courseTitle: 'Core TOEIC Vocabulary',
-            courseThumbnail: 'https://example.com/thumb.jpg',
+            pillar: 'VOCABULARY',
+            resourceType: 'COURSE',
+            resourceId: 'course-1',
+            resourceTitle: 'Core TOEIC Vocabulary',
+            resourceThumbnail: 'https://example.com/thumb.jpg',
             reason: 'Weakest section — recommended first.',
             totalEstimatedMinutes: 420,
           },
@@ -297,15 +276,64 @@ describe('RoadmapCard', () => {
     expect(link.querySelector('img')).toHaveAttribute('src', 'https://example.com/thumb.jpg');
   });
 
+  it('routes a VOCAB_LIBRARY item to its library detail page, with no progress bar', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(
+      roadmap({
+        items: [
+          {
+            phase: 1,
+            pillar: 'VOCABULARY',
+            resourceType: 'VOCAB_LIBRARY',
+            resourceId: 'lib-1',
+            resourceTitle: '1000 Từ Tiếng Anh Thông Dụng',
+            resourceThumbnail: null,
+            reason: 'Điểm khởi đầu cho phần từ vựng.',
+            totalEstimatedMinutes: 0,
+          },
+        ],
+      }),
+    );
+    renderCard();
+
+    const link = await screen.findByRole('link', { name: /1000 từ tiếng anh thông dụng/i });
+    expect(link).toHaveAttribute('href', '/vocab/libraries/lib-1');
+    expect(screen.queryByText(/weeks/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/lessons/i)).not.toBeInTheDocument();
+  });
+
+  it('routes a LISTENING_CATEGORY item to the listening catalog, preselecting the category via router state', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(
+      roadmap({
+        items: [
+          {
+            phase: 1,
+            pillar: 'LISTENING',
+            resourceType: 'LISTENING_CATEGORY',
+            resourceId: 'cat-1',
+            resourceTitle: 'Hội thoại hằng ngày',
+            resourceThumbnail: null,
+            reason: 'Điểm khởi đầu cho phần kỹ năng nghe.',
+            totalEstimatedMinutes: 0,
+          },
+        ],
+      }),
+    );
+    renderCard();
+
+    const link = await screen.findByRole('link', { name: /hội thoại hằng ngày/i });
+    expect(link).toHaveAttribute('href', '/practice/listening');
+  });
+
   it('does not render the collapse/expand toggle for 3 or fewer phases, and shows every phase', async () => {
     mockGetRoadmap.mockResolvedValueOnce(
       roadmap({
         items: [1, 2, 3].map((phase) => ({
           phase,
-          courseType: 'VOCABULARY' as const,
-          courseId: `course-${phase}`,
-          courseTitle: `Phase ${phase} Course`,
-          courseThumbnail: null,
+          pillar: 'VOCABULARY' as const,
+          resourceType: 'COURSE' as const,
+          resourceId: `course-${phase}`,
+          resourceTitle: `Phase ${phase} Course`,
+          resourceThumbnail: null,
           reason: 'reason',
           totalEstimatedMinutes: 420,
         })),
@@ -322,10 +350,11 @@ describe('RoadmapCard', () => {
       roadmap({
         items: [1, 2, 3, 4].map((phase) => ({
           phase,
-          courseType: 'VOCABULARY' as const,
-          courseId: `course-${phase}`,
-          courseTitle: `Phase ${phase} Course`,
-          courseThumbnail: null,
+          pillar: 'VOCABULARY' as const,
+          resourceType: 'COURSE' as const,
+          resourceId: `course-${phase}`,
+          resourceTitle: `Phase ${phase} Course`,
+          resourceThumbnail: null,
           reason: 'reason',
           totalEstimatedMinutes: 420,
         })),

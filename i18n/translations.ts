@@ -147,9 +147,6 @@ const en = {
         "Take a short placement test to get a learning plan built around your level and goal.",
       createCta: "Create my roadmap",
       retakeCta: "Retake the placement test",
-      aiSummaryCta: "Get AI insights on my roadmap",
-      aiSummaryLoading: "Generating insights…",
-      aiSummaryFailed: "Could not generate insights.",
       viewAllCta: "View all",
       collapseCta: "Collapse",
       // An ESTIMATE, never presented as exact — derived client-side from
@@ -1025,7 +1022,7 @@ const en = {
       "Skip the test — we'll build your roadmap from the beginning.",
     methodPlacementTitle: "Find out my current level",
     methodPlacementDescription:
-      "Take a short 12-question test (about 5 minutes) so we can personalize your roadmap.",
+      "Take a short 24-question test (about 10 minutes) so we can personalize your roadmap.",
     methodStartFailed: "Could not start. Please try again.",
 
     testSectionGrammar: "Grammar",
@@ -1056,7 +1053,8 @@ const en = {
     resultListeningScore: "Listening",
     resultCorrectCount: (correct: number, total: number) =>
       `${correct} / ${total} correct`,
-    resultContinue: "View roadmap analysis",
+    resultPreparingRoadmap: "Preparing your roadmap…",
+    resultViewRoadmap: "View my personal roadmap →",
     resultViewDetails: "View test details",
     reviewTitle: "Test details",
     reviewBack: "Back to results",
@@ -1095,6 +1093,7 @@ const en = {
     roadmapPhasesHeading: "Your roadmap",
     roadmapCollapse: "Collapse",
     roadmapExpand: "Expand",
+    roadmapViewResource: "View",
   },
 };
 
@@ -1159,7 +1158,7 @@ const vi: TranslationDict = {
     continueLearningHint:
       "Bài học hiện tại của bạn sẽ hiển thị ở đây khi tính năng bài học ra mắt.",
     continue: "Tiếp tục",
-    learningTracks: "Lộ trình học",
+    learningTracks: "Khóa học của bạn",
     coreModules: "3 học phần chính",
     recommendedForYou: "Đề xuất cho bạn",
     noCoursesYet: "Chưa có khóa học nào được xuất bản.",
@@ -1213,9 +1212,6 @@ const vi: TranslationDict = {
         "Làm bài kiểm tra ngắn để nhận lộ trình học được xây dựng theo đúng trình độ và mục tiêu của bạn.",
       createCta: "Tạo lộ trình ngay",
       retakeCta: "Làm lại bài kiểm tra",
-      aiSummaryCta: "Xem phân tích AI về lộ trình",
-      aiSummaryLoading: "Đang tạo phân tích…",
-      aiSummaryFailed: "Không thể tạo phân tích.",
       viewAllCta: "Xem tất cả",
       collapseCta: "Thu gọn",
       estimatedWeeks: (weeks: number) => `~${weeks} tuần`,
@@ -1974,7 +1970,7 @@ const vi: TranslationDict = {
       "Bỏ qua bài kiểm tra — hệ thống sẽ xây lộ trình từ đầu cho bạn.",
     methodPlacementTitle: "Xác định trình độ hiện tại",
     methodPlacementDescription:
-      "Làm bài kiểm tra ngắn gồm 12 câu (khoảng 5 phút) để cá nhân hóa lộ trình học của bạn.",
+      "Làm bài kiểm tra ngắn gồm 24 câu (khoảng 10 phút) để cá nhân hóa lộ trình học của bạn.",
     methodStartFailed: "Không thể bắt đầu. Vui lòng thử lại.",
 
     testSectionGrammar: "Ngữ pháp",
@@ -2005,7 +2001,8 @@ const vi: TranslationDict = {
     resultListeningScore: "Nghe",
     resultCorrectCount: (correct: number, total: number) =>
       `${correct} / ${total} câu đúng`,
-    resultContinue: "Xem phân tích lộ trình",
+    resultPreparingRoadmap: "Đang chuẩn bị lộ trình cho bạn…",
+    resultViewRoadmap: "Xem lộ trình cá nhân →",
     resultViewDetails: "Xem chi tiết bài làm",
     reviewTitle: "Chi tiết bài làm",
     reviewBack: "Quay lại kết quả",
@@ -2045,6 +2042,7 @@ const vi: TranslationDict = {
     roadmapPhasesHeading: "Lộ trình của bạn",
     roadmapCollapse: "Thu gọn",
     roadmapExpand: "Mở rộng",
+    roadmapViewResource: "Xem",
   },
 };
 

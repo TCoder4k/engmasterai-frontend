@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Target, TrendingUp, Flame, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { LearningGoal } from '../../types';
-import { RoadmapView, getPlacementRoadmap } from '../../services/placementService';
+import { RoadmapItemView, RoadmapView, getPlacementRoadmap } from '../../services/placementService';
 import {
   CourseProgressSummary,
   continuePath,
@@ -45,6 +45,29 @@ const MASCOT_SRC = '/mascot/mascot2-transparent.png';
 const MASCOT_ASPECT_RATIO = '730 / 342';
 
 const COLLAPSED_PHASE_COUNT = 3;
+
+// Resource-type-aware navigation target — mirrors RoadmapCard.tsx's own
+// targetFor exactly. COURSE keeps the existing progress-aware "continue
+// where you left off" behavior; VOCAB_LIBRARY and LISTENING_CATEGORY route
+// to their own real, already-shipped browse pages.
+const targetFor = (
+  item: RoadmapItemView,
+  summary: CourseProgressSummary | null,
+): { to: string; state?: unknown } => {
+  switch (item.resourceType) {
+    case 'COURSE':
+      return {
+        to:
+          summary && summary.status === 'IN_PROGRESS'
+            ? (continuePath(summary) ?? `/courses/${item.resourceId}`)
+            : `/courses/${item.resourceId}`,
+      };
+    case 'VOCAB_LIBRARY':
+      return { to: `/vocab/libraries/${item.resourceId}` };
+    case 'LISTENING_CATEGORY':
+      return { to: '/practice/listening', state: { categoryId: item.resourceId } };
+  }
+};
 
 interface StatCardProps {
   icon: React.ComponentType<{ size?: number; className?: string }>;
@@ -125,13 +148,18 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
   // Fired alongside the roadmap fetch, not after it — but it needs the
   // roadmap's course ids, so it starts as soon as those exist.
   useEffect(() => {
-    if (!roadmap || roadmap.items.length === 0) {
+    // Course-specific — VocabLibrary/ListeningCategory items have no
+    // equivalent progress signal yet (see targetFor's own comment).
+    const courseIds = (roadmap?.items ?? [])
+      .filter((item) => item.resourceType === 'COURSE')
+      .map((item) => item.resourceId);
+    if (courseIds.length === 0) {
       setProgressState('ready');
       return;
     }
     let cancelled = false;
     setProgressState('loading');
-    getCourseProgressSummaries(roadmap.items.map((item) => item.courseId))
+    getCourseProgressSummaries(courseIds)
       .then((summaries) => {
         if (cancelled) return;
         setProgressSummaries(summaries);
@@ -168,7 +196,7 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
     let totalLessons = 0;
     let completedLessons = 0;
     for (const item of roadmap.items) {
-      const summary = progressSummaries.get(item.courseId);
+      const summary = progressSummaries.get(item.resourceId);
       if (!summary) continue;
       totalLessons += summary.totalLessons;
       completedLessons += summary.completedLessons;
@@ -273,24 +301,22 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
 
           <ol className="space-y-3">
             {visibleItems.map((item) => {
-              const summary = progressSummaries?.get(item.courseId) ?? null;
+              const summary = progressSummaries?.get(item.resourceId) ?? null;
               const presentation = summary ? statusPresentation(summary.status, t) : null;
-              const target =
-                summary && summary.status === 'IN_PROGRESS'
-                  ? (continuePath(summary) ?? `/courses/${item.courseId}`)
-                  : `/courses/${item.courseId}`;
+              const target = targetFor(item, summary);
+              const isCourse = item.resourceType === 'COURSE';
 
               return (
                 <li
-                  key={`${item.phase}-${item.courseId}`}
+                  key={`${item.phase}-${item.resourceId}`}
                   className="flex gap-4 items-start rounded-2xl border border-slate-100 dark:border-ink-700 p-4"
                 >
                   <div className="flex-shrink-0 w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-black flex items-center justify-center">
                     {item.phase}
                   </div>
-                  {item.courseThumbnail ? (
+                  {item.resourceThumbnail ? (
                     <img
-                      src={item.courseThumbnail}
+                      src={item.resourceThumbnail}
                       alt=""
                       className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
                     />
@@ -301,18 +327,23 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-slate-900 dark:text-white truncate">
-                      {item.courseTitle}
+                      {item.resourceTitle}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{item.reason}</p>
 
-                    {progressState === 'loading' && (
+                    {/* COURSE: real progress bar/status badge, from the batch
+                        progress fetch. VOCAB_LIBRARY/LISTENING_CATEGORY: no
+                        equivalent signal exists yet (see targetFor's own
+                        comment) — a plain "view" link instead, never a
+                        fabricated progress bar. */}
+                    {isCourse && progressState === 'loading' && (
                       <div
                         className="h-5 w-32 mt-2 bg-slate-100 dark:bg-ink-800 rounded animate-pulse"
                         aria-hidden="true"
                       />
                     )}
 
-                    {progressState === 'ready' && summary && (
+                    {isCourse && progressState === 'ready' && summary && (
                       <div className="flex items-center gap-2 flex-wrap mt-2">
                         <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex-shrink-0">
                           {summary.totalLessons} {t.widgets.lessons}
@@ -331,7 +362,8 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
                               {presentation.label}
                             </span>
                             <Link
-                              to={target}
+                              to={target.to}
+                              state={target.state}
                               className="flex-shrink-0 text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded-full transition-colors"
                             >
                               {presentation.cta}
@@ -340,11 +372,39 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
                         )}
                       </div>
                     )}
+
+                    {!isCourse && (
+                      <div className="mt-2">
+                        <Link
+                          to={target.to}
+                          state={target.state}
+                          className="inline-flex flex-shrink-0 text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded-full transition-colors"
+                        >
+                          {t.onboarding.roadmapViewResource}
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </li>
               );
             })}
           </ol>
+        </div>
+      )}
+
+      {/* The AI Planner's own overall rationale for this exact roadmap —
+          already generated in the same background call that picked the
+          phases above (see ResultStep.tsx / OnboardingPage.tsx's auto-fire),
+          so it's ready by the time this screen renders. Omitted entirely
+          (never a placeholder/error) when that call failed or produced no
+          summary — same silent-degrade rule RoadmapCard.tsx follows on the
+          dashboard. */}
+      {roadmap.aiSummary && (
+        <div className="border-t border-slate-100 dark:border-ink-800 pt-4">
+          <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed flex gap-2">
+            <Sparkles size={14} className="flex-shrink-0 mt-0.5 text-blue-500" aria-hidden="true" />
+            <span>{roadmap.aiSummary}</span>
+          </p>
         </div>
       )}
 
