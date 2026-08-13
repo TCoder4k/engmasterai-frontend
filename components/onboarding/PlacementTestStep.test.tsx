@@ -70,6 +70,12 @@ const result: PlacementResult = {
   listeningScore: 100,
   overallScore: 67,
   estimatedLevel: 'A2',
+  grammarCorrect: 8,
+  grammarTotal: 8,
+  vocabularyCorrect: 0,
+  vocabularyTotal: 8,
+  listeningCorrect: 8,
+  listeningTotal: 8,
   durationSeconds: 120,
   completedAt: new Date().toISOString(),
 };

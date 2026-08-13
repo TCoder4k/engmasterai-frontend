@@ -72,7 +72,7 @@ const CourseCard: React.FC<CourseCardProps> = ({ course, progress }) => {
   return (
     <Link
       to={target}
-      className={`group flex flex-col justify-between gap-3 p-4 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${style.hoverBorder}`}
+      className={`snap-start min-w-[260px] sm:min-w-0 group flex flex-col justify-between gap-3 p-4 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${style.hoverBorder}`}
     >
       <div className="space-y-1 min-w-0">
         <span

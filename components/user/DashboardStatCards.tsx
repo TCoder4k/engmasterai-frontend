@@ -32,7 +32,7 @@ const StatTile: React.FC<StatTileProps> = ({
   subtitle,
 }) => {
   return (
-    <div className="rounded-2xl border border-slate-100 dark:border-ink-700 bg-white dark:bg-ink-900 p-4 space-y-3">
+    <div className="snap-start min-w-[150px] md:min-w-0 rounded-2xl border border-slate-100 dark:border-ink-700 bg-white dark:bg-ink-900 p-3 md:p-4 space-y-3">
       <div className="flex items-center gap-2 min-w-0">
         <div
           className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconTileClass}`}
@@ -52,7 +52,7 @@ const StatTile: React.FC<StatTileProps> = ({
             aria-hidden="true"
           />
         ) : (
-          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+          <p className="text-lg md:text-2xl font-black text-slate-900 dark:text-white tabular-nums">
             {value ?? '—'}
           </p>
         )}
@@ -87,7 +87,12 @@ const DashboardStatCards: React.FC<DashboardStatCardsProps> = ({
         : `${analytics.recentAccuracyPercent}%`;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    // Horizontal snap carousel below md (768px) — a static 3-col grid at
+    // 640px measured too tight for the full Vietnamese labels (confirmed via
+    // screenshot: "TỪ ĐÃ THÀNH THẠO" truncates at 640px, fits cleanly at
+    // 768px), so each tile gets its own scrollable lane instead of a
+    // squeezed 1/3 column. Reverts to the existing static grid from md up.
+    <div className="flex overflow-x-auto snap-x snap-mandatory gap-2 -mx-4 px-4 pb-1 md:grid md:grid-cols-3 md:overflow-visible md:mx-0 md:px-0 md:pb-0 md:gap-3">
       <StatTile
         icon={BookMarked}
         iconTileClass="bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400"

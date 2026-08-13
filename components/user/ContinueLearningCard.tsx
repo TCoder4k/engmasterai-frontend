@@ -157,81 +157,92 @@ const ContinueLearningCard: React.FC<ContinueLearningCardProps> = ({
           <Play className="w-4 h-4 text-blue-500 fill-blue-500 dark:text-blue-400 dark:fill-blue-400" aria-hidden="true" />
           {t.dashboard.continueLearning}
         </h2>
-        <Link
-          to="/grammar"
+        {/* A same-page anchor, not a route — the roadmap is multi-pillar
+            (Grammar + Vocabulary + Listening) now, so a Link to /grammar
+            would misleadingly suggest "roadmap" means only the Grammar
+            module. Scrolls to RoadmapCard's wrapper (UserHome.tsx) instead;
+            no dedicated roadmap route exists outside onboarding. */}
+        <a
+          href="#personal-roadmap"
           className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors rounded-lg px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
           {t.dashboard.viewRoadmap}
           <ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
-        </Link>
+        </a>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 dark:border-ink-700 bg-white dark:bg-ink-900 p-4 flex items-center gap-4 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors">
-        <span
-          className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"
-          aria-hidden="true"
-        >
-          {resolved ? resolved.icon : <BookOpen className="w-6 h-6" />}
-        </span>
+      <div className="rounded-2xl border border-slate-200 dark:border-ink-700 bg-white dark:bg-ink-900 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors">
+        {/* sm:contents removes this wrapper from layout at 640px+, so icon +
+            text become the same 2 direct flex children they are today
+            (alongside the CTA below) — phones get icon+title grouped as one
+            row above a full-width CTA instead. */}
+        <div className="flex items-center gap-3 sm:contents">
+          <span
+            className="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0"
+            aria-hidden="true"
+          >
+            {resolved ? resolved.icon : <BookOpen className="w-6 h-6" />}
+          </span>
 
-        <div className="min-w-0 flex-1">
-          {resolved ? (
-            <>
-              <span className="inline-block px-2.5 py-0.5 bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30 text-[10px] font-bold rounded-full mb-1">
-                {resolved.moduleLabel}
-              </span>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
-                {resolved.title}
-              </h3>
-              {resolved.detail && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                  {resolved.detail}
-                </p>
-              )}
-              {/* Rendered only when a true percentage exists. */}
-              {showProgress && (
-                <div className="flex items-center gap-2 mt-1.5 max-w-[220px]">
-                  <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
-                    {t.dashboard.progress}
-                  </span>
-                  <div
-                    className="flex-1 h-1.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={progressPercent ?? 0}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={t.dashboard.progress}
-                  >
+          <div className="min-w-0 flex-1">
+            {resolved ? (
+              <>
+                <span className="inline-block px-2.5 py-0.5 bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/20 dark:text-indigo-300 dark:border-indigo-500/30 text-[10px] font-bold rounded-full mb-1">
+                  {resolved.moduleLabel}
+                </span>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                  {resolved.title}
+                </h3>
+                {resolved.detail && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    {resolved.detail}
+                  </p>
+                )}
+                {/* Rendered only when a true percentage exists. */}
+                {showProgress && (
+                  <div className="flex items-center gap-2 mt-1.5 max-w-none sm:max-w-[220px]">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex-shrink-0">
+                      {t.dashboard.progress}
+                    </span>
                     <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
-                      style={{ width: `${progressPercent}%` }}
-                    />
+                      className="flex-1 h-1.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={progressPercent ?? 0}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={t.dashboard.progress}
+                    >
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full transition-all duration-500"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                      {progressPercent}%
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 flex-shrink-0">
-                    {progressPercent}%
-                  </span>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <span className="inline-block px-2.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 dark:bg-ink-800 dark:text-slate-300 dark:border-ink-700 text-[10px] font-bold rounded-full mb-1">
-                {t.common.comingSoon}
-              </span>
-              <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
-                {t.dashboard.noLearningActivity}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                {t.dashboard.continueLearningHint}
-              </p>
-            </>
-          )}
+                )}
+              </>
+            ) : (
+              <>
+                <span className="inline-block px-2.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 dark:bg-ink-800 dark:text-slate-300 dark:border-ink-700 text-[10px] font-bold rounded-full mb-1">
+                  {t.common.comingSoon}
+                </span>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                  {t.dashboard.noLearningActivity}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                  {t.dashboard.continueLearningHint}
+                </p>
+              </>
+            )}
+          </div>
         </div>
 
         {resolved && (
           <Link
             to={resolved.path}
-            className="flex-shrink-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            className="w-full sm:w-auto justify-center flex-shrink-0 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
           >
             {t.dashboard.continue}
             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

@@ -36,15 +36,11 @@ const RADIUS = 54;
 const STROKE = 10;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-// Section-count derivation, deliberately client-side and backend-change-free:
-// the shipped scoring spec is `sectionScore = correctInSection / 4 * 100`, so
-// every score is an exact multiple of 25 and `correct = score / 25` always —
-// no new "correctCount" field needed anywhere.
-const QUESTIONS_PER_SECTION = 4;
-
-// Step 4 — the server-graded result. Every SCORE here comes straight from the
-// backend response; only presentation (X/Y counts, level names, encouragement
-// copy, progress-bar widths) is derived client-side from those scores.
+// Step 4 — the server-graded result. Every SCORE and per-section X/Y count
+// here comes straight from the backend response (see PlacementResult) —
+// never re-derived from a rounded percentage, which is lossy once a section
+// has more than 4 questions. Only presentation (level names, encouragement
+// copy, progress-bar widths) is derived client-side from those values.
 const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
   const { t } = useTranslation();
   const [showReview, setShowReview] = useState(false);
@@ -83,6 +79,8 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
     key: string;
     label: string;
     score: number;
+    correct: number;
+    total: number;
     icon: React.ComponentType<{ size?: number; className?: string }>;
     accent: string;
     barClass: string;
@@ -91,6 +89,8 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
       key: 'grammar',
       label: t.onboarding.resultGrammarScore,
       score: result.grammarScore,
+      correct: result.grammarCorrect,
+      total: result.grammarTotal,
       icon: BookOpen,
       accent: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
       barClass: 'bg-blue-500',
@@ -99,6 +99,8 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
       key: 'vocabulary',
       label: t.onboarding.resultVocabularyScore,
       score: result.vocabularyScore,
+      correct: result.vocabularyCorrect,
+      total: result.vocabularyTotal,
       icon: Type,
       accent: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
       barClass: 'bg-emerald-500',
@@ -107,6 +109,8 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
       key: 'listening',
       label: t.onboarding.resultListeningScore,
       score: result.listeningScore,
+      correct: result.listeningCorrect,
+      total: result.listeningTotal,
       icon: Headphones,
       accent: 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400',
       barClass: 'bg-violet-500',
@@ -187,7 +191,6 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
       <div className="grid grid-cols-3 gap-3">
         {sections.map((section) => {
           const Icon = section.icon;
-          const correct = Math.round(section.score / 25);
           return (
             <div
               key={section.key}
@@ -206,7 +209,7 @@ const ResultStep: React.FC<ResultStepProps> = ({ result, onContinue }) => {
                 {section.label}
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                {t.onboarding.resultCorrectCount(correct, QUESTIONS_PER_SECTION)}
+                {t.onboarding.resultCorrectCount(section.correct, section.total)}
               </p>
               <div className="w-full h-1.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden mt-1.5">
                 <div

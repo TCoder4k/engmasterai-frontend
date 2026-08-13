@@ -49,6 +49,12 @@ const result = (overrides: Partial<PlacementResult> = {}): PlacementResult => ({
   listeningScore: 0,
   overallScore: 58,
   estimatedLevel: 'A1',
+  grammarCorrect: 8,
+  grammarTotal: 8,
+  vocabularyCorrect: 6,
+  vocabularyTotal: 8,
+  listeningCorrect: 0,
+  listeningTotal: 8,
   durationSeconds: 240,
   completedAt: new Date().toISOString(),
   ...overrides,
@@ -71,12 +77,55 @@ describe('ResultStep', () => {
     ).toBeInTheDocument();
   });
 
-  it('derives X/Y correct counts from the section score without any new backend field', () => {
-    // sectionScore = correctInSection / 4 * 100, so 100% -> 4/4, 75% -> 3/4, 0% -> 0/4.
-    renderResult(result({ grammarScore: 100, vocabularyScore: 75, listeningScore: 0 }));
-    expect(screen.getByText('4 / 4 correct')).toBeInTheDocument();
-    expect(screen.getByText('3 / 4 correct')).toBeInTheDocument();
-    expect(screen.getByText('0 / 4 correct')).toBeInTheDocument();
+  // Regression guard: ResultStep used to infer "X of Y correct" from the
+  // rounded score under a stale 4-question/section, 25%-increment assumption
+  // (correct = round(score / 25)). That broke once sections grew to 8
+  // questions — e.g. a real 63% (5/8) inferred back to round(63/25) = 3, not
+  // 5. The fix renders grammarCorrect/grammarTotal etc. straight from the
+  // backend, never re-derived from the rounded score.
+  it('renders the authoritative 5/8 correct count backend field, matching a 63% score', () => {
+    renderResult(
+      result({
+        grammarScore: 63,
+        grammarCorrect: 5,
+        grammarTotal: 8,
+      }),
+    );
+    expect(screen.getByText('63%')).toBeInTheDocument();
+    expect(screen.getByText('5 / 8 correct')).toBeInTheDocument();
+  });
+
+  it('renders the authoritative 7/8 correct count backend field, matching an 88% score', () => {
+    renderResult(
+      result({
+        vocabularyScore: 88,
+        vocabularyCorrect: 7,
+        vocabularyTotal: 8,
+      }),
+    );
+    expect(screen.getByText('88%')).toBeInTheDocument();
+    expect(screen.getByText('7 / 8 correct')).toBeInTheDocument();
+  });
+
+  it('renders the authoritative 8/8 correct count backend field, matching a 100% score', () => {
+    renderResult(
+      result({
+        // Grammar/vocabulary deliberately kept off both 100% and 8/8 here —
+        // only the section under test should match either query, so this
+        // can't pass by accidentally matching a different section's tile.
+        grammarScore: 63,
+        grammarCorrect: 5,
+        grammarTotal: 8,
+        vocabularyScore: 75,
+        vocabularyCorrect: 6,
+        vocabularyTotal: 8,
+        listeningScore: 100,
+        listeningCorrect: 8,
+        listeningTotal: 8,
+      }),
+    );
+    expect(screen.getByText('100%')).toBeInTheDocument();
+    expect(screen.getByText('8 / 8 correct')).toBeInTheDocument();
   });
 
   it('shows the overall score inside the gauge', () => {

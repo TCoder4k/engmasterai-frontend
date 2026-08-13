@@ -164,7 +164,7 @@ const ReviewDueCard: React.FC<ReviewDueCardProps> = ({
   return (
     <section
       aria-label={branch.eyebrow}
-      className={`rounded-2xl border p-6 space-y-4 ${tone.card}`}
+      className={`rounded-2xl border p-5 sm:p-6 space-y-4 ${tone.card}`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center gap-5">
         <div
@@ -196,7 +196,7 @@ const ReviewDueCard: React.FC<ReviewDueCardProps> = ({
         </div>
         <Link
           to={branch.ctaHref}
-          className={`inline-flex items-center justify-center gap-1.5 flex-shrink-0 text-sm font-bold text-white px-6 py-3 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 ${tone.cta}`}
+          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 flex-shrink-0 text-sm font-bold text-white px-6 py-3 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 ${tone.cta}`}
         >
           <span>{branch.ctaLabel}</span>
           <ArrowRight size={15} aria-hidden="true" />

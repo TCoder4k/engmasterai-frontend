@@ -179,7 +179,9 @@ describe('RoadmapCard', () => {
     renderCard();
 
     expect(await screen.findByText('20 Lessons')).toBeInTheDocument();
-    expect(screen.getByText('25%')).toBeInTheDocument();
+    // Two "25%" nodes now render (the sm:+ column and the phone-only sm:hidden
+    // row) — jsdom doesn't honor CSS visibility for plain text queries.
+    expect(screen.getAllByText('25%').length).toBeGreaterThan(0);
   });
 
   it('shows an estimated-weeks tag derived from real totalEstimatedMinutes, rounded up', async () => {
@@ -245,7 +247,7 @@ describe('RoadmapCard', () => {
     // that re-render, so wait for progress-dependent content first or this
     // assertion can race the mocked promise and catch the pre-progress
     // fallback href instead.
-    await screen.findByText('25%');
+    await screen.findAllByText('25%');
 
     expect(screen.getByRole('link', { name: /core toeic vocabulary/i })).toHaveAttribute(
       'href',

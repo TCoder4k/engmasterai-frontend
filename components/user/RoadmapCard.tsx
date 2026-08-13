@@ -1,9 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ChevronRight, ChevronUp, Map, MapPin, RotateCw, Sparkles } from 'lucide-react';
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Headphones,
+  Map,
+  RotateCw,
+  Sparkles,
+  Type,
+} from 'lucide-react';
 import { LearningGoal } from '../../types';
 import {
   RoadmapItemView,
+  RoadmapPillar,
   RoadmapView,
   getPlacementRoadmap,
 } from '../../services/placementService';
@@ -17,6 +28,32 @@ import { useTranslation } from '../../i18n/useTranslation';
 import { StringKeys, TranslationDict } from '../../i18n/translations';
 import Skeleton from '../shared/Skeleton';
 import { DEFAULT_DAILY_TARGETS } from './dailyTargets';
+
+// A resource with no real thumbnail (ListeningCategory has no thumbnail
+// column at all; a Course/VocabLibrary can also lack one) used to fall back
+// to one flat gray MapPin regardless of pillar — reads as a broken/unfinished
+// tile rather than a deliberate placeholder. Same icon+color pairing already
+// established for these three pillars elsewhere (ResultStep, ContinueLearningCard).
+const PILLAR_FALLBACK: Record<
+  RoadmapPillar,
+  { Icon: React.ComponentType<{ size?: number; className?: string }>; tileClass: string; iconClass: string }
+> = {
+  GRAMMAR: {
+    Icon: BookOpen,
+    tileClass: 'bg-blue-100 dark:bg-blue-500/15',
+    iconClass: 'text-blue-500 dark:text-blue-400',
+  },
+  VOCABULARY: {
+    Icon: Type,
+    tileClass: 'bg-emerald-100 dark:bg-emerald-500/15',
+    iconClass: 'text-emerald-500 dark:text-emerald-400',
+  },
+  LISTENING: {
+    Icon: Headphones,
+    tileClass: 'bg-violet-100 dark:bg-violet-500/15',
+    iconClass: 'text-violet-500 dark:text-violet-400',
+  },
+};
 
 const GOAL_LABEL_KEY: Record<LearningGoal, StringKeys<TranslationDict['onboarding']>> = {
   FOUNDATION: 'goalFoundation',
@@ -264,15 +301,21 @@ const RoadmapCard: React.FC = () => {
                     <img
                       src={item.resourceThumbnail}
                       alt=""
-                      className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover flex-shrink-0"
                     />
                   ) : (
-                    <div
-                      className="w-14 h-14 rounded-xl bg-slate-100 dark:bg-ink-800 flex items-center justify-center flex-shrink-0"
-                      aria-hidden="true"
-                    >
-                      <MapPin size={20} className="text-slate-400" />
-                    </div>
+                    (() => {
+                      const fallback = PILLAR_FALLBACK[item.pillar];
+                      const FallbackIcon = fallback.Icon;
+                      return (
+                        <div
+                          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${fallback.tileClass}`}
+                          aria-hidden="true"
+                        >
+                          <FallbackIcon size={20} className={fallback.iconClass} />
+                        </div>
+                      );
+                    })()
                   )}
 
                   <div className="min-w-0 flex-1">
@@ -304,6 +347,24 @@ const RoadmapCard: React.FC = () => {
                       <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mt-1">
                         {summary.totalLessons} {t.widgets.lessons}
                       </p>
+                    )}
+
+                    {/* Phone-only compact progress row — the sm:+ column
+                        below is hidden entirely under 640px, which left
+                        phones with no progress indicator at all on any
+                        roadmap phase. */}
+                    {progressState === 'ready' && summary && (
+                      <div className="sm:hidden flex items-center gap-2 mt-1.5">
+                        <div className="flex-1 h-1.5 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden">
+                          <div
+                            style={{ width: `${summary.progressPercent}%` }}
+                            className="h-full bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full"
+                          />
+                        </div>
+                        <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 tabular-nums flex-shrink-0">
+                          {summary.progressPercent}%
+                        </span>
+                      </div>
                     )}
                   </div>
 

@@ -195,6 +195,15 @@ export interface PlacementResult {
   listeningScore: number;
   overallScore: number;
   estimatedLevel: CefrLevel;
+  // Authoritative per-section counts — render these directly ("5 / 8 câu
+  // đúng"), never re-derive a count from the rounded score above (lossy
+  // once a section has more than 4 questions).
+  grammarCorrect: number;
+  grammarTotal: number;
+  vocabularyCorrect: number;
+  vocabularyTotal: number;
+  listeningCorrect: number;
+  listeningTotal: number;
   durationSeconds: number | null;
   completedAt: string;
 }
