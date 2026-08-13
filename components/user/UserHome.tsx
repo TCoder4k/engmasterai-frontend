@@ -334,11 +334,14 @@ const UserHome: React.FC = () => {
         <div className="flex-1 min-w-0 space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-6">
+              {/* Phone-only: heading/subtitle shrunk (text-2xl/text-xs ->
+                  text-lg/text-[11px]) to make room for the bigger mascot
+                  next to it — sm:+ sizes unchanged (desktop untouched). */}
               <div className="space-y-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                <h1 className="text-lg sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   {t.dashboard.welcomeBack}, {firstName}! 👋
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
                   {t.dashboard.keepLearning}
                 </p>
               </div>
@@ -352,9 +355,11 @@ const UserHome: React.FC = () => {
                   730x342 aspect ratio, so there is no layout shift whether
                   the image is cached or still loading. object-contain
                   (never cover) keeps its natural proportions exactly as
-                  authored. Purely decorative — the heading and subtitle
-                  already carry the same information in text. */}
-              <div className="hidden sm:block relative flex-shrink-0 w-40 sm:w-48 md:w-56 max-w-full">
+                  authored. Now visible on phones too (previously hidden
+                  below sm) — sized up a little from the heading/subtitle
+                  shrink above so it reads clearly at phone width; sm:/md:
+                  sizes unchanged (desktop untouched). */}
+              <div className="relative flex-shrink-0 w-28 sm:w-48 md:w-56 max-w-full">
                 <div className="w-full overflow-hidden" style={{ aspectRatio: '730 / 342' }}>
                   <img
                     src="/mascot/mascot2-transparent.png"
@@ -365,26 +370,28 @@ const UserHome: React.FC = () => {
                 </div>
 
                 {/* Floating stat-chip badges — real elevated UI, matching the
-                    mockup's two white icon cards above the illustration. */}
+                    mockup's two white icon cards above the illustration.
+                    Scaled down at the base tier to stay proportional to the
+                    smaller phone-width mascot. */}
                 <div
-                  className="absolute -top-1 left-2 sm:left-4 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
+                  className="absolute -top-1 left-1 sm:left-4 w-5 h-5 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
                   aria-hidden="true"
                 >
-                  <BarChart3 className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-blue-500" />
+                  <BarChart3 className="w-2.5 h-2.5 sm:w-[18px] sm:h-[18px] text-blue-500" />
                 </div>
                 <Sparkles
-                  className="absolute -top-1 left-0 w-3 h-3 text-blue-300 dark:text-blue-400/60"
+                  className="absolute -top-1 left-0 w-2 h-2 sm:w-3 sm:h-3 text-blue-300 dark:text-blue-400/60"
                   aria-hidden="true"
                 />
 
                 <div
-                  className="absolute -top-1 right-2 sm:right-4 w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
+                  className="absolute -top-1 right-1 sm:right-4 w-5 h-5 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
                   aria-hidden="true"
                 >
-                  <Target className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-teal-500" />
+                  <Target className="w-2.5 h-2.5 sm:w-[18px] sm:h-[18px] text-teal-500" />
                 </div>
                 <Sparkles
-                  className="absolute top-2 right-0 w-2.5 h-2.5 text-teal-300 dark:text-teal-400/60"
+                  className="absolute top-2 right-0 w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 text-teal-300 dark:text-teal-400/60"
                   aria-hidden="true"
                 />
               </div>
@@ -430,8 +437,13 @@ const UserHome: React.FC = () => {
               issues its own GET /placement/roadmap, nothing else on this
               page shares that data. Its own empty state ("no roadmap yet")
               is one branch of this same component, so placing it here also
-              puts that prompt after Continue Learning rather than before. */}
-          <RoadmapCard />
+              puts that prompt after Continue Learning rather than before.
+              id anchors ContinueLearningCard's "Xem lộ trình" link — the
+              roadmap is multi-pillar now, not just Grammar, so that link
+              scrolls here instead of navigating to /grammar. */}
+          <div id="personal-roadmap">
+            <RoadmapCard />
+          </div>
 
           {/* Learning Tracks — the three module entry points. Horizontal snap
               carousel on phones, 3-col grid from sm up. The carousel's own
@@ -479,7 +491,11 @@ const UserHome: React.FC = () => {
               </p>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {/* Horizontal snap carousel on phones (mirrors Learning Tracks
+                above) so cards keep their real desktop size instead of
+                stacking full-width; reverts to the existing sm:grid-cols-2
+                xl:grid-cols-3 grid from 640px up, unchanged. */}
+            <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 -mx-4 px-4 pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0 sm:gap-4 xl:grid-cols-3">
               {courses.map((course) => (
                 <CourseCard
                   key={course.id}
@@ -489,15 +505,6 @@ const UserHome: React.FC = () => {
               ))}
             </div>
           </section>
-
-          {/* On phones/tablets the widgets flow here, below the courses,
-              as normal full-width sections (no narrow side column). */}
-          <div className="lg:hidden">
-            <UserSidebar
-              analytics={analytics}
-              onRetryAnalytics={() => setAnalyticsAttempt((n) => n + 1)}
-            />
-          </div>
         </div>
 
         {/* ---- Desktop-only right widget column ---- */}

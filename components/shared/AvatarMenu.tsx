@@ -18,13 +18,27 @@ interface AvatarMenuProps {
   // 'admin': always light — the admin layout has no dark styling, so a
   // dark dropdown on a light page would be the only dark element there.
   variant?: 'student' | 'admin';
+  /**
+   * Extra controls rendered as a bordered row at the top of the dropdown's
+   * menu-items section — StudentMobileHeader.tsx uses this to fold
+   * ThemeToggle/LanguageSwitcher into the avatar menu on phones/tablets
+   * instead of showing them as separate header icons. Desktop callers don't
+   * pass this — those controls stay in the header row there, unchanged.
+   */
+  extraMenuItems?: React.ReactNode;
 }
 
 // Joins the light classes with the dark: variants only for the student
 // variant, so the admin usage stays visually unchanged in dark mode.
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(' ');
 
-const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate, variant = 'student' }) => {
+const AvatarMenu: React.FC<AvatarMenuProps> = ({
+  user,
+  onLogout,
+  onAvatarUpdate,
+  variant = 'student',
+  extraMenuItems,
+}) => {
   const { t } = useTranslation();
   const themed = variant === 'student';
 
@@ -259,6 +273,16 @@ const AvatarMenu: React.FC<AvatarMenuProps> = ({ user, onLogout, onAvatarUpdate,
 
         {/* Menu Items */}
         <div className="py-1.5">
+          {extraMenuItems && (
+            <div
+              className={cx(
+                'px-4 py-2 flex items-center gap-2 border-b border-slate-100 mb-1',
+                themed && 'dark:border-slate-700',
+              )}
+            >
+              {extraMenuItems}
+            </div>
+          )}
           <Link
             to="/profile"
             onClick={() => setIsOpen(false)}

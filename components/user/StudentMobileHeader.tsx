@@ -40,12 +40,22 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
           </span>
         </Link>
 
-        {/* No SoundToggle — see StudentLayout. */}
+        {/* No SoundToggle — see StudentLayout. Theme/Language move into the
+            avatar dropdown here (mobile/tablet only) rather than sitting as
+            separate header icons — the desktop header keeps them visible. */}
         <div className="flex items-center space-x-1 sm:space-x-1.5">
-          <ThemeToggle />
-          <LanguageSwitcher />
           <NotificationBell />
-          <AvatarMenu user={user} onLogout={onLogout} onAvatarUpdate={onAvatarUpdate} />
+          <AvatarMenu
+            user={user}
+            onLogout={onLogout}
+            onAvatarUpdate={onAvatarUpdate}
+            extraMenuItems={
+              <>
+                <ThemeToggle />
+                <LanguageSwitcher />
+              </>
+            }
+          />
         </div>
       </div>
     </header>
