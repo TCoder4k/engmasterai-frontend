@@ -41,3 +41,22 @@ export const lookupWord = async (query: string): Promise<DictionaryLookupResult>
   if (!response.ok) return throwApiError(response, 'Failed to look up word');
   return response.json();
 };
+
+export interface DictionarySuggestion {
+  word: string;
+  shortMeaningVi: string | null;
+}
+
+// GET /dictionary/suggestions?q=&limit= — VocabWord-only prefix autocomplete,
+// fired on debounced keystrokes. Same no-AbortSignal reasoning as lookupWord
+// above; DictionaryPanel discards a stale response by ticket instead.
+export const suggestWords = async (
+  prefix: string,
+  limit = 6,
+): Promise<DictionarySuggestion[]> => {
+  const qs = new URLSearchParams({ q: prefix, limit: String(limit) });
+  const response = await apiFetch(`${API_BASE_URL}/dictionary/suggestions?${qs}`);
+
+  if (!response.ok) return throwApiError(response, 'Failed to fetch suggestions');
+  return response.json();
+};

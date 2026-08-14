@@ -37,6 +37,10 @@ const panel = () => screen.queryByRole('dialog');
 
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
+  // Safe default for every test in this file: autocomplete must never hit a
+  // real network call just because a test only cares about exact lookup.
+  // Tests about suggestions themselves override this per-call below.
+  vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -154,7 +158,21 @@ describe('DictionaryPanel lookup states', () => {
     expect(lookupSpy).not.toHaveBeenCalled();
   });
 
-  it('debounces typing and only looks up the settled query once', async () => {
+  it('typing alone never triggers an exact lookup — only Enter/submit or picking a suggestion does', async () => {
+    const lookupSpy = vi.spyOn(dictionaryService, 'lookupWord');
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+
+    expect(lookupSpy).not.toHaveBeenCalled();
+  });
+
+  it('pressing Enter runs the exact lookup for the typed query', async () => {
     const lookupSpy = vi
       .spyOn(dictionaryService, 'lookupWord')
       .mockResolvedValue(resultFixture());
@@ -163,9 +181,7 @@ describe('DictionaryPanel lookup states', () => {
     await openPanel(user);
 
     await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
+    await user.keyboard('{Enter}');
 
     expect(lookupSpy).toHaveBeenCalledTimes(1);
     expect(lookupSpy).toHaveBeenCalledWith('hello');
@@ -178,9 +194,7 @@ describe('DictionaryPanel lookup states', () => {
     await openPanel(user);
 
     await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
+    await user.keyboard('{Enter}');
 
     await waitFor(() => expect(screen.getByText('hello')).toBeInTheDocument());
     expect(screen.getByText('Xin chào')).toBeInTheDocument();
@@ -197,9 +211,7 @@ describe('DictionaryPanel lookup states', () => {
     await openPanel(user);
 
     await user.type(screen.getByPlaceholderText(/accomplish/i), 'zzzzz');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
+    await user.keyboard('{Enter}');
 
     await waitFor(() =>
       expect(screen.getByText(/no dictionary entry found/i)).toBeInTheDocument(),
@@ -215,9 +227,7 @@ describe('DictionaryPanel lookup states', () => {
     await openPanel(user);
 
     await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
+    await user.keyboard('{Enter}');
 
     await waitFor(() =>
       expect(screen.getByText(/looking up words too quickly/i)).toBeInTheDocument(),
@@ -240,14 +250,10 @@ describe('DictionaryPanel lookup states', () => {
 
     const input = screen.getByPlaceholderText(/accomplish/i);
     await user.type(input, 'hello');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
+    await user.keyboard('{Enter}');
     await user.clear(input);
     await user.type(input, 'world');
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(500);
-    });
+    await user.keyboard('{Enter}');
 
     // The first (still-pending) request resolves AFTER the second already
     // settled — its result must never overwrite the newer one on screen.
@@ -258,6 +264,284 @@ describe('DictionaryPanel lookup states', () => {
     await waitFor(() => expect(screen.getByText('world')).toBeInTheDocument());
     expect(screen.queryByText('hello')).not.toBeInTheDocument();
     expect(lookupSpy).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('DictionaryPanel autocomplete', () => {
+  const openPanel = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(launcher()!);
+  };
+
+  it('shows nothing for a 1-character query — too short to suggest', async () => {
+    const suggestSpy = vi.spyOn(dictionaryService, 'suggestWords');
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'g');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(suggestSpy).not.toHaveBeenCalled();
+  });
+
+  it('resets suggestions immediately when the query shrinks back below 2 characters', async () => {
+    vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([
+      { word: 'give', shortMeaningVi: 'đưa' },
+    ]);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    const input = screen.getByPlaceholderText(/accomplish/i);
+    await user.type(input, 'gi');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    await waitFor(() => expect(screen.getByRole('listbox')).toBeInTheDocument());
+
+    await user.type(input, '{Backspace}');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('debounces typing and fetches suggestions for the settled prefix only', async () => {
+    const suggestSpy = vi
+      .spyOn(dictionaryService, 'suggestWords')
+      .mockResolvedValue([{ word: 'hello', shortMeaningVi: 'Xin chào' }]);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(suggestSpy).toHaveBeenCalledTimes(1);
+    expect(suggestSpy).toHaveBeenCalledWith('hello', 6);
+    await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
+  });
+
+  it('shows a loading state while suggestions are in flight, then the list', async () => {
+    let resolveSuggest: (value: dictionaryService.DictionarySuggestion[]) => void;
+    const pending = new Promise<dictionaryService.DictionarySuggestion[]>((resolve) => {
+      resolveSuggest = resolve;
+    });
+    vi.spyOn(dictionaryService, 'suggestWords').mockReturnValue(pending);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'gi');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(screen.getByRole('status')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveSuggest([{ word: 'give', shortMeaningVi: 'đưa' }]);
+    });
+
+    await waitFor(() => expect(screen.getByText('give')).toBeInTheDocument());
+  });
+
+  it('zero local matches shows an actionable exact-lookup fallback, not a dead end', async () => {
+    // "responsible" has no VocabWord entry but IS resolvable via the
+    // existing exact lookup (Redis/external) — the empty-suggestions state
+    // must offer that action, not just report "no suggestions".
+    vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([]);
+    const lookupSpy = vi.spyOn(dictionaryService, 'lookupWord');
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'responsible');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText('Search "responsible"')).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/press enter to search the dictionary/i)).toBeInTheDocument();
+    // Typing alone must never trigger the exact lookup automatically, even
+    // once the fallback is showing.
+    expect(lookupSpy).not.toHaveBeenCalled();
+  });
+
+  it('clicking the exact-lookup fallback performs the exact lookup for the trimmed query', async () => {
+    vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([]);
+    const lookupSpy = vi
+      .spyOn(dictionaryService, 'lookupWord')
+      .mockResolvedValue(resultFixture({ word: 'responsible' }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'responsible');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    await waitFor(() =>
+      expect(screen.getByText('Search "responsible"')).toBeInTheDocument(),
+    );
+
+    await user.click(screen.getByText('Search "responsible"'));
+
+    expect(lookupSpy).toHaveBeenCalledWith('responsible');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('responsible')).toBeInTheDocument());
+  });
+
+  it('pressing Enter with zero local suggestions performs the exact lookup', async () => {
+    vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([]);
+    const lookupSpy = vi
+      .spyOn(dictionaryService, 'lookupWord')
+      .mockResolvedValue(resultFixture({ word: 'responsible' }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'responsible');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    await waitFor(() =>
+      expect(screen.getByText('Search "responsible"')).toBeInTheDocument(),
+    );
+
+    await user.keyboard('{Enter}');
+
+    expect(lookupSpy).toHaveBeenCalledWith('responsible');
+    await waitFor(() => expect(screen.getByText('responsible')).toBeInTheDocument());
+  });
+
+  it('shows a soft error without breaking the panel when suggestions fail', async () => {
+    vi.spyOn(dictionaryService, 'suggestWords').mockRejectedValue(new Error('network down'));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'gi');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText(/could not load suggestions/i)).toBeInTheDocument(),
+    );
+  });
+
+  it('discards a stale suggestion response — only the latest prefix wins', async () => {
+    let resolveFirst: (value: dictionaryService.DictionarySuggestion[]) => void;
+    const first = new Promise<dictionaryService.DictionarySuggestion[]>((resolve) => {
+      resolveFirst = resolve;
+    });
+    vi.spyOn(dictionaryService, 'suggestWords')
+      .mockImplementationOnce(() => first)
+      .mockImplementationOnce(() =>
+        Promise.resolve([{ word: 'world', shortMeaningVi: 'thế giới' }]),
+      );
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    const input = screen.getByPlaceholderText(/accomplish/i);
+    await user.type(input, 'he');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    await user.clear(input);
+    await user.type(input, 'wo');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    await act(async () => {
+      resolveFirst([{ word: 'hello', shortMeaningVi: 'Xin chào' }]);
+    });
+
+    await waitFor(() => expect(screen.getByText('world')).toBeInTheDocument());
+    expect(screen.queryByText('hello')).not.toBeInTheDocument();
+  });
+
+  it('ArrowDown/ArrowUp move the highlight, and Enter selects the highlighted suggestion', async () => {
+    vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([
+      { word: 'give', shortMeaningVi: 'đưa' },
+      { word: 'give up', shortMeaningVi: 'từ bỏ' },
+    ]);
+    const lookupSpy = vi
+      .spyOn(dictionaryService, 'lookupWord')
+      .mockResolvedValue(resultFixture({ word: 'give up' }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    const input = screen.getByPlaceholderText(/accomplish/i);
+    await user.type(input, 'gi');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
+
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+
+    expect(lookupSpy).toHaveBeenCalledWith('give up');
+    expect(input).toHaveValue('give up');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+  });
+
+  it('clicking a suggestion fills the input, closes the list, and runs the exact lookup', async () => {
+    vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([
+      { word: 'give', shortMeaningVi: 'đưa' },
+    ]);
+    const lookupSpy = vi
+      .spyOn(dictionaryService, 'lookupWord')
+      .mockResolvedValue(resultFixture({ word: 'give' }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    const input = screen.getByPlaceholderText(/accomplish/i);
+    await user.type(input, 'gi');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('option'));
+
+    expect(input).toHaveValue('give');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(lookupSpy).toHaveBeenCalledWith('give');
+    await waitFor(() => expect(screen.getByText('give')).toBeInTheDocument());
+  });
+
+  it('first Escape closes only the suggestion dropdown; a second Escape then closes the panel', async () => {
+    vi.spyOn(dictionaryService, 'suggestWords').mockResolvedValue([
+      { word: 'give', shortMeaningVi: 'đưa' },
+    ]);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    const input = screen.getByPlaceholderText(/accomplish/i);
+    await user.type(input, 'gi');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+    await waitFor(() => expect(screen.getByRole('listbox')).toBeInTheDocument());
+
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(panel()).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+    expect(panel()).not.toBeInTheDocument();
   });
 });
 
