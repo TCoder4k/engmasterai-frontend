@@ -1095,6 +1095,24 @@ const en = {
     roadmapExpand: "Expand",
     roadmapViewResource: "View",
   },
+
+  assistant: {
+    openLauncher: "Open Engy assistant",
+  },
+  dictionary: {
+    title: "Dictionary",
+    searchLabel: "Search a word",
+    searchPlaceholder: "e.g. accomplish",
+    loading: "Looking up…",
+    emptyState: "Search an English word to see its meaning.",
+    notFound: "No dictionary entry found.",
+    errorGeneric: "Could not look up this word right now. Please try again.",
+    rateLimited: "You're looking up words too quickly. Try again in a moment.",
+    invalidQuery: "Please enter a word using English letters only (max 3 words).",
+    synonyms: "Synonyms",
+    vietnameseMeaning: "Vietnamese meaning",
+    attribution: "Definitions from Wiktionary via FreeDictionaryAPI.com",
+  },
 };
 
 export type TranslationDict = typeof en;
@@ -2043,6 +2061,24 @@ const vi: TranslationDict = {
     roadmapCollapse: "Thu gọn",
     roadmapExpand: "Mở rộng",
     roadmapViewResource: "Xem",
+  },
+
+  assistant: {
+    openLauncher: "Mở trợ lý Engy",
+  },
+  dictionary: {
+    title: "Từ điển",
+    searchLabel: "Tra một từ",
+    searchPlaceholder: "vd: accomplish",
+    loading: "Đang tra cứu…",
+    emptyState: "Tìm một từ tiếng Anh để xem nghĩa.",
+    notFound: "Không tìm thấy từ này trong từ điển.",
+    errorGeneric: "Không thể tra từ này lúc này. Vui lòng thử lại.",
+    rateLimited: "Bạn tra từ quá nhanh. Vui lòng thử lại sau.",
+    invalidQuery: "Vui lòng nhập từ tiếng Anh (tối đa 3 từ).",
+    synonyms: "Từ đồng nghĩa",
+    vietnameseMeaning: "Nghĩa tiếng Việt",
+    attribution: "Định nghĩa từ Wiktionary qua FreeDictionaryAPI.com",
   },
 };
 
