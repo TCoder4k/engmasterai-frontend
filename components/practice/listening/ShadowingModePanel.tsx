@@ -29,6 +29,7 @@ import {
 } from './recording/useRecorder';
 import { useListeningContent } from './ListeningContentPage';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { useAssistantLock } from '../../shared/assistant/useAssistant';
 
 // Sprint 11 Phase 3 — Shadowing's RECORDING layer. Not Shadowing itself.
 //
@@ -173,6 +174,13 @@ const ShadowingModePanel: React.FC = () => {
   useEffect(() => {
     if (isRecording && selectedDeviceId === null) recorderRetry();
   }, [isRecording, selectedDeviceId, recorderRetry]);
+
+  // UX precaution, not assessment integrity (Engy stays fully available
+  // during graded stages by product decision — see docs/CLAUDE.md): hides
+  // the assistant launcher while actively recording so its round trigger
+  // never competes with this panel's own round mic button in the same
+  // corner. Reappears the moment recording stops.
+  useAssistantLock({ active: isRecording, reason: 'uxRecording' });
 
   // A new take invalidates the previous verdict AND its idempotency key. Both
   // must reset together: keeping the key would make the second recording

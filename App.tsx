@@ -47,6 +47,7 @@ import OnboardingGateBoundary from './components/shared/OnboardingGateBoundary';
 import OnboardingPage from './components/onboarding/OnboardingPage';
 import GamificationBoundary from './components/shared/GamificationProvider';
 import StudyTimeBoundary from './components/shared/StudyTimeBoundary';
+import AssistantBoundary from './components/shared/assistant/AssistantBoundary';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { LanguageProvider } from './i18n/LanguageProvider';
 import { SoundProvider } from './components/shared/SoundProvider';
@@ -147,6 +148,17 @@ const App: React.FC = () => {
               timer. Nesting order between the two boundaries is arbitrary;
               neither reads the other. */}
           <Route element={<StudyTimeBoundary />}>
+          {/* Floating Dictionary + Engy — nested here for the same structural
+              reasons as the two boundaries above: mounted once per session,
+              survives every navigation, excluded from admin by structure.
+              Nesting order among these three is arbitrary; none of them
+              reads another. It ALSO excludes /onboarding and
+              /onboarding/retake by structure (they sit outside this whole
+              group, same as they already do for the two boundaries above) —
+              that is the entire frontend enforcement of "Engy is
+              unavailable during the Placement Test": no runtime check, just
+              route nesting. See AssistantBoundary.tsx's own header. */}
+          <Route element={<AssistantBoundary />}>
           <Route path="/home" element={<UserHome />} />
           <Route path="/vocab" element={<VocabLibraryPage />} />
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
@@ -208,6 +220,7 @@ const App: React.FC = () => {
           </Route>
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
+          </Route>
           </Route>
           </Route>
           </Route>
