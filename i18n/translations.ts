@@ -1112,6 +1112,11 @@ const en = {
     synonyms: "Synonyms",
     vietnameseMeaning: "Vietnamese meaning",
     attribution: "Definitions from Wiktionary via FreeDictionaryAPI.com",
+    suggestionsLabel: "Suggestions",
+    suggestionsLoading: "Finding suggestions…",
+    suggestionsError: "Could not load suggestions.",
+    searchFallbackAction: 'Search "{{word}}"',
+    searchFallbackHint: "Press Enter to search the dictionary",
   },
 };
 
@@ -2079,6 +2084,11 @@ const vi: TranslationDict = {
     synonyms: "Từ đồng nghĩa",
     vietnameseMeaning: "Nghĩa tiếng Việt",
     attribution: "Định nghĩa từ Wiktionary qua FreeDictionaryAPI.com",
+    suggestionsLabel: "Gợi ý",
+    suggestionsLoading: "Đang tìm gợi ý…",
+    suggestionsError: "Không thể tải gợi ý.",
+    searchFallbackAction: 'Tra "{{word}}"',
+    searchFallbackHint: "Nhấn Enter để tra từ điển",
   },
 };
 

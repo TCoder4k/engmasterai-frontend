@@ -3,15 +3,27 @@ import { Search, X, Volume2, Loader2, AlertCircle } from 'lucide-react';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { ApiError } from '../../../services/apiError';
-import { lookupWord, DictionaryLookupResult } from '../../../services/dictionaryService';
+import {
+  lookupWord,
+  suggestWords,
+  DictionaryLookupResult,
+  DictionarySuggestion,
+} from '../../../services/dictionaryService';
 import type { TranslationDict } from '../../../i18n/translations';
 
-const DEBOUNCE_MS = 350;
-// Mirrors LookupWordQueryDto's backend regex exactly — client-side
-// validation is a UX nicety (fail fast, no round trip for an obviously bad
-// query), never the source of truth; the server re-validates independently.
-const QUERY_PATTERN = /^[A-Za-z'-]+(?: [A-Za-z'-]+){0,2}$/;
+const SUGGEST_DEBOUNCE_MS = 250;
+const MIN_SUGGEST_LENGTH = 2;
+const SUGGESTION_LIMIT = 6;
 const MAX_QUERY_LENGTH = 64;
+// Mirrors LookupWordQueryDto's backend regex exactly — gates the actual
+// GET /dictionary/lookup call at submit/select time. Never used reactively
+// while typing: a still-incomplete prefix like "give " would fail this
+// (each token needs 1+ chars), which is expected mid-word, not an error.
+const QUERY_PATTERN = /^[A-Za-z'-]+(?: [A-Za-z'-]+){0,2}$/;
+// Character-class only, used reactively while typing — only a genuinely
+// disallowed character (digit, symbol) flashes "invalid format"; an
+// in-progress prefix never does.
+const INVALID_CHAR_PATTERN = /[^A-Za-z' -]/;
 
 type PanelState =
   | { status: 'empty' }
@@ -21,18 +33,35 @@ type PanelState =
   | { status: 'error'; message: string }
   | { status: 'result'; data: DictionaryLookupResult };
 
+type SuggestState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'empty' }
+  | { status: 'error' }
+  | { status: 'list'; items: DictionarySuggestion[] };
+
 // Dictionary MVP — compact lookup surface. Popover on desktop, bottom sheet
 // on mobile, both anchored to the same bottom-right corner AssistantLauncher
 // occupies. Never fabricates a definition: every non-"result" state is an
 // honest empty/loading/error/not-found surface, never a guess.
+//
+// Two independent surfaces share this panel: a VocabWord-only autocomplete
+// (fires on every debounced keystroke, cheap, local-only) and the exact
+// 3-tier lookup (fires ONLY on Enter/submit or picking a suggestion, never
+// automatically while typing — see runExactLookup).
 const DictionaryPanel: React.FC = () => {
   const assistant = useAssistant();
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const [state, setState] = useState<PanelState>({ status: 'empty' });
+  const [resultState, setResultState] = useState<PanelState>({ status: 'empty' });
+  const [suggestState, setSuggestState] = useState<SuggestState>({ status: 'idle' });
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const requestTicket = useRef(0);
+  const suggestTicket = useRef(0);
+  const suggestDebounceRef = useRef<number | null>(null);
 
   // Focus goes into the surface on open, same expectation as any other
   // newly-opened panel in this app.
@@ -40,10 +69,21 @@ const DictionaryPanel: React.FC = () => {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (suggestDebounceRef.current !== null) window.clearTimeout(suggestDebounceRef.current);
+    };
+  }, []);
+
   // Outside-click + Escape, same idiom as AvatarMenu — deliberately excludes
   // BOTH this panel and the launcher button, so a click on the launcher
   // while open is handled once by its own onClick toggle rather than raced
   // by this handler closing it a tick earlier.
+  //
+  // Escape here only runs when the suggestion dropdown is ALREADY closed:
+  // the input's own onKeyDown (below) stops propagation and closes the
+  // dropdown first on the first Escape, so this document-level handler only
+  // ever sees a second, later Escape.
   useEffect(() => {
     if (!assistant) return;
     const handlePointerDown = (event: MouseEvent) => {
@@ -65,45 +105,159 @@ const DictionaryPanel: React.FC = () => {
     };
   }, [assistant]);
 
-  // Debounce + "latest request wins". apiFetch's own timeout wrapper always
-  // builds its OWN AbortController and ignores a caller-supplied one (see
-  // dictionaryService.ts's header comment), so a superseded lookup is
-  // discarded by ticket rather than actually cancelled over the wire.
-  useEffect(() => {
-    const trimmed = query.trim().replace(/\s+/g, ' ');
+  // Exact lookup — runs ONLY here, never from a typing effect. Always clears
+  // the suggestion surface first (synchronously, before any network call) so
+  // the old list can never linger under, or flash back over, the result.
+  const runExactLookup = (rawWord: string) => {
+    if (suggestDebounceRef.current !== null) {
+      window.clearTimeout(suggestDebounceRef.current);
+      suggestDebounceRef.current = null;
+    }
+    suggestTicket.current += 1; // discard any suggestion fetch already in flight
+    setShowSuggestions(false);
+    setSuggestState({ status: 'idle' });
+    setHighlightedIndex(-1);
+
+    const trimmed = rawWord.trim().replace(/\s+/g, ' ');
     if (trimmed.length === 0) {
-      setState({ status: 'empty' });
+      setResultState({ status: 'empty' });
       return;
     }
     if (trimmed.length > MAX_QUERY_LENGTH || !QUERY_PATTERN.test(trimmed)) {
-      setState({ status: 'invalid' });
+      setResultState({ status: 'invalid' });
       return;
     }
 
     const ticket = (requestTicket.current += 1);
-    const timer = window.setTimeout(() => {
-      setState({ status: 'loading' });
-      lookupWord(trimmed)
-        .then((data) => {
-          if (requestTicket.current !== ticket) return;
-          setState({ status: 'result', data });
-        })
-        .catch((error: unknown) => {
-          if (requestTicket.current !== ticket) return;
-          if (error instanceof ApiError && error.status === 404) {
-            setState({ status: 'notFound' });
-            return;
-          }
-          if (error instanceof ApiError && error.status === 429) {
-            setState({ status: 'error', message: t.dictionary.rateLimited });
-            return;
-          }
-          setState({ status: 'error', message: t.dictionary.errorGeneric });
-        });
-    }, DEBOUNCE_MS);
+    setResultState({ status: 'loading' });
+    lookupWord(trimmed)
+      .then((data) => {
+        if (requestTicket.current !== ticket) return;
+        setResultState({ status: 'result', data });
+      })
+      .catch((error: unknown) => {
+        if (requestTicket.current !== ticket) return;
+        if (error instanceof ApiError && error.status === 404) {
+          setResultState({ status: 'notFound' });
+          return;
+        }
+        if (error instanceof ApiError && error.status === 429) {
+          setResultState({ status: 'error', message: t.dictionary.rateLimited });
+          return;
+        }
+        setResultState({ status: 'error', message: t.dictionary.errorGeneric });
+      });
+  };
 
-    return () => window.clearTimeout(timer);
-  }, [query, t]);
+  const selectSuggestion = (item: DictionarySuggestion) => {
+    setQuery(item.word);
+    runExactLookup(item.word);
+    inputRef.current?.focus();
+  };
+
+  // Suggestions — VocabWord-only autocomplete, debounced 250ms. Handled
+  // directly from the change event (not a useEffect keyed on `query`) so
+  // that runExactLookup/selectSuggestion setting `query` programmatically
+  // never re-triggers a fetch — only actual typing does.
+  const handleQueryChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setQuery(value);
+
+    if (suggestDebounceRef.current !== null) {
+      window.clearTimeout(suggestDebounceRef.current);
+      suggestDebounceRef.current = null;
+    }
+
+    const trimmed = value.trim().replace(/\s+/g, ' ');
+
+    if (trimmed.length === 0) {
+      setResultState({ status: 'empty' });
+      setSuggestState({ status: 'idle' });
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    if (INVALID_CHAR_PATTERN.test(trimmed) || trimmed.length > MAX_QUERY_LENGTH) {
+      setResultState({ status: 'invalid' });
+      setSuggestState({ status: 'idle' });
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    // Too short to suggest yet, but not an invalid format either — reset any
+    // stale invalid/result message immediately rather than a beat later.
+    if (trimmed.length < MIN_SUGGEST_LENGTH) {
+      setResultState({ status: 'empty' });
+      setSuggestState({ status: 'idle' });
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    setShowSuggestions(true);
+    setHighlightedIndex(-1);
+    const ticket = (suggestTicket.current += 1);
+    suggestDebounceRef.current = window.setTimeout(() => {
+      setSuggestState({ status: 'loading' });
+      suggestWords(trimmed, SUGGESTION_LIMIT)
+        .then((items) => {
+          if (suggestTicket.current !== ticket) return;
+          setSuggestState(items.length > 0 ? { status: 'list', items } : { status: 'empty' });
+        })
+        .catch(() => {
+          if (suggestTicket.current !== ticket) return;
+          setSuggestState({ status: 'error' });
+        });
+    }, SUGGEST_DEBOUNCE_MS);
+  };
+
+  // Select the highlighted suggestion if there is one, otherwise run exact
+  // lookup for whatever is currently typed. Shared by the form's onSubmit
+  // AND the input's own Enter handling below — the latter is not redundant:
+  // relying only on the browser's implicit "Enter submits a lone text
+  // field" behaviour is fragile here, since role="combobox" + a custom
+  // dropdown is exactly the shape the browser's OWN native autofill
+  // suggestions compete with (see autoComplete="off" on the input).
+  // Handling Enter explicitly makes submission deterministic regardless.
+  const submitCurrentQuery = () => {
+    if (showSuggestions && highlightedIndex >= 0 && suggestState.status === 'list') {
+      selectSuggestion(suggestState.items[highlightedIndex]);
+      return;
+    }
+    runExactLookup(query);
+  };
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    submitCurrentQuery();
+  };
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitCurrentQuery();
+      return;
+    }
+    if (event.key === 'Escape' && showSuggestions) {
+      // Close the dropdown only — stop this Escape from also reaching the
+      // document-level handler that closes the whole panel.
+      event.stopPropagation();
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
+      return;
+    }
+    if (!showSuggestions || suggestState.status !== 'list') return;
+    const items = suggestState.items;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setHighlightedIndex((prev) => (prev + 1 >= items.length ? 0 : prev + 1));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setHighlightedIndex((prev) => (prev - 1 < 0 ? items.length - 1 : prev - 1));
+    }
+  };
 
   if (!assistant) return null;
 
@@ -131,7 +285,7 @@ const DictionaryPanel: React.FC = () => {
         </button>
       </div>
 
-      <div className="px-4 pb-3 shrink-0">
+      <form onSubmit={handleSubmit} role="search" className="px-4 pb-3 shrink-0">
         <label className="relative block">
           <span className="sr-only">{t.dictionary.searchLabel}</span>
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
@@ -139,18 +293,124 @@ const DictionaryPanel: React.FC = () => {
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={handleQueryChange}
+            onKeyDown={handleInputKeyDown}
             placeholder={t.dictionary.searchPlaceholder}
+            autoComplete="off"
+            role="combobox"
+            aria-expanded={showSuggestions}
+            aria-controls="dictionary-suggestions-listbox"
+            aria-autocomplete="list"
+            aria-activedescendant={
+              showSuggestions && highlightedIndex >= 0
+                ? `dictionary-suggestion-${highlightedIndex}`
+                : undefined
+            }
             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
         </label>
-      </div>
+      </form>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
-        <DictionaryPanelBody state={state} t={t} />
+        {showSuggestions ? (
+          <DictionarySuggestionsList
+            state={suggestState}
+            query={query.trim().replace(/\s+/g, ' ')}
+            highlightedIndex={highlightedIndex}
+            onSelect={selectSuggestion}
+            onExactLookup={runExactLookup}
+            t={t}
+          />
+        ) : (
+          <DictionaryPanelBody state={resultState} t={t} />
+        )}
       </div>
     </div>
   );
+};
+
+const DictionarySuggestionsList: React.FC<{
+  state: SuggestState;
+  query: string;
+  highlightedIndex: number;
+  onSelect: (item: DictionarySuggestion) => void;
+  onExactLookup: (word: string) => void;
+  t: TranslationDict;
+}> = ({ state, query, highlightedIndex, onSelect, onExactLookup, t }) => {
+  switch (state.status) {
+    case 'idle':
+      return null;
+    case 'loading':
+      return (
+        <div
+          role="status"
+          className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500 dark:text-slate-400"
+        >
+          <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+          {t.dictionary.suggestionsLoading}
+        </div>
+      );
+    case 'empty':
+      // No local VocabWord matched this prefix — that does not mean the
+      // word doesn't exist. Exact lookup (Redis/external) can still resolve
+      // it, so offer it as the next action rather than a dead end.
+      return (
+        <button
+          type="button"
+          onClick={() => onExactLookup(query)}
+          className="w-full text-left px-2 py-2.5 rounded-lg text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
+          <span className="font-semibold">
+            {t.dictionary.searchFallbackAction.replace('{{word}}', query)}
+          </span>
+          <span className="block text-xs font-normal text-slate-400 dark:text-slate-500 mt-0.5">
+            {t.dictionary.searchFallbackHint}
+          </span>
+        </button>
+      );
+    case 'error':
+      return (
+        <div className="flex items-start gap-2 py-6 text-sm text-rose-600 dark:text-rose-400">
+          <AlertCircle size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
+          <span>{t.dictionary.suggestionsError}</span>
+        </div>
+      );
+    case 'list':
+      return (
+        <ul
+          id="dictionary-suggestions-listbox"
+          role="listbox"
+          aria-label={t.dictionary.suggestionsLabel}
+          className="divide-y divide-slate-100 dark:divide-slate-800"
+        >
+          {state.items.map((item, index) => (
+            <li key={item.word} role="presentation">
+              <button
+                type="button"
+                id={`dictionary-suggestion-${index}`}
+                role="option"
+                aria-selected={index === highlightedIndex}
+                onClick={() => onSelect(item)}
+                className={`w-full text-left px-2 py-2.5 rounded-lg text-sm flex items-baseline justify-between gap-2 ${
+                  index === highlightedIndex
+                    ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
+                    : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span className="font-semibold">{item.word}</span>
+                {item.shortMeaningVi && (
+                  <span className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                    {item.shortMeaningVi}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      );
+    default:
+      return null;
+  }
 };
 
 const DictionaryPanelBody: React.FC<{ state: PanelState; t: TranslationDict }> = ({
