@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Search, X, Volume2, Loader2, AlertCircle } from 'lucide-react';
+import { Search, X, Volume2, Loader2, AlertCircle, MessageCircle, Star, ChevronRight } from 'lucide-react';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { ApiError } from '../../../services/apiError';
@@ -89,13 +89,13 @@ const DictionaryPanel: React.FC = () => {
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
       if (panelRef.current?.contains(target)) return;
-      if (assistant.launcherRef.current?.contains(target)) return;
+      if (assistant.launcherRefs.dictionary.current?.contains(target)) return;
       assistant.closeTool();
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       assistant.closeTool();
-      assistant.launcherRef.current?.focus();
+      assistant.launcherRefs.dictionary.current?.focus();
     };
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
@@ -276,7 +276,7 @@ const DictionaryPanel: React.FC = () => {
           type="button"
           onClick={() => {
             assistant.closeTool();
-            assistant.launcherRef.current?.focus();
+            assistant.launcherRefs.dictionary.current?.focus();
           }}
           aria-label={t.common.close}
           className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
@@ -443,7 +443,10 @@ const DictionaryPanelBody: React.FC<{ state: PanelState; t: TranslationDict }> =
         </div>
       );
     case 'result':
-      return <DictionaryResultView data={state.data} t={t} />;
+      // Keyed by word so the local favorite toggle (visual-only, no backend
+      // persistence — see DictionaryResultView) never leaks from one looked
+      // -up word onto the next.
+      return <DictionaryResultView key={state.data.word} data={state.data} t={t} />;
     default:
       return null;
   }
@@ -454,23 +457,64 @@ const playAudio = (url: string) => {
   void audio.play().catch(() => undefined);
 };
 
+// Presentational only — part-of-speech -> tag/card tint. Falls back to a
+// neutral slate tint for any value this map doesn't recognize (the source
+// API is free-text, not a closed enum) rather than skipping the tint.
+const POS_STYLES: Record<string, { tag: string; card: string }> = {
+  VERB: {
+    tag: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+    card: 'bg-green-50 dark:bg-green-500/5',
+  },
+  NOUN: {
+    tag: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+    card: 'bg-purple-50 dark:bg-purple-500/5',
+  },
+  ADJECTIVE: {
+    tag: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+    card: 'bg-amber-50 dark:bg-amber-500/5',
+  },
+  ADVERB: {
+    tag: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400',
+    card: 'bg-sky-50 dark:bg-sky-500/5',
+  },
+};
+const DEFAULT_POS_STYLE = {
+  tag: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  card: 'bg-slate-50 dark:bg-slate-800/60',
+};
+
 const DictionaryResultView: React.FC<{ data: DictionaryLookupResult; t: TranslationDict }> = ({
   data,
   t,
 }) => {
+  const assistant = useAssistant();
+  // Visual-only — no backend field/endpoint exists to persist a favorite
+  // word yet, so this resets whenever a fresh lookup remounts this
+  // component (see the `key={data.word}` above it in DictionaryPanelBody).
+  const [isFavorite, setIsFavorite] = useState(false);
   // A lookup that came from a real Wiktionary source, not the curated
   // VocabWord bank — that's exactly when a Wiktionary/FreeDictionaryAPI.com
   // attribution line is required. See free-dictionary-api.provider.ts's
   // header comment on the backend for the license this satisfies.
   const showAttribution = data.source !== 'VOCAB_WORD';
 
+  // Phase C hand-off — only a REAL VocabWord hit gets a VOCAB_WORD context
+  // (a resourceId the backend can actually re-resolve/re-authorize); a
+  // tier-2/3 result still hands off the panel + prefilled question, just
+  // with GENERAL context, rather than echoing this client-held definition
+  // to the server as if it were an already-validated resource.
+  const handleAskEngy = () => {
+    assistant?.handoffToChat({
+      prefillMessage: t.dictionary.askEngyPrefill.replace('{{word}}', data.word),
+      context: data.vocabWordId
+        ? { type: 'VOCAB_WORD', resourceId: data.vocabWordId }
+        : { type: 'GENERAL' },
+    });
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-lg font-extrabold text-slate-900 dark:text-white">{data.word}</p>
-          {data.ipa && <p className="text-sm text-slate-500 dark:text-slate-400">{data.ipa}</p>}
-        </div>
+      <div className="flex items-center gap-2.5">
         {data.audioUrl && (
           <button
             type="button"
@@ -481,31 +525,71 @@ const DictionaryResultView: React.FC<{ data: DictionaryLookupResult; t: Translat
             <Volume2 size={16} />
           </button>
         )}
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-lg font-extrabold text-slate-900 dark:text-white truncate">
+              {data.word}
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsFavorite((prev) => !prev)}
+              aria-pressed={isFavorite}
+              aria-label={isFavorite ? t.dictionary.favoriteRemove : t.dictionary.favoriteAdd}
+              className="shrink-0 text-slate-300 dark:text-slate-600 hover:text-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
+            >
+              <Star
+                size={16}
+                fill={isFavorite ? 'currentColor' : 'none'}
+                className={isFavorite ? 'text-amber-400' : ''}
+              />
+            </button>
+          </div>
+          {data.ipa && <p className="text-sm text-slate-500 dark:text-slate-400">{data.ipa}</p>}
+        </div>
       </div>
 
       {data.viTranslation && (
-        <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-          {data.viTranslation}
-        </p>
+        <p className="text-sm font-bold text-blue-700 dark:text-blue-300">{data.viTranslation}</p>
       )}
 
-      <div className="space-y-2.5">
-        {data.meanings.map((meaning, index) => (
-          <div key={index} className="text-sm">
-            {meaning.partOfSpeech && (
-              <span className="inline-block px-1.5 py-0.5 mr-1.5 rounded text-[11px] font-bold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                {meaning.partOfSpeech}
-              </span>
-            )}
-            {meaning.definitionEn && (
-              <span className="text-slate-700 dark:text-slate-200">{meaning.definitionEn}</span>
-            )}
-            {meaning.exampleEn && (
-              <p className="mt-0.5 text-slate-500 dark:text-slate-400 italic">“{meaning.exampleEn}”</p>
-            )}
-          </div>
-        ))}
+      <div className="border-t border-slate-100 dark:border-slate-800" />
+
+      <div className="space-y-2">
+        {data.meanings.map((meaning, index) => {
+          const style = meaning.partOfSpeech
+            ? (POS_STYLES[meaning.partOfSpeech.toUpperCase()] ?? DEFAULT_POS_STYLE)
+            : DEFAULT_POS_STYLE;
+          return (
+            <div key={index} className={`rounded-xl p-2.5 text-sm ${style.card}`}>
+              <div className="flex items-start gap-2">
+                {meaning.partOfSpeech && (
+                  <span
+                    className={`shrink-0 mt-0.5 inline-block px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide ${style.tag}`}
+                  >
+                    {meaning.partOfSpeech}
+                  </span>
+                )}
+                {meaning.definitionEn && (
+                  <span className="text-slate-700 dark:text-slate-200">{meaning.definitionEn}</span>
+                )}
+              </div>
+              {meaning.exampleEn && (
+                <p className="mt-1 text-slate-500 dark:text-slate-400 italic">“{meaning.exampleEn}”</p>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      <button
+        type="button"
+        onClick={handleAskEngy}
+        className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+      >
+        <MessageCircle size={18} className="shrink-0" aria-hidden="true" />
+        <span className="flex-1 text-left text-sm font-semibold">{t.dictionary.askEngy}</span>
+        <ChevronRight size={18} className="shrink-0" aria-hidden="true" />
+      </button>
 
       {data.synonyms.length > 0 && (
         <div>

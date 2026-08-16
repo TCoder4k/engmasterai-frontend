@@ -14,6 +14,7 @@ import NextLessonCard from './NextLessonCard';
 import ErrorState from '../shared/ErrorState';
 import Skeleton from '../shared/Skeleton';
 import { useStudyActivity } from '../shared/StudyTimeBoundary';
+import { useAssistantLessonContext } from '../shared/assistant/useAssistant';
 import { getLesson, getCourseLessons } from '../../services/lessonService';
 import { getPublishedCourse } from '../../services/courseService';
 import { authService } from '../../services/authService';
@@ -253,6 +254,14 @@ const LessonPage: React.FC = () => {
     (requestedStage === 'practice' && stageStatuses.practice === 'unavailable')
       ? 'video'
       : requestedStage;
+
+  // Phase C — tells the assistant shell "the student is viewing THIS lesson
+  // at THIS stage" so ChatPanel can attach a server-trusted context
+  // projection automatically (see chat-context.resolver.ts). Descriptive
+  // only — never gates access; Engy is fully available at every stage here
+  // by product decision (docs/CLAUDE.md), same as the useStudyActivity call
+  // below tracks study time without gating anything either.
+  useAssistantLessonContext(lessonId ? { lessonId, stage: currentStage } : null);
 
   // Sprint 10.5 — study time for the non-video stages. The video stage is
   // registered by LessonVideoPlayer itself, because only that component knows
