@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  Headphones,
   Map,
   RotateCw,
   Sparkles,
@@ -34,24 +33,34 @@ import { DEFAULT_DAILY_TARGETS } from './dailyTargets';
 // to one flat gray MapPin regardless of pillar — reads as a broken/unfinished
 // tile rather than a deliberate placeholder. Same icon+color pairing already
 // established for these three pillars elsewhere (ResultStep, ContinueLearningCard).
+//
+// LISTENING uses a real illustrative photo instead of an icon tile (product
+// request — see public/roadmap/listening-tips.jpg's provenance note below);
+// the other two pillars still use the icon+tint tile.
 const PILLAR_FALLBACK: Record<
   RoadmapPillar,
-  { Icon: React.ComponentType<{ size?: number; className?: string }>; tileClass: string; iconClass: string }
+  | { kind: 'icon'; Icon: React.ComponentType<{ size?: number; className?: string }>; tileClass: string; iconClass: string }
+  | { kind: 'image'; src: string }
 > = {
   GRAMMAR: {
+    kind: 'icon',
     Icon: BookOpen,
     tileClass: 'bg-blue-100 dark:bg-blue-500/15',
     iconClass: 'text-blue-500 dark:text-blue-400',
   },
   VOCABULARY: {
+    kind: 'icon',
     Icon: Type,
     tileClass: 'bg-emerald-100 dark:bg-emerald-500/15',
     iconClass: 'text-emerald-500 dark:text-emerald-400',
   },
+  // Downloaded once from the product-supplied reference URL into
+  // public/roadmap/listening-tips.jpg rather than hotlinked — an external
+  // host outside our control is not something a production fallback image
+  // should depend on staying up.
   LISTENING: {
-    Icon: Headphones,
-    tileClass: 'bg-violet-100 dark:bg-violet-500/15',
-    iconClass: 'text-violet-500 dark:text-violet-400',
+    kind: 'image',
+    src: '/roadmap/listening-tips.jpg',
   },
 };
 
@@ -306,6 +315,16 @@ const RoadmapCard: React.FC = () => {
                   ) : (
                     (() => {
                       const fallback = PILLAR_FALLBACK[item.pillar];
+                      if (fallback.kind === 'image') {
+                        return (
+                          <img
+                            src={fallback.src}
+                            alt=""
+                            aria-hidden="true"
+                            className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover flex-shrink-0"
+                          />
+                        );
+                      }
                       const FallbackIcon = fallback.Icon;
                       return (
                         <div
