@@ -61,13 +61,13 @@ const LandingHeader: React.FC = () => {
             </Logo>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1 lg:gap-2 bg-slate-100/70 dark:bg-ink-900/70 p-1.5 rounded-full border border-slate-200/70 dark:border-ink-700 backdrop-blur-sm">
+          <div className="hidden md:flex items-center gap-1 lg:gap-1.5 bg-slate-100/70 dark:bg-ink-900/70 p-1.5 rounded-full border border-slate-200/70 dark:border-ink-700 backdrop-blur-sm">
             {SECTION_LINKS.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={scrollToSection(link.href)}
-                className="px-3.5 py-1.5 text-xs lg:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-ink-800 rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                className="px-3.5 lg:px-4 py-1.5 text-xs lg:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-ink-800 rounded-full whitespace-nowrap transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
                 {link.name}
               </a>
