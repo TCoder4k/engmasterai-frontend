@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import {
-  GraduationCap,
   Home,
   BookOpen,
   Headphones,
@@ -12,6 +11,7 @@ import {
   Gem,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
+import { Logo } from '../shared/Logo';
 import LevelWidget from './LevelWidget';
 
 const HEXAGON_CLIP = 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)';
@@ -50,10 +50,9 @@ const StudentDesktopSidebar: React.FC = () => {
         <NavLink
           to="/home"
           aria-label={t.nav.goToDashboard}
-          className="flex items-center space-x-2.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          <GraduationCap size={30} className="text-blue-600 dark:text-blue-400" aria-hidden="true" />
-          <span className="text-xl font-extrabold text-slate-900 dark:text-white">EngMasterAI</span>
+          <Logo size="md" />
         </NavLink>
       </div>
 

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap } from 'lucide-react';
 import AvatarMenu, { AvatarMenuUser } from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
@@ -32,11 +31,11 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
         <Link
           to="/home"
           aria-label={t.nav.goToDashboard}
-          className="flex items-center space-x-2 min-w-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          className="flex items-center gap-2 min-w-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          <GraduationCap size={26} className="text-blue-600 dark:text-blue-400 flex-shrink-0" aria-hidden="true" />
+          <img src="/logo/logo.png" alt="" aria-hidden="true" className="w-7 h-7 object-contain flex-shrink-0" />
           <span className="text-base font-extrabold text-slate-900 dark:text-white hidden sm:block">
-            EngMasterAI
+            EngMaster<span className="text-blue-600 dark:text-blue-400">AI</span>
           </span>
         </Link>
 
