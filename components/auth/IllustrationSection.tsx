@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Globe, GraduationCap, Cpu, Sparkles, Languages, BookOpen, Laptop, MessageCircle } from 'lucide-react';
+import { Globe, Cpu, Sparkles, Languages, BookOpen, Laptop, MessageCircle } from 'lucide-react';
+import { Logo } from '../shared/Logo';
 
 export const IllustrationSection: React.FC = () => {
   return (
@@ -31,12 +32,7 @@ export const IllustrationSection: React.FC = () => {
 
         {/* Main Content */}
         <div className="space-y-6 text-left">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-white text-blue-600 rounded-2xl shadow-xl shadow-blue-900/20">
-              <GraduationCap className="w-10 h-10" />
-            </div>
-            <span className="text-3xl font-extrabold tracking-tight">EngMasterAI</span>
-          </div>
+          <Logo size="lg" variant="inverted" withTagline />
 
           <h1 className="text-6xl font-black leading-[1.1]">
             Chinh phục <br />

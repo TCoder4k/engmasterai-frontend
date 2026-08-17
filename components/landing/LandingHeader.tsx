@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Globe, LayoutDashboard, Menu, Sparkles, X } from 'lucide-react';
+import { ArrowRight, Globe, LayoutDashboard, Menu, X } from 'lucide-react';
 import { authService, AUTH_CHANGED_EVENT } from '../../services/authService';
 import { DURATION, EASE } from '../shared/motion';
+import { Logo } from '../shared/Logo';
 import { SECTION_LINKS, scrollToSection } from './sections';
 
 // Marketing header: transparent over the hero, frosted once scrolled.
@@ -50,20 +51,14 @@ const LandingHeader: React.FC = () => {
         <div className="flex items-center justify-between gap-4">
           <Link
             to="/"
-            className="flex items-center gap-2.5 group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="group rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="EngMasterAI — trang chủ"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-600/25 group-hover:scale-105 transition-transform">
-              <Sparkles className="w-5 h-5" aria-hidden="true" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                EngMaster<span className="text-blue-600 dark:text-blue-400 font-extrabold">AI</span>
-              </span>
+            <Logo size="md">
               <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 tracking-wider uppercase mt-0.5">
                 Global Learning
               </span>
-            </div>
+            </Logo>
           </Link>
 
           <div className="hidden md:flex items-center gap-1 lg:gap-2 bg-slate-100/70 dark:bg-ink-900/70 p-1.5 rounded-full border border-slate-200/70 dark:border-ink-700 backdrop-blur-sm">

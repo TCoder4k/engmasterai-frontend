@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Languages, Moon, Send, Smartphone, Sparkles } from 'lucide-react';
+import { Languages, Moon, Send, Smartphone } from 'lucide-react';
+import { Logo } from '../shared/Logo';
 import { SECTION_IDS, scrollToSection } from './sections';
 
 // Footer.
@@ -100,16 +101,8 @@ const LandingFooter: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-slate-800 dark:border-ink-700">
           <div className="lg:col-span-2 space-y-4">
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 w-fit rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            >
-              <span className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30">
-                <Sparkles className="w-5 h-5" aria-hidden="true" />
-              </span>
-              <span className="text-xl font-bold tracking-tight text-white">
-                EngMaster<span className="text-blue-500">AI</span>
-              </span>
+            <Link to="/" className="w-fit rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+              <Logo size="md" variant="inverted" withTagline />
             </Link>
 
             <p className="text-xs sm:text-sm text-slate-400 max-w-sm leading-relaxed">
