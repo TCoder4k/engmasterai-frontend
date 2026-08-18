@@ -226,7 +226,7 @@ export const LoginForm: React.FC = () => {
       {/* Logo Section */}
       <Logo />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {/* Error Message */}
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -235,13 +235,13 @@ export const LoginForm: React.FC = () => {
         )}
 
         {/* Role Selection Label */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <label className="text-sm font-bold text-slate-700 uppercase tracking-wider ml-1">Bạn là ai?</label>
           <div className="grid grid-cols-2 gap-4">
             <button
               type="button"
               onClick={() => setRole(UserRole.LEARNER)}
-              className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 ${
+              className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 role === UserRole.LEARNER
                   ? 'border-blue-600 bg-blue-50/80 text-blue-700 ring-4 ring-blue-600/10'
                   : 'border-slate-100 bg-white hover:border-slate-200 text-slate-500'
@@ -259,7 +259,7 @@ export const LoginForm: React.FC = () => {
             <button
               type="button"
               onClick={() => setRole(UserRole.ADMIN)}
-              className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all duration-300 ${
+              className={`relative flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-300 ${
                 role === UserRole.ADMIN
                   ? 'border-blue-600 bg-blue-50/80 text-blue-700 ring-4 ring-blue-600/10'
                   : 'border-slate-100 bg-white hover:border-slate-200 text-slate-500'
@@ -288,7 +288,7 @@ export const LoginForm: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ten-dang-nhap@gmail.com"
-                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
             </div>
           </div>
@@ -303,7 +303,7 @@ export const LoginForm: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-12 pr-12 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
               <button
                 type="button"
@@ -353,7 +353,7 @@ export const LoginForm: React.FC = () => {
           onCredential={handleGoogleCredential}
         />
 
-        <p className="text-center text-slate-600 mt-10 font-medium">
+        <p className="text-center text-slate-600 mt-5 font-medium">
           Chưa có tài khoản?{' '}
           <Link
             to="/register"
@@ -363,13 +363,7 @@ export const LoginForm: React.FC = () => {
           </Link>
         </p>
 
-        <div className="flex justify-center gap-6 text-xs text-slate-400 font-bold mt-12 pb-4">
-          <a href="#" className="hover:text-blue-600 transition-colors">ĐIỀU KHOẢN</a>
-          <span className="opacity-30">•</span>
-          <a href="#" className="hover:text-blue-600 transition-colors">BẢO MẬT</a>
-          <span className="opacity-30">•</span>
-          <a href="#" className="hover:text-blue-600 transition-colors">TRỢ GIÚP</a>
-        </div>
+       
       </form>
     </div>
   );

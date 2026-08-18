@@ -38,6 +38,20 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onCredentialRef.current = onCredential;
 
   const [unavailable, setUnavailable] = useState(false);
+  // The width GIS was last asked to render at. renderGoogleButton() injects
+  // an iframe that self-resizes ASYNCHRONOUSLY once Google's server responds
+  // (its HEIGHT, driven by shape/size/text — never something this component
+  // requests) — a mutation of `container`'s own children, which the
+  // ResizeObserver below also watches. Reacting to every observed size
+  // change unconditionally therefore re-triggers render(), which wipes and
+  // re-renders the iframe, which resizes again: an unbounded
+  // render -> resize -> render loop hitting accounts.google.com on every
+  // iteration (Phase 11 production incident). Width is the only dimension
+  // this component ever passes to GIS as a render option and is bounded by
+  // the flex/w-full parent, not by iframe content — so a GIS-driven resize
+  // never changes it. Gating re-render on width actually changing breaks
+  // the feedback loop while still reacting to a real viewport/layout resize.
+  const lastRenderedWidthRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!CLIENT_ID) return;
@@ -52,6 +66,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       if (!container) return;
       try {
         const measuredWidth = container.clientWidth || GIS_MAX_WIDTH;
+        lastRenderedWidthRef.current = measuredWidth;
         await renderGoogleButton(container, CLIENT_ID, {
           type: 'standard',
           theme: 'outline',
@@ -76,6 +91,13 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
     const resizeObserver =
       container && 'ResizeObserver' in window
         ? new ResizeObserver(() => {
+            const currentWidth = containerRef.current?.clientWidth ?? null;
+            if (
+              currentWidth === null ||
+              currentWidth === lastRenderedWidthRef.current
+            ) {
+              return;
+            }
             if (resizeTimer) clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => void render(), RESIZE_DEBOUNCE_MS);
           })
@@ -113,6 +135,7 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
       ) : (
         <div
           ref={containerRef}
+          data-testid="google-signin-container"
           className="w-full flex justify-center min-h-[52px]"
         />
       )}

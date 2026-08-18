@@ -222,11 +222,11 @@ export const RegisterForm: React.FC = () => {
       {/* Logo Section */}
       <Logo />
 
-      <div className="text-center mb-8">
+      <div className="text-center mb-4">
         <p className="text-slate-500 font-bold">Tham gia cùng hàng nghìn học viên tại EngMasterAI</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-2">
         {/* Success Message */}
         {success && (
           <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
@@ -245,9 +245,9 @@ export const RegisterForm: React.FC = () => {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="group">
-            <label className="text-sm font-bold text-slate-700 mb-2 block ml-1">Họ và tên</label>
+            <label className="text-sm font-bold text-slate-700 mb-1.5 block ml-1">Họ và tên</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
@@ -256,13 +256,13 @@ export const RegisterForm: React.FC = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nguyễn Văn A"
-                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
             </div>
           </div>
 
           <div className="group">
-            <label className="text-sm font-bold text-slate-700 mb-2 block ml-1">Địa chỉ Email</label>
+            <label className="text-sm font-bold text-slate-700 mb-1.5 block ml-1">Địa chỉ Email</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
@@ -271,13 +271,13 @@ export const RegisterForm: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@gmail.com"
-                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
             </div>
           </div>
 
           <div className="group">
-            <label className="text-sm font-bold text-slate-700 mb-2 block ml-1">Mật khẩu</label>
+            <label className="text-sm font-bold text-slate-700 mb-1.5 block ml-1">Mật khẩu</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
@@ -287,7 +287,7 @@ export const RegisterForm: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 minLength={6}
-                className="w-full pl-12 pr-12 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
               <button
                 type="button"
@@ -300,7 +300,7 @@ export const RegisterForm: React.FC = () => {
           </div>
 
           <div className="group">
-            <label className="text-sm font-bold text-slate-700 mb-2 block ml-1">Xác nhận mật khẩu</label>
+            <label className="text-sm font-bold text-slate-700 mb-1.5 block ml-1">Xác nhận mật khẩu</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
@@ -310,7 +310,7 @@ export const RegisterForm: React.FC = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 minLength={6}
-                className="w-full pl-12 pr-12 py-4 bg-white border-2 border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
+                className="w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-600 transition-all placeholder:text-slate-400 font-medium"
               />
               <button
                 type="button"
@@ -323,7 +323,7 @@ export const RegisterForm: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-2">
+        <div>
           <label className="flex items-start gap-3 cursor-pointer group">
             <div className="mt-1 relative">
               <input
@@ -342,7 +342,7 @@ export const RegisterForm: React.FC = () => {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-4 mt-2 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-200 transform transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
+          className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-200 transform transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
         >
           {isLoading ? (
              <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -354,7 +354,7 @@ export const RegisterForm: React.FC = () => {
           onCredential={handleGoogleCredential}
         />
 
-        <p className="text-center text-slate-600 mt-10 font-medium">
+        <p className="text-center text-slate-600 mt-5 font-medium">
           Đã có tài khoản?{' '}
           <Link
             to="/login"

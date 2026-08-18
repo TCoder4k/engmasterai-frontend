@@ -129,6 +129,25 @@
         background-image: radial-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px);
       }
 
+      /* Chrome/Edge tint autofilled inputs a pale blue (#e8f0fe) via an
+         internal UA style no CSS property overrides directly — only this
+         transition-delay trick defeats it. Without it, any input the
+         browser has ever autofilled (email/password fields especially)
+         looks like it has a dingy grey-blue background that no className
+         here actually set. */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover,
+      input:-webkit-autofill:focus {
+        -webkit-text-fill-color: inherit;
+        transition: background-color 9999s ease-in-out 0s;
+        box-shadow: 0 0 0 1000px #ffffff inset;
+      }
+      .dark input:-webkit-autofill,
+      .dark input:-webkit-autofill:hover,
+      .dark input:-webkit-autofill:focus {
+        box-shadow: 0 0 0 1000px #1e293b inset;
+      }
+
       /* Frosted panel. backdrop-filter has no v3 utility. */
       .landing-glass {
         background: rgba(255, 255, 255, 0.85);
