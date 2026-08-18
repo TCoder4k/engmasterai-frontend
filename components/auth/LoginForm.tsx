@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Logo } from './Logo';
 import { GoogleSignInButton } from './GoogleSignInButton';
@@ -54,6 +54,11 @@ export const LoginForm: React.FC = () => {
   const [error, setError] = useState('');
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  // React state is not a synchronous mutex: if the credential callback is
+  // invoked twice in the same tick, both invocations can observe the stale
+  // pre-render value and both issue POST /auth/google. A ref closes that
+  // concurrency gap; the state remains only for UI state.
+  const googleInFlightRef = useRef(false);
   const [linkEmail, setLinkEmail] = useState<string | null>(null);
   const [pendingCredential, setPendingCredential] = useState<string | null>(null);
   const [linkPassword, setLinkPassword] = useState('');
@@ -78,7 +83,8 @@ export const LoginForm: React.FC = () => {
   };
 
   const handleGoogleCredential = async (credential: string) => {
-    if (isGoogleLoading) return; // ignore a duplicate callback while one request is in flight
+    if (googleInFlightRef.current) return; // synchronous mutex — see googleInFlightRef's doc comment
+    googleInFlightRef.current = true;
     setError('');
     setIsGoogleLoading(true);
     try {
@@ -93,6 +99,7 @@ export const LoginForm: React.FC = () => {
       }
     } finally {
       setIsGoogleLoading(false);
+      googleInFlightRef.current = false;
     }
   };
 
