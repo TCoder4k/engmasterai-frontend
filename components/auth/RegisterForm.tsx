@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -22,6 +22,11 @@ export const RegisterForm: React.FC = () => {
   >(undefined);
 
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  // See LoginForm.tsx's identical googleInFlightRef doc comment: isGoogleLoading
+  // (React state) is not a synchronous mutex, so two credential-callback
+  // invocations in the same tick both read the same stale value and both
+  // pass the state check — a ref closes that gap.
+  const googleInFlightRef = useRef(false);
   const [linkEmail, setLinkEmail] = useState<string | null>(null);
   const [pendingCredential, setPendingCredential] = useState<string | null>(null);
   const [linkPassword, setLinkPassword] = useState('');
@@ -46,7 +51,8 @@ export const RegisterForm: React.FC = () => {
   };
 
   const handleGoogleCredential = async (credential: string) => {
-    if (isGoogleLoading) return;
+    if (googleInFlightRef.current) return; // synchronous mutex — see googleInFlightRef's doc comment
+    googleInFlightRef.current = true;
     setError('');
     setIsGoogleLoading(true);
     try {
@@ -61,6 +67,7 @@ export const RegisterForm: React.FC = () => {
       }
     } finally {
       setIsGoogleLoading(false);
+      googleInFlightRef.current = false;
     }
   };
 
