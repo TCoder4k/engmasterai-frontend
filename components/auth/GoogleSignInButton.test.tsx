@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { render, cleanup, screen, act } from '@testing-library/react';
-import { GoogleSignInButton } from './GoogleSignInButton';
-import * as googleAuth from '../../services/googleAuth';
+import type { GoogleSignInButton as GoogleSignInButtonComponent } from './GoogleSignInButton';
+import type * as GoogleAuthModule from '../../services/googleAuth';
 
 // Phase 11 production incident regression coverage.
 //
@@ -17,6 +17,29 @@ import * as googleAuth from '../../services/googleAuth';
 // (must NOT re-render) and a genuinely different width (must re-render
 // exactly once more) — proving the loop is broken without breaking the
 // original responsive-width feature.
+//
+// GoogleSignInButton reads import.meta.env.VITE_GOOGLE_CLIENT_ID into a
+// MODULE-LEVEL constant, evaluated exactly once, the moment the module is
+// first imported — before any beforeEach/vi.stubEnv in a test file could
+// possibly run. Locally that variable comes from .env.local (gitignored,
+// developer-machine-only); CI's clean checkout has no such file, so the
+// constant silently resolves to undefined there, and the component's
+// `if (!CLIENT_ID) return` guard short-circuits the whole effect — every
+// assertion below that expects renderGoogleButton to have been called
+// deterministically saw 0 calls in CI while passing locally (reproduced
+// exactly by temporarily hiding .env.local and re-running this file).
+// A static top-level `import` is hoisted and evaluated before ANY of this
+// file's own top-level code — including a `vi.stubEnv` call placed after
+// it — so the only way to control CLIENT_ID is to stub the env var FIRST
+// and then import the component (and the service module it reads GIS
+// through) dynamically, once, in beforeAll.
+vi.stubEnv(
+  'VITE_GOOGLE_CLIENT_ID',
+  'test-client-id.apps.googleusercontent.com',
+);
+
+let GoogleSignInButton: typeof GoogleSignInButtonComponent;
+let googleAuth: typeof GoogleAuthModule;
 
 let resizeCallback: ResizeObserverCallback | null = null;
 
@@ -49,6 +72,15 @@ const fireResize = async () => {
 };
 
 describe('GoogleSignInButton', () => {
+  beforeAll(async () => {
+    ({ GoogleSignInButton } = await import('./GoogleSignInButton'));
+    googleAuth = await import('../../services/googleAuth');
+  });
+
+  afterAll(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     vi.useFakeTimers();
     resizeCallback = null;
