@@ -21,16 +21,10 @@ import PlacementAudioPlayer from './PlacementAudioPlayer';
 
 interface PlacementTestStepProps {
   attempt: PlacementAttemptState;
-  onCompleted: (result: PlacementResult) => void;
-  // Wizard-level "leave the test" — back to StartMethodStep. Distinct from
-  // the in-test goPrev()/"Trước" button below (which moves between the 12
-  // questions of THIS attempt); this exits the test screen entirely. Safe by
-  // construction: the in-progress PlacementAttempt row is left untouched, so
-  // choosing the placement method again from StartMethodStep resumes this
-  // exact attempt (same questions, same answers so far, same expiresAt) via
-  // POST /placement/start's existing idempotent-resume behavior — the same
-  // guarantee that already makes a mid-test page refresh safe.
-  onBack: () => void;
+  // `timedOut` distinguishes a manual last-question submit from the
+  // countdown's own auto-submit, so the wizard can route the latter straight
+  // to the Roadmap step instead of stopping at Result.
+  onCompleted: (result: PlacementResult, options: { timedOut: boolean }) => void;
 }
 
 // Step 3 — the 24-question test itself. COMPOSED, NOT COPIED: the question
@@ -60,7 +54,7 @@ const toStudentQuizQuestion = (
   answered: null,
 });
 
-const PlacementTestStep: React.FC<PlacementTestStepProps> = ({ attempt, onCompleted, onBack }) => {
+const PlacementTestStep: React.FC<PlacementTestStepProps> = ({ attempt, onCompleted }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const userId = authService.getUser()?.id;
@@ -101,7 +95,7 @@ const PlacementTestStep: React.FC<PlacementTestStepProps> = ({ attempt, onComple
     writePlacementDraft(userId, { currentIndex: index });
   }, [userId, index]);
 
-  const doSubmit = useCallback(async () => {
+  const doSubmit = useCallback(async (timedOut: boolean) => {
     if (autoSubmitFiredRef.current) return;
     autoSubmitFiredRef.current = true;
     setSubmitting(true);
@@ -119,7 +113,7 @@ const PlacementTestStep: React.FC<PlacementTestStepProps> = ({ attempt, onComple
     try {
       const result = await submitPlacementAttempt(attempt.attemptId);
       if (userId) clearPlacementDraft(userId);
-      onCompleted(result);
+      onCompleted(result, { timedOut });
     } catch (err) {
       autoSubmitFiredRef.current = false; // allow a retry
       setError(handleAuthError(err, navigate) || t.onboarding.testSubmitFailed);
@@ -137,7 +131,7 @@ const PlacementTestStep: React.FC<PlacementTestStepProps> = ({ attempt, onComple
     const tick = () => {
       const ms = new Date(attempt.expiresAt).getTime() - Date.now();
       setRemainingMs(ms);
-      if (ms <= 0) void doSubmit();
+      if (ms <= 0) void doSubmit(true);
     };
     tick();
     const interval = window.setInterval(tick, 1000);
@@ -172,16 +166,8 @@ const PlacementTestStep: React.FC<PlacementTestStepProps> = ({ attempt, onComple
       directionRef.current = 1;
       setIndex((i) => i + 1);
     } else {
-      void doSubmit();
+      void doSubmit(false);
     }
-  };
-
-  // Same "persist on navigation, not on every keystroke" discipline as
-  // goNext/goPrev — leaving the test screen counts as navigation, so
-  // whatever's selected on the current question is saved before we go.
-  const handleBack = () => {
-    void persistCurrent();
-    onBack();
   };
 
   const goPrev = () => {
@@ -240,18 +226,6 @@ const PlacementTestStep: React.FC<PlacementTestStepProps> = ({ attempt, onComple
 
   return (
     <div className="bg-white dark:bg-ink-900 rounded-3xl shadow-xl p-6 sm:p-8" onKeyDown={handleKeyDown}>
-      {/* submitting always renders the spinner branch above instead of this
-          one, so there is no in-flight-submit race for this button to guard
-          against. */}
-      <button
-        type="button"
-        onClick={handleBack}
-        className="inline-flex items-center gap-1 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors mb-3"
-      >
-        <ChevronLeft size={16} aria-hidden="true" />
-        {t.common.back}
-      </button>
-
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">
           <div

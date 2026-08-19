@@ -80,7 +80,7 @@ const result: PlacementResult = {
   completedAt: new Date().toISOString(),
 };
 
-const renderStep = (onCompleted = vi.fn(), onBack = vi.fn()) =>
+const renderStep = (onCompleted = vi.fn()) =>
   render(
     // Reduced motion, matching how the real app runs under test (App.tsx's
     // own MotionConfig, driven by vitest.setup.ts's prefers-reduced-motion
@@ -90,7 +90,7 @@ const renderStep = (onCompleted = vi.fn(), onBack = vi.fn()) =>
     <MotionConfig reducedMotion="always">
       <LanguageProvider>
         <MemoryRouter>
-          <PlacementTestStep attempt={attempt} onCompleted={onCompleted} onBack={onBack} />
+          <PlacementTestStep attempt={attempt} onCompleted={onCompleted} />
         </MemoryRouter>
       </LanguageProvider>
     </MotionConfig>,
@@ -123,17 +123,9 @@ describe('PlacementTestStep', () => {
     expect(screen.getByRole('timer')).toHaveTextContent('1:30');
   });
 
-  it('the wizard-level Back button persists the currently selected answer, then calls onBack — leaving the in-progress attempt untouched for later resume', async () => {
-    const user = userEvent.setup();
-    const onBack = vi.fn();
-    renderStep(vi.fn(), onBack);
-
-    await user.click(screen.getByRole('radio', { name: /Tea with sugar/i }));
-    await user.click(screen.getByRole('button', { name: 'Back' }));
-
-    expect(mockAnswer).toHaveBeenCalledWith('attempt-1', 'q1', { optionId: 'a' });
-    expect(onBack).toHaveBeenCalledTimes(1);
-    expect(mockSubmit).not.toHaveBeenCalled();
+  it('renders no exit/back-to-method button — the test has no way to leave once started', () => {
+    renderStep();
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
   });
 
   it('renders the custom audio player (not the bare native <audio controls>) for a listening question', () => {
@@ -173,7 +165,7 @@ describe('PlacementTestStep', () => {
       <MotionConfig reducedMotion="always">
         <LanguageProvider>
           <MemoryRouter>
-            <PlacementTestStep attempt={transcriptOnlyAttempt} onCompleted={vi.fn()} onBack={vi.fn()} />
+            <PlacementTestStep attempt={transcriptOnlyAttempt} onCompleted={vi.fn()} />
           </MemoryRouter>
         </LanguageProvider>
       </MotionConfig>,
@@ -220,6 +212,31 @@ describe('PlacementTestStep', () => {
     await user.click(screen.getByRole('button', { name: /submit/i }));
 
     await waitFor(() => expect(mockSubmit).toHaveBeenCalledWith('attempt-1'));
-    await waitFor(() => expect(onCompleted).toHaveBeenCalledWith(result));
+    await waitFor(() => expect(onCompleted).toHaveBeenCalledWith(result, { timedOut: false }));
+  });
+
+  it('auto-submits and calls onCompleted with timedOut: true once the countdown reaches zero', async () => {
+    mockSubmit.mockResolvedValueOnce(result);
+    const onCompleted = vi.fn();
+    // Already expired at mount, so the countdown effect's own synchronous
+    // first tick() fires the auto-submit immediately — no need to wait out a
+    // real setInterval tick.
+    const alreadyExpiredAttempt: PlacementAttemptState = {
+      ...attempt,
+      expiresAt: new Date(Date.now() - 1_000).toISOString(),
+    };
+
+    render(
+      <MotionConfig reducedMotion="always">
+        <LanguageProvider>
+          <MemoryRouter>
+            <PlacementTestStep attempt={alreadyExpiredAttempt} onCompleted={onCompleted} />
+          </MemoryRouter>
+        </LanguageProvider>
+      </MotionConfig>,
+    );
+
+    await waitFor(() => expect(mockSubmit).toHaveBeenCalledWith('attempt-1'));
+    await waitFor(() => expect(onCompleted).toHaveBeenCalledWith(result, { timedOut: true }));
   });
 });
