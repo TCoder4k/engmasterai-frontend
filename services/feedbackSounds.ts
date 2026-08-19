@@ -146,3 +146,15 @@ export const playComplete = (): void =>
     { frequency: 784, startAt: 0.2, duration: 0.1 },
     { frequency: 1047, startAt: 0.3, duration: 0.22 },
   ]);
+
+// Speaking Partner — a rising blip on record START and a falling one on
+// record STOP/send, mirroring playCorrect/playIncorrect's own
+// rising-vs-falling contrast so the two are never confused by ear. Routed
+// through the exact same playTones() helper as every cue above: fails
+// silently on a blocked/suspended/missing AudioContext, and is muted by the
+// same global preference — recording itself must never depend on this.
+export const playRecordStart = (): void =>
+  playTones([{ frequency: 523, startAt: 0, duration: 0.07 }], 0.05);
+
+export const playRecordStop = (): void =>
+  playTones([{ frequency: 392, startAt: 0, duration: 0.09 }], 0.05);

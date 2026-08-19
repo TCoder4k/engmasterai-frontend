@@ -41,6 +41,10 @@ const en = {
     // what lets Shadowing be reached AT ALL without a 6th bottom-nav slot.
     // `nav.listening` itself is left untouched because PracticeHubPage's
     // legacy card still uses it next to a Listening-specific description.
+    // `audioPractice` now points at /practice, the shared Nghe-nói hub for
+    // BOTH Listening/Shadowing and Speaking Partner — realigned away from a
+    // same-day Sprint 13 follow-up that had briefly given Speaking Partner
+    // its own separate nav key (`nav.speaking`, since removed) here.
     audioPractice: "Audio Practice",
     goToDashboard: "Go to Dashboard",
     vocabulary: "Vocabulary",
@@ -625,11 +629,11 @@ const en = {
     progressLabel: "Trap Hunter progress",
   },
   practice: {
-    title: "Practice",
-    subtitle: "Sharpen your skills with focused practice sessions.",
-    vocabularySection: "Vocabulary Practice",
+    // PracticeHubPage's hero — matches the "Nghe - nói" nav item that now
+    // leads here, mirroring `nav.audioPractice`'s own EN wording rather than
+    // a literal translation, same as that key's existing convention.
+    title: "Audio Practice",
     listeningSection: "Listening Practice",
-    grammarSection: "Grammar Practice",
     modeFlashcards: "Flashcards",
     modeFlashcardsDesc: "Flip through cards to review word meanings.",
     modeGuess: "Guess the Word",
@@ -642,6 +646,94 @@ const en = {
     modeContextualDesc: "Complete sentences using the right word.",
     modeListening: "Listening Dictation",
     modeListeningDesc: "Practice listening with TOEIC-style dialogues.",
+    // Speaking Partner (Phase 1+2) — push-to-talk voice conversation.
+    modeSpeaking: "Speaking Partner",
+    modeSpeakingDesc: "Practice speaking with an AI conversation partner.",
+    // PracticeHubPage's Nghe-nói mode-selection section — two compact cards
+    // (Listening/Shadowing, Speaking Partner). Card titles kept separate
+    // from modeListeningDesc/modeSpeakingDesc above, which stay in use by
+    // SpeakingCatalogPage's own header and the older card copy.
+    modeListeningCardTitle: "Listening & Dictation (Shadowing)",
+    // Short, dot-separated skill tags under the title — NOT a bulleted list,
+    // matches the compact reference layout (2026-08-20 redesign).
+    modeListeningTagline: "Listen • Shadow • Dictate",
+    /** A REAL count (fetched from GET /listening/catalog?mode=SHADOWING, meta.total) — never a placeholder number. */
+    modeListeningLessonCount: (count: number) => `${count} lesson${count === 1 ? '' : 's'}`,
+    // Full descriptive text, used as the CTA button's aria-label — the
+    // visible label is the short, shared `startCta` below; two identically-
+    // worded buttons on this page still need distinct accessible names.
+    modeListeningCardCta: "Start listening practice →",
+    modeSpeakingCardTitle: "Speak naturally with an AI Partner",
+    modeSpeakingTagline: "Converse • React • Get feedback",
+    /** Free Talk is a real, existing scenario — not a fabricated figure like the lesson count above, so this is a static label. */
+    modeSpeakingChipLabel: "Free conversation",
+    modeSpeakingCardCta: "Start speaking with AI →",
+    startCta: "Start",
+    hubTipTitle: "Effective learning tip",
+    hubTipBody: "Combine both modes every day to build well-rounded listening comprehension and speaking fluency.",
+    // Reused by SpeakingCatalogPage (top of the Speaking tree) and
+    // SpeakingSessionPage (both the in-session and summary screens) — the
+    // one, obvious way back to the shared mode-selection hub.
+    backToModeHub: "Back to mode selection",
+    speakingNoScenarios: "No speaking topics are available yet.",
+    speakingNoExercises: "This topic has no exercises yet.",
+    speakingBackToCatalog: "Back to topics",
+    speakingBackToScenario: "Back",
+    // SpeakingCatalogPage's two sections: scenario-based practice vs. the
+    // one open-topic Free Talk entry.
+    speakingContextSectionTitle: "Practice by context",
+    speakingContextSectionDesc: "Choose a real-life situation to practice speaking in a specific context.",
+    speakingFreeTalkSectionTitle: "Free Talk",
+    speakingFreeTalkSectionDesc: "Chat naturally with the AI about any topic you like.",
+    speakingFreeTalkCardTitle: "Free conversation",
+    speakingFreeTalkBadge: "No topic limit",
+    speakingFreeTalkCardDesc: "Speak freely to build your reflexes and confidence in conversation.",
+    speakingFreeTalkCta: "Start chatting",
+    speakingCatalogFooterHint: "You can pick a specific situation or chat freely to practice your speaking reflexes.",
+    speakingStartAction: "Start",
+    // Free Talk auto-starts the moment its page loads (no "Start" tap needed
+    // — the catalog's own CTA is already the one gesture) — shown briefly
+    // while the attempt is being created.
+    speakingConnecting: "Connecting...",
+    speakingCompleteAction: "End session",
+    // Guards the in-session "Back to mode selection" link — only shown while
+    // a turn is actively recording/uploading/processing/speaking, matching
+    // the same disabled-state condition already used for the Finish button.
+    speakingLeaveConfirm: "Leaving now will cancel the current turn. Continue?",
+    // Tap-to-toggle mic control (SpeakingRecorderControl) — a single tap
+    // starts, a single tap stops and sends; no holding required.
+    speakingTapToTalk: "Tap to talk",
+    speakingTapToStop: "Tap to stop and send",
+    speakingRecorderHint: "Speak naturally — the AI will listen and respond.",
+    speakingReplayAi: "Replay AI's line",
+    // Distinct from speakingReplayAi (the control-row "replay the latest
+    // line" button) — this is the per-bubble icon on any AI message, so the
+    // two must never share an accessible name (a screen reader would read
+    // both simply as "Replay AI's line" with no way to tell them apart).
+    speakingPlayMessage: "Play this message",
+    // The subtitle toggle's own label doubles as its current state, like a
+    // checkbox button — "Subtitles off" while off (tap to turn ON),
+    // "Subtitles on" while on (tap to turn OFF).
+    speakingSubtitlesOn: "Subtitles on",
+    speakingSubtitlesOff: "Subtitles off",
+    speakingSubtitleError: "Couldn't translate",
+    speakingSubtitleRetry: "Retry",
+    speakingPrivacyFooter: "This practice session is private and only used to improve your skills.",
+    speakingStateRecording: "AI is listening to you...",
+    speakingStateProcessing: "Engy is thinking...",
+    speakingStateSpeaking: "Engy is speaking...",
+    // A single turn failed server-side (Gemini Live) — retryable, the mic
+    // re-enables right after this.
+    speakingLiveTurnError: "That didn't go through. Tap the mic to try again.",
+    // The WHOLE Live connection ended (not just one turn) — this build is a
+    // Live MVP, not a resumable session (see docs/CLAUDE.md), so the mic is
+    // disabled for the rest of this conversation; "End session" still works.
+    speakingLiveSessionEnded: "This conversation has ended. Tap \"End session\" to see your summary, then start a new one.",
+    speakingYouLabel: "You",
+    speakingAiLabel: "Engy",
+    speakingTurnCountLabel: "Turns",
+    speakingSummaryTitle: "Conversation complete!",
+    speakingSummaryTurns: (count: number) => `You completed ${count} turn${count === 1 ? '' : 's'}.`,
     chooseDeck: "Choose a deck to practice",
     noPublishedDecks: "No published decks available yet.",
     startSession: "Start",
@@ -692,7 +784,6 @@ const en = {
     elapsedLabel: "Time",
     newlyLearnedLabel: "Newly started",
     newlyMasteredLabel: "Newly mastered",
-    reviewDueCta: "Review due words",
     flipCardHint: "Tap the card to flip it",
     flipCardVisibleHint: "Tap to see the meaning",
     playAudio: "Play pronunciation",
@@ -1673,10 +1764,7 @@ const vi: TranslationDict = {
   },
   practice: {
     title: "Luyện tập",
-    subtitle: "Rèn luyện kỹ năng với các buổi luyện tập tập trung.",
-    vocabularySection: "Luyện Từ vựng",
     listeningSection: "Luyện Nghe",
-    grammarSection: "Luyện Ngữ pháp",
     modeFlashcards: "Thẻ ghi nhớ",
     modeFlashcardsDesc: "Lật thẻ để ôn lại nghĩa của từ.",
     modeGuess: "Đoán từ",
@@ -1690,6 +1778,59 @@ const vi: TranslationDict = {
     modeListening: "Chép chính tả nghe hiểu",
     modeListeningDesc:
       "Luyện nghe với các đoạn hội thoại theo phong cách TOEIC.",
+    // Luyện Nói Với Đối Tác AI (Phase 1+2) — hội thoại giọng nói push-to-talk.
+    modeSpeaking: "Luyện Nói Với Đối Tác AI",
+    modeSpeakingDesc: "Luyện nói cùng đối tác hội thoại AI.",
+    modeListeningCardTitle: "Luyện nghe & chép chính tả (Shadowing)",
+    modeListeningTagline: "Nghe • Nhại lại • Chép chính tả",
+    modeListeningLessonCount: (count: number) => `${count} bài luyện`,
+    modeListeningCardCta: "Bắt đầu luyện nghe →",
+    modeSpeakingCardTitle: "Luyện nói phản xạ với AI Partner",
+    modeSpeakingTagline: "Hội thoại • Phản xạ • Phản hồi",
+    modeSpeakingChipLabel: "Hội thoại tự do",
+    modeSpeakingCardCta: "Bắt đầu luyện nói với AI →",
+    startCta: "Bắt đầu",
+    hubTipTitle: "Mẹo nhỏ",
+    hubTipBody: "Luyện cả hai chế độ mỗi ngày để nghe hiểu & nói lưu loát hơn.",
+    backToModeHub: "Quay lại chọn chế độ",
+    speakingNoScenarios: "Chưa có chủ đề luyện nói nào.",
+    speakingNoExercises: "Chủ đề này chưa có bài luyện nào.",
+    speakingBackToCatalog: "Quay lại danh sách chủ đề",
+    speakingBackToScenario: "Quay lại",
+    speakingContextSectionTitle: "Luyện theo bối cảnh",
+    speakingContextSectionDesc: "Chọn một tình huống thực tế để luyện nói theo ngữ cảnh cụ thể.",
+    speakingFreeTalkSectionTitle: "Nói chuyện tự do",
+    speakingFreeTalkSectionDesc: "Trò chuyện tự nhiên với AI về bất kỳ chủ đề nào bạn muốn.",
+    speakingFreeTalkCardTitle: "Trò chuyện tự do",
+    speakingFreeTalkBadge: "Không giới hạn chủ đề",
+    speakingFreeTalkCardDesc: "Tự do nói để cải thiện phản xạ và sự tự tin trong giao tiếp.",
+    speakingFreeTalkCta: "Bắt đầu trò chuyện",
+    speakingCatalogFooterHint:
+      "Bạn có thể chọn một tình huống cụ thể hoặc nói chuyện tự do để luyện phản xạ giao tiếp.",
+    speakingStartAction: "Bắt đầu",
+    speakingConnecting: "Đang kết nối...",
+    speakingCompleteAction: "Kết thúc buổi học",
+    speakingLeaveConfirm: "Rời khỏi lúc này sẽ hủy lượt nói hiện tại. Tiếp tục?",
+    speakingTapToTalk: "Nhấn để nói",
+    speakingTapToStop: "Nhấn để dừng và gửi",
+    speakingRecorderHint: "Hãy nói tự nhiên, AI sẽ lắng nghe và phản hồi.",
+    speakingReplayAi: "Phát lại câu AI",
+    speakingPlayMessage: "Nghe lại tin nhắn này",
+    speakingSubtitlesOn: "Đã bật phụ đề",
+    speakingSubtitlesOff: "Đã tắt phụ đề",
+    speakingSubtitleError: "Không dịch được",
+    speakingSubtitleRetry: "Thử lại",
+    speakingPrivacyFooter: "Buổi luyện tập được bảo mật và chỉ dùng để cải thiện kỹ năng của bạn.",
+    speakingStateRecording: "AI đang lắng nghe bạn nói...",
+    speakingStateProcessing: "Engy đang xử lý...",
+    speakingStateSpeaking: "Engy đang nói...",
+    speakingLiveTurnError: "Lượt nói này chưa gửi được. Nhấn micro để thử lại.",
+    speakingLiveSessionEnded: "Cuộc trò chuyện đã kết thúc. Nhấn \"Kết thúc buổi học\" để xem tổng kết, sau đó bắt đầu buổi mới.",
+    speakingYouLabel: "Bạn",
+    speakingAiLabel: "Engy",
+    speakingTurnCountLabel: "Số lượt nói",
+    speakingSummaryTitle: "Hoàn thành hội thoại!",
+    speakingSummaryTurns: (count: number) => `Bạn đã hoàn thành ${count} lượt nói.`,
     chooseDeck: "Chọn một bộ từ để luyện tập",
     noPublishedDecks: "Chưa có bộ từ nào được công khai.",
     startSession: "Bắt đầu",
@@ -1736,7 +1877,6 @@ const vi: TranslationDict = {
     elapsedLabel: "Thời gian",
     newlyLearnedLabel: "Mới bắt đầu học",
     newlyMasteredLabel: "Mới thành thạo",
-    reviewDueCta: "Ôn từ đến hạn",
     flipCardHint: "Chạm vào thẻ để lật",
     flipCardVisibleHint: "Nhấn để xem nghĩa",
     playAudio: "Phát âm",

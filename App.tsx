@@ -40,6 +40,9 @@ import ShadowingCatalogPage from './components/practice/listening/ShadowingCatal
 import ListeningContentPage from './components/practice/listening/ListeningContentPage';
 import DictationModePanel from './components/practice/listening/DictationModePanel';
 import ShadowingModePanel from './components/practice/listening/ShadowingModePanel';
+import SpeakingCatalogPage from './components/practice/speaking/SpeakingCatalogPage';
+import SpeakingScenarioPage from './components/practice/speaking/SpeakingScenarioPage';
+import SpeakingSessionPage from './components/practice/speaking/SpeakingSessionPage';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -218,6 +221,21 @@ const App: React.FC = () => {
             <Route path="dictation" element={<DictationModePanel />} />
             <Route path="shadowing" element={<ShadowingModePanel />} />
           </Route>
+          {/* Speaking Partner (Phase 1+2) — push-to-talk voice conversation.
+              Same nesting as /practice/listening: inside AssistantBoundary/
+              StudyTimeBoundary/GamificationBoundary, so it earns study time
+              like every other learning surface (no XP yet — deliberately
+              deferred, see the backend module's own header comment).
+              /practice/speaking/:scenarioId/:exerciseId is the session page;
+              unlike Listening's layout-route nesting, each level here is its
+              own full page rather than a shared player shell — there is no
+              persistent media element to preserve across a mode switch. */}
+          <Route path="/practice/speaking" element={<SpeakingCatalogPage />} />
+          <Route path="/practice/speaking/:scenarioId" element={<SpeakingScenarioPage />} />
+          <Route
+            path="/practice/speaking/:scenarioId/:exerciseId"
+            element={<SpeakingSessionPage />}
+          />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
           </Route>

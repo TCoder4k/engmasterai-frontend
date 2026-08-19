@@ -113,17 +113,94 @@ export class FakeMediaRecorder {
  * `sampleAmplitude` is the whole knob: 0 makes every sample exactly the 128
  * mid-point, which is what a muted track looks like to an analyser.
  */
+/**
+ * Enough of a ScriptProcessorNode for useSpeakingLiveCapture's PCM16
+ * streaming graph — jsdom has neither AudioWorklet nor
+ * ScriptProcessorNode, so this is the only way `onaudioprocess` can ever
+ * fire in a test. `emitAudioProcess` is the test-driven equivalent of the
+ * browser calling it on a real audio-buffer boundary.
+ */
+export class FakeScriptProcessorNode {
+  onaudioprocess: ((event: { inputBuffer: { getChannelData: (channel: number) => Float32Array } }) => void) | null =
+    null;
+  connect(): void {}
+  disconnect(): void {}
+  emitAudioProcess(samples: Float32Array): void {
+    this.onaudioprocess?.({ inputBuffer: { getChannelData: () => samples } });
+  }
+}
+
+/** Enough of a GainNode for the silent monitoring tap useSpeakingLiveCapture routes its processor through. */
+export class FakeGainNode {
+  gain = { value: 1 };
+  connect(): void {}
+  disconnect(): void {}
+}
+
+/**
+ * Enough of an AudioBufferSourceNode for useSpeakingLivePlayback's gapless
+ * scheduling — `start()` records that it was asked to play rather than
+ * actually playing anything (jsdom has no audio output), and `onended`
+ * fires only when a test explicitly calls `triggerEnded()`, the same
+ * test-controlled-completion pattern the old TTS-based test used for
+ * observing AI_SPEAKING via a manual `endSpeech()`.
+ */
+export class FakeAudioBufferSourceNode {
+  buffer: { duration: number } | null = null;
+  onended: (() => void) | null = null;
+  started = false;
+  startedAt: number | undefined;
+  connect(): void {}
+  start(when?: number): void {
+    this.started = true;
+    this.startedAt = when;
+  }
+  triggerEnded(): void {
+    this.onended?.();
+  }
+}
+
+/** A fake `AudioBuffer` — just enough shape for useSpeakingLivePlayback to read `.duration` and write into `.getChannelData()`. */
+export class FakeAudioBuffer {
+  private readonly channelData: Float32Array;
+  constructor(
+    public readonly numberOfChannels: number,
+    public readonly length: number,
+    public readonly sampleRate: number,
+  ) {
+    this.channelData = new Float32Array(length);
+  }
+  get duration(): number {
+    return this.length / this.sampleRate;
+  }
+  getChannelData(): Float32Array {
+    return this.channelData;
+  }
+}
+
 export class FakeAudioContext {
   static instances: FakeAudioContext[] = [];
   /** Distance from the 128 mid-point the fake analyser reports. 0 = digital silence. */
   static sampleAmplitude = 40;
   /** Set to make construction throw — WebAudio present but refusing the stream. */
   static failOnConstruct = false;
+  /**
+   * Set to reproduce a browser that silently ignores the requested
+   * `{ sampleRate }` constructor option and keeps its own device rate
+   * instead (real Web Audio behaviour some engines exhibit — see
+   * useSpeakingLiveCapture's own resampleTo16k comment for why this
+   * matters: mislabeling that mismatched audio as 16kHz to Gemini is what
+   * produced unintelligible, hallucinated transcripts in production).
+   * `null` (default) means the request is honoured, matching the common
+   * case every other test in this suite relies on.
+   */
+  static forceSampleRate: number | null = null;
 
   static reset(): void {
     FakeAudioContext.instances = [];
     FakeAudioContext.sampleAmplitude = 40;
     FakeAudioContext.failOnConstruct = false;
+    FakeAudioContext.forceSampleRate = null;
   }
 
   static latest(): FakeAudioContext {
@@ -136,14 +213,26 @@ export class FakeAudioContext {
   sourceDisconnected = false;
   /** Set to 'suspended' to reproduce an autoplay-blocked context, which measures silence. */
   state: 'running' | 'suspended' | 'closed' = 'running';
+  /** Recorded so a test can assert useSpeakingLiveCapture asked for 16kHz specifically — distinct from the ACTUAL `sampleRate` below, which is what a real AudioContext reports back and may differ. */
+  readonly requestedSampleRate: number | undefined;
+  /** The context's real, effective rate — what `AudioContext.sampleRate` actually returns. Honours the request unless `forceSampleRate` says otherwise. */
+  readonly sampleRate: number;
+  /** The most recently created processor — useSpeakingLiveCapture creates exactly one per start(). */
+  processorNode: FakeScriptProcessorNode | null = null;
+  /** Every buffer-source node created, in order — useSpeakingLivePlayback creates one per audio chunk (plus one per replay()). */
+  bufferSources: FakeAudioBufferSourceNode[] = [];
+  /** Static per Web Audio's own spec, but never actually advances here — gapless scheduling only needs it to exist. */
+  currentTime = 0;
 
   resume(): Promise<void> {
     if (this.state === 'suspended') this.state = 'running';
     return Promise.resolve();
   }
 
-  constructor() {
+  constructor(options?: { sampleRate?: number }) {
     if (FakeAudioContext.failOnConstruct) throw new Error('audio context unavailable');
+    this.requestedSampleRate = options?.sampleRate;
+    this.sampleRate = FakeAudioContext.forceSampleRate ?? options?.sampleRate ?? 44100;
     FakeAudioContext.instances.push(this);
   }
 
@@ -171,6 +260,30 @@ export class FakeAudioContext {
       },
       disconnect: () => undefined,
     };
+  }
+
+  createScriptProcessor(): FakeScriptProcessorNode {
+    const processor = new FakeScriptProcessorNode();
+    this.processorNode = processor;
+    return processor;
+  }
+
+  createGain(): FakeGainNode {
+    return new FakeGainNode();
+  }
+
+  createBuffer(numberOfChannels: number, length: number, sampleRate: number): FakeAudioBuffer {
+    return new FakeAudioBuffer(numberOfChannels, length, sampleRate);
+  }
+
+  createBufferSource(): FakeAudioBufferSourceNode {
+    const source = new FakeAudioBufferSourceNode();
+    this.bufferSources.push(source);
+    return source;
+  }
+
+  get destination(): { connect: () => void } {
+    return { connect: () => undefined };
   }
 
   close(): Promise<void> {

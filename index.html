@@ -287,6 +287,31 @@
             transparent 100%
           );
         }
+
+        /* Speaking Partner mic control: a continuous, subtle "breathing"
+           shadow while idle, and a smoother expanding ring while actively
+           recording (replaces Tailwind's flatter `animate-ping` here).
+           Purely decorative in both cases — recording correctness never
+           depends on either one running, same principle as the sound
+           effects' own playSafely() in SpeakingRecorderControl.tsx. */
+        @keyframes speaking-mic-breathe {
+          0%, 100% {
+            box-shadow: 0 12px 35px rgba(124, 58, 237, 0.15), 0 0 0 0 rgba(139, 92, 246, 0.12);
+          }
+          50% {
+            box-shadow: 0 12px 40px rgba(124, 58, 237, 0.22), 0 0 0 12px rgba(139, 92, 246, 0);
+          }
+        }
+        .speaking-mic-breathe {
+          animation: speaking-mic-breathe 1.8s ease-in-out infinite;
+        }
+        @keyframes speaking-mic-ring {
+          0% { transform: scale(0.92); opacity: 0.8; }
+          100% { transform: scale(1.35); opacity: 0; }
+        }
+        .speaking-mic-ring {
+          animation: speaking-mic-ring 1.4s ease-out infinite;
+        }
       }
       @media (prefers-reduced-motion: reduce) {
         .practice-burst-particle {

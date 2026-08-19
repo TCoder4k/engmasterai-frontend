@@ -29,17 +29,21 @@ const StudentDesktopSidebar: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
 
-  // NavLink's own `to`-based matching already covers /practice/listening and
-  // its :contentId/... sub-routes; the audio-practice entry ALSO needs to
-  // read as current on /practice/shadowing, which does not share that
-  // prefix. NavLink's `aria-current` is derived entirely from its own
-  // isActive and cannot be overridden by a passed prop (react-router computes
-  // it internally: `isActive ? ariaCurrentProp : undefined`), so this one
-  // entry is rendered as a plain `Link` below with the combined boolean
+  // /practice is now this item's own target (the shared Nghe-nói hub), so
+  // NavLink's own `to`-based matching would need to cover /practice AND every
+  // mode nested under it (listening, shadowing, speaking) while EXCLUDING
+  // /practice/vocab and /practice/review, which live under the same prefix
+  // but belong to a different section. That's more than a single `to` match
+  // can express, and NavLink's `aria-current` is derived entirely from its
+  // own isActive and cannot be overridden by a passed prop (react-router
+  // computes it internally: `isActive ? ariaCurrentProp : undefined`), so
+  // this entry is rendered as a plain `Link` below with the combined boolean
   // computed by hand — see StudentBottomNavigation's matching comment.
   const isAudioPracticeActive =
+    location.pathname === '/practice' ||
     location.pathname.startsWith('/practice/listening') ||
-    location.pathname.startsWith('/practice/shadowing');
+    location.pathname.startsWith('/practice/shadowing') ||
+    location.pathname.startsWith('/practice/speaking');
 
   return (
     <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col h-screen sticky top-0 overflow-hidden flex-shrink-0">
@@ -72,25 +76,30 @@ const StudentDesktopSidebar: React.FC = () => {
           <span>{t.nav.grammar}</span>
         </NavLink>
 
-        {/* Sprint 03D: the generic "Practice" nav item is replaced by a
-            dedicated Listening entry — Vocabulary practice is reached via
-            the Vocabulary section below instead (see VocabLibraryPage ->
-            LibraryDetailPage's deck list). /practice (the hub) remains an
-            internal compatibility route, no longer primary navigation.
+        {/* "Nghe - nói" opens /practice — the shared Listening/Shadowing +
+            Speaking Partner mode-selection hub. Realigned from a same-day
+            Sprint 13 follow-up that had instead sent this link straight to
+            /practice/listening and given Speaking Partner its own separate
+            NavLink below; the product owner's own reference design puts both
+            modes behind ONE nav item, chosen at /practice, not two competing
+            top-level entries. /practice is primary navigation again — no
+            longer the compatibility-only route it was under Sprint 03D.
+
+            Vocabulary practice is still reached via the Vocabulary section
+            below instead (see VocabLibraryPage -> LibraryDetailPage's deck
+            list) — /practice also carries a Vocabulary/Review shortcut
+            section, but that isn't this item's job.
 
             Sprint 11 — ONE entry for both Dictation and Shadowing, not two.
             An earlier revision gave each its own NavLink here ("Chủ đề" for
             Dictation, a separate "Shadowing" item); once
             ListeningCatalogPage grew an in-page Dictation<->Shadowing toggle
             in its hero, a second nav item pointing at the same shared
-            catalog was redundant, and merging them is what keeps this
-            sidebar short (no scrollbar) while ALSO being how a phone reaches
-            Shadowing without a 6th bottom-nav slot: the toggle does that
-            job, on both surfaces, from this one door in. `/practice/shadowing`
-            still exists and still resolves — the toggle navigates there —
-            it is simply no longer a separate nav item. */}
+            catalog was redundant. `/practice/shadowing` still exists and
+            still resolves — the toggle navigates there — it is simply
+            reached one step further in, not as its own top-level item. */}
         <Link
-          to="/practice/listening"
+          to="/practice"
           aria-current={isAudioPracticeActive ? 'page' : undefined}
           className={navLinkClass(isAudioPracticeActive)}
         >
