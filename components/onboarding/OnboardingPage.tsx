@@ -158,10 +158,26 @@ const OnboardingPage: React.FC<OnboardingPageProps> = ({ retake = false }) => {
 
   const handleBackToGoal = () => setStep('goal');
 
-  const handleBackToMethod = () => setStep('method');
-
-  const handleTestCompleted = (testResult: PlacementResult) => {
+  // The placement test itself has no exit affordance once started (no `onBack`
+  // prop on PlacementTestStep) — a student must finish it or let the timer
+  // expire. On a timeout auto-submit, skip the Result screen entirely and go
+  // straight to the Roadmap, same "prepare then show" pattern as
+  // handleBeginnerStarted above. A manual on-time submit still shows Result.
+  const handleTestCompleted = async (
+    testResult: PlacementResult,
+    { timedOut }: { timedOut: boolean },
+  ) => {
     markOnboarded();
+    if (timedOut) {
+      setStep('preparingRoadmap');
+      try {
+        await requestPlacementRoadmapPlan();
+      } catch {
+        // Swallowed deliberately — see handleBeginnerStarted's comment above.
+      }
+      setStep('roadmap');
+      return;
+    }
     setResult(testResult);
     setStep('result');
   };
@@ -190,7 +206,7 @@ const OnboardingPage: React.FC<OnboardingPageProps> = ({ retake = false }) => {
         )}
 
         {step === 'test' && attempt && (
-          <PlacementTestStep attempt={attempt} onCompleted={handleTestCompleted} onBack={handleBackToMethod} />
+          <PlacementTestStep attempt={attempt} onCompleted={handleTestCompleted} />
         )}
 
         {step === 'preparingRoadmap' && (
