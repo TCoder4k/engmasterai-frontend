@@ -137,10 +137,18 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
         </p>
       ) : (
         <>
+          {/* max-w-[400px] mirrors GIS_MAX_WIDTH above — the width this
+              component asks GIS to render at. overflow-hidden is the actual
+              fix: GIS's "Personalized" button (shown when the browser
+              already has an active Google session — avatar + name instead
+              of the generic label) has been reported to size itself off its
+              own content rather than strictly honoring the requested
+              `width`, which without a hard container cap can stretch this
+              box and push the surrounding form layout. */}
           <div
             ref={containerRef}
             data-testid="google-signin-container"
-            className="w-full flex justify-center min-h-[52px]"
+            className="w-full max-w-[400px] mx-auto flex justify-center items-center min-h-[52px] overflow-hidden"
           />
           {/* Phase 11.1: GIS exposes no official callback for a blocked
               popup on the button flow (only PromptMomentNotification, which
