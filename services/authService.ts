@@ -2,6 +2,7 @@ import { clearRecentActivity } from './recentActivity';
 import { clearAllQuizDrafts } from './quizDraft';
 import { clearPlacementDraft } from './placementDraft';
 import { fetchWithTimeout } from './fetchTimeout';
+import { disableGoogleAutoSelect } from './googleAuth';
 // Deliberate circular import (refreshCoordinator.ts imports authService for
 // authService.refresh(); authService.ts imports refreshCoordinator here for
 // cancelAll()). Safe because neither module touches the other's export at
@@ -377,6 +378,10 @@ export const authService = {
 
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
+    // See disableGoogleAutoSelect's doc comment — without this, GIS keeps
+    // showing the previous account's Personalized button state on this
+    // origin even though our own session is now gone.
+    disableGoogleAutoSelect();
 
     // Clear this student's local Continue Learning / video-resume state so
     // a shared device never surfaces it under the next logged-in account.
