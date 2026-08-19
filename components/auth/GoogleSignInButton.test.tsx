@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
-import { render, cleanup, screen, act } from '@testing-library/react';
+import { render, cleanup, screen, act, fireEvent } from '@testing-library/react';
 import type { GoogleSignInButton as GoogleSignInButtonComponent } from './GoogleSignInButton';
 import type * as GoogleAuthModule from '../../services/googleAuth';
 
@@ -142,11 +142,25 @@ describe('GoogleSignInButton', () => {
     expect(googleAuth.renderGoogleButton).toHaveBeenCalledTimes(2);
   });
 
-  it('always shows the popup-blocked tip (Phase 11.1 — no official GIS hook exists to detect it conditionally)', async () => {
+  it('shows a minimal help toggle by default, not the popup-blocked guidance (Phase 11.1 — no official GIS hook exists to detect failure, so it is not auto-shown, and not permanently visible either since most users never hit it)', async () => {
     render(<GoogleSignInButton text="continue_with" onCredential={() => {}} />);
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
+
+    expect(screen.getByText('Cần trợ giúp đăng nhập?')).toBeInTheDocument();
+    expect(
+      screen.queryByTestId('google-signin-popup-tip'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('reveals the popup-blocked guidance only after the help toggle is clicked', async () => {
+    render(<GoogleSignInButton text="continue_with" onCredential={() => {}} />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    fireEvent.click(screen.getByText('Cần trợ giúp đăng nhập?'));
 
     expect(screen.getByTestId('google-signin-popup-tip')).toBeInTheDocument();
   });
