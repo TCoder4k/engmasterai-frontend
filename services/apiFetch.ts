@@ -25,13 +25,28 @@ const buildHeaders = (init?: HeadersInit): Headers => {
   return headers;
 };
 
-export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
+// `timeoutMs` is optional and additive — every existing call site keeps the
+// default (fetchWithTimeout's own 15s) since `options` defaults to `{}`.
+// Added for Speaking Partner's turn-submission call, which can legitimately
+// take up to ~40s of backend processing (STT then an AI reply, sequentially)
+// plus upload time for a large audio blob — the shared 15s default would
+// abort most real (not just slow) turns while the backend keeps working and
+// still pays for the Gemini calls. See services/speakingService.ts.
+export async function apiFetch(
+  input: string,
+  init: RequestInit = {},
+  options: { timeoutMs?: number } = {},
+): Promise<Response> {
   const send = (): Promise<Response> =>
-    fetchWithTimeout(input, {
-      ...init,
-      headers: buildHeaders(init.headers),
-      credentials: 'include',
-    });
+    fetchWithTimeout(
+      input,
+      {
+        ...init,
+        headers: buildHeaders(init.headers),
+        credentials: 'include',
+      },
+      options.timeoutMs,
+    );
 
   const response = await send();
   if (response.status !== 401) return response;

@@ -7,6 +7,8 @@ import {
   playIncorrect,
   playTimeout,
   playComplete,
+  playRecordStart,
+  playRecordStop,
 } from './feedbackSounds';
 
 // jsdom has no AudioContext at all — which is exactly the environment these
@@ -25,6 +27,8 @@ describe('feedbackSounds', () => {
       playIncorrect();
       playTimeout();
       playComplete();
+      playRecordStart();
+      playRecordStop();
     }).not.toThrow();
   });
 

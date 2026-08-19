@@ -10,13 +10,27 @@ const StudentBottomNavigation: React.FC = () => {
   const { t } = useTranslation();
   const location = useLocation();
 
-  // Sprint 11 — ONE slot for both Dictation and Shadowing (was two nav
-  // items, one per mode; see StudentDesktopSidebar's matching comment for
-  // why they were merged). NavLink's own `to`-based matching already covers
-  // `/practice/listening` and its `:contentId/...` sub-routes; the ONE gap is
-  // `/practice/shadowing`, which does not share that prefix, so it is
-  // checked explicitly and OR'd into the item's active state below.
-  const isAudioPracticeActive = location.pathname.startsWith('/practice/shadowing');
+  // "Nghe - nói" opens /practice — the shared Listening/Shadowing + Speaking
+  // Partner mode-selection hub. Realigned from a same-day Sprint 13
+  // follow-up that had instead sent this slot straight to /practice/listening
+  // and added a SIXTH, separate "Speaking" slot ("no Speaking/Writing item"
+  // this file's own history had deliberately avoided) — the product owner's
+  // reference design puts both modes behind ONE nav item, chosen at
+  // /practice, so that sixth slot is gone and this file is back to five.
+  //
+  // Because the target is now /practice itself, NavLink's own `to`-based
+  // matching would need to cover /practice AND every mode nested under it
+  // (listening, shadowing, speaking) while EXCLUDING /practice/vocab and
+  // /practice/review, which share the prefix but belong to a different
+  // section — more than a single `to` match can express, and NavLink's
+  // `aria-current` can't be overridden by a passed prop (confirmed against
+  // react-router's own NavLink source). So this stays a plain `Link` with the
+  // combined boolean computed by hand, same as StudentDesktopSidebar.
+  const isAudioPracticeActive =
+    location.pathname === '/practice' ||
+    location.pathname.startsWith('/practice/listening') ||
+    location.pathname.startsWith('/practice/shadowing') ||
+    location.pathname.startsWith('/practice/speaking');
 
   const items: {
     label: string;
@@ -27,13 +41,13 @@ const StudentBottomNavigation: React.FC = () => {
   }[] = [
     { label: t.nav.home, icon: <Home size={21} />, to: '/home', end: true },
     // Sprint 05 — matches the desktop sidebar: the Courses slot is now the
-    // Grammar module. Five slots, unchanged; no Speaking/Writing item.
+    // Grammar module.
     { label: t.nav.grammar, icon: <BookOpen size={21} />, to: '/grammar' },
     { label: t.nav.vocabulary, icon: <BookMarked size={21} />, to: '/vocab' },
     {
       label: t.nav.audioPractice,
       icon: <Headphones size={21} />,
-      to: '/practice/listening',
+      to: '/practice',
       forceActive: isAudioPracticeActive,
     },
     { label: t.nav.profile, icon: <UserIcon size={21} />, to: '/profile' },
@@ -46,16 +60,20 @@ const StudentBottomNavigation: React.FC = () => {
     >
       <div className="flex">
         {items.map((item) => {
-          // The audio-practice slot needs TWO active path prefixes
-          // (/practice/listening AND /practice/shadowing), which NavLink's
-          // own `to`-based matching cannot express — its `aria-current` is
-          // computed entirely from that single-path match and cannot be
-          // overridden by a passed prop (confirmed against react-router's own
-          // NavLink source). A plain `Link` with the combined boolean
-          // computed by hand is what makes `aria-current` correct on
-          // /practice/shadowing too, not just on /practice/listening.
+          // The audio-practice slot's `to` is the parent hub (/practice), and
+          // its active state must cover /practice plus every mode nested
+          // under it (listening/shadowing/speaking) while EXCLUDING
+          // /practice/vocab and /practice/review, which share the prefix but
+          // are a different section — a plain `startsWith(item.to)` fallback
+          // would wrongly light this item up on those routes too, so
+          // `forceActive` (computed above) is trusted as the COMPLETE answer
+          // here, not OR'd with a prefix match. NavLink's own `to`-based
+          // matching can't express this distinction either way, and its
+          // `aria-current` can't be overridden by a passed prop (confirmed
+          // against react-router's own NavLink source) — hence the plain
+          // `Link` with the hand-computed boolean.
           if (item.to && item.forceActive !== undefined) {
-            const combinedActive = item.forceActive || location.pathname.startsWith(item.to);
+            const combinedActive = item.forceActive;
             return (
               <Link
                 key={item.label}

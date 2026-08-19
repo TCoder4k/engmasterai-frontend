@@ -7,12 +7,15 @@ import { LanguageProvider } from '../../i18n/LanguageProvider';
 import StudentDesktopSidebar from './StudentDesktopSidebar';
 import StudentBottomNavigation from './StudentBottomNavigation';
 
-// Sprint 03D: the generic "Practice" nav item was replaced by a dedicated
-// Listening entry pointing directly at /practice/listening. These tests
-// guard the navigation-restructure requirements: no "Practice" label left
-// in primary nav, correct destination, and NavLink's own aria-current
-// reflects the active route (used here instead of asserting exact CSS
-// class strings, which are an implementation detail).
+// "Nghe - nói" (Audio Practice) now opens /practice, the shared
+// Listening/Shadowing + Speaking Partner mode-selection hub — realigned from
+// an earlier state where this link went straight to /practice/listening and
+// Speaking Partner had its own separate nav item. These tests guard the
+// navigation-restructure requirements: no "Practice" label left bare in
+// primary nav, correct destination, no duplicate Speaking entry, and
+// NavLink's own aria-current (or the hand-computed equivalent) reflects the
+// active route (used here instead of asserting exact CSS class strings,
+// which are an implementation detail).
 const renderAt = (ui: ReactElement, initialPath: string) =>
   render(
     <LanguageProvider>
@@ -24,8 +27,11 @@ afterEach(() => cleanup());
 
 // Sprint 05: "My Courses" (desktop) / "Courses" (mobile) — both pointing at
 // the generic /courses catalog — became a single Grammar module entry at
-// /grammar. Speaking and Writing are explicitly deferred to a later roadmap
-// and must not appear in either navigation.
+// /grammar. Writing is still deferred and must not appear in either
+// navigation. Speaking Partner shipped in Sprint 13 but does NOT get its own
+// nav item — it's reached through "Nghe - nói" -> /practice instead (see
+// "StudentDesktopSidebar navigation" / "StudentBottomNavigation" below) —
+// so it belongs in this same "must not appear as a separate item" check.
 describe('Grammar module navigation (Sprint 05)', () => {
   it('the desktop sidebar shows Grammar, not My Courses, linking to /grammar', () => {
     renderAt(<StudentDesktopSidebar />, '/home');
@@ -62,47 +68,58 @@ describe('Grammar module navigation (Sprint 05)', () => {
   it.each([
     ['desktop sidebar', <StudentDesktopSidebar key="d" />],
     ['bottom navigation', <StudentBottomNavigation key="m" />],
-  ])('shows no Speaking or Writing item in the %s', (_label, ui) => {
+  ])('shows no Writing item and no separate Speaking item in the %s', (_label, ui) => {
     renderAt(ui, '/home');
 
-    expect(screen.queryByText(/speaking/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/writing/i)).not.toBeInTheDocument();
+    // "Speaking" must not appear as a link name of its own — it's reached
+    // through the "Audio Practice"/"Nghe - nói" item instead, not a
+    // duplicate top-level entry.
+    expect(screen.queryByRole('link', { name: /^speaking$/i })).not.toBeInTheDocument();
   });
 });
 
 describe('StudentDesktopSidebar navigation', () => {
-  // Sprint 11 — ONE entry, "Audio Practice", for both Dictation and
-  // Shadowing (was two separate NavLinks: "Topics" for Dictation, a second
-  // "Shadowing" item). The catalog it points at gained an in-page
-  // Dictation<->Shadowing toggle, so a second nav item pointing at the same
-  // shared catalog became redundant, and merging them is what keeps the
-  // sidebar short. See StudentDesktopSidebar's own comment on this link.
-  it('shows an "Audio Practice" item, not "Practice", "Listening" or a separate "Shadowing" item, linking to /practice/listening', () => {
+  // "Audio Practice" ("Nghe - nói") now opens /practice, the shared
+  // Listening/Shadowing + Speaking Partner hub — not /practice/listening
+  // directly, and not a separate "Speaking"/"Shadowing" item. See
+  // StudentDesktopSidebar's own comment on this link.
+  it('shows an "Audio Practice" item, not "Practice", "Listening" or a separate "Shadowing" item, linking to /practice', () => {
     renderAt(<StudentDesktopSidebar />, '/home');
 
     expect(screen.queryByText('Practice')).not.toBeInTheDocument();
     expect(screen.queryByText('Listening')).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^shadowing$/i })).not.toBeInTheDocument();
     const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
-    expect(audioPracticeLink).toHaveAttribute('href', '/practice/listening');
+    expect(audioPracticeLink).toHaveAttribute('href', '/practice');
   });
 
-  it('marks the Audio Practice link active when the current route is /practice/listening', () => {
-    renderAt(<StudentDesktopSidebar />, '/practice/listening');
+  it('marks the Audio Practice link active when the current route is /practice', () => {
+    renderAt(<StudentDesktopSidebar />, '/practice');
 
     const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
     expect(audioPracticeLink).toHaveAttribute('aria-current', 'page');
   });
 
-  // The merged entry's whole point: it must ALSO read as current on the
-  // other mode's route, which does not share /practice/listening's prefix
-  // and which NavLink's own matching cannot express (see the component's
-  // comment on why this link is a plain `Link`, not a `NavLink`).
-  it('also marks the Audio Practice link active when the current route is /practice/shadowing', () => {
-    renderAt(<StudentDesktopSidebar />, '/practice/shadowing');
+  it.each([
+    ['/practice/listening'],
+    ['/practice/shadowing'],
+    ['/practice/speaking'],
+  ])('also marks the Audio Practice link active when the current route is %s', (path) => {
+    renderAt(<StudentDesktopSidebar />, path);
 
     const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
     expect(audioPracticeLink).toHaveAttribute('aria-current', 'page');
+  });
+
+  it.each([
+    ['/practice/vocab/deck-1'],
+    ['/practice/review'],
+  ])('does NOT mark the Audio Practice link active on %s, a different /practice section', (path) => {
+    renderAt(<StudentDesktopSidebar />, path);
+
+    const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
+    expect(audioPracticeLink).not.toHaveAttribute('aria-current');
   });
 
   it('does not mark the Audio Practice link active on an unrelated route', () => {
@@ -142,31 +159,44 @@ describe('EngMasterAI brand navigation (Sprint 03E)', () => {
 });
 
 describe('StudentBottomNavigation', () => {
-  // Sprint 11 — see StudentDesktopSidebar navigation's matching comment: the
-  // one bottom-nav slot into the catalog is "Audio Practice" now, not
-  // "Listening" and not two separate slots, because the catalog itself
-  // picks Dictation vs Shadowing via its own in-page toggle — the mobile
-  // answer to reaching Shadowing without a 6th slot here.
-  it('shows an "Audio Practice" item, not "Practice" or "Listening", linking to /practice/listening', () => {
+  // "Audio Practice" ("Nghe - nói") opens /practice, the shared
+  // Listening/Shadowing + Speaking Partner hub — five slots total, no
+  // separate "Speaking" sixth slot (see StudentBottomNavigation's own
+  // comment on this item).
+  it('shows an "Audio Practice" item, not "Practice" or "Listening", linking to /practice', () => {
     renderAt(<StudentBottomNavigation />, '/home');
 
     expect(screen.queryByText('Practice')).not.toBeInTheDocument();
     expect(screen.queryByText('Listening')).not.toBeInTheDocument();
     const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
-    expect(audioPracticeLink).toHaveAttribute('href', '/practice/listening');
+    expect(audioPracticeLink).toHaveAttribute('href', '/practice');
   });
 
-  it('marks the Audio Practice item active when the current route is /practice/listening', () => {
-    renderAt(<StudentBottomNavigation />, '/practice/listening');
+  it('marks the Audio Practice item active when the current route is /practice', () => {
+    renderAt(<StudentBottomNavigation />, '/practice');
 
     const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
     expect(audioPracticeLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('also marks the Audio Practice item active when the current route is /practice/shadowing', () => {
-    renderAt(<StudentBottomNavigation />, '/practice/shadowing');
+  it.each([
+    ['/practice/listening'],
+    ['/practice/shadowing'],
+    ['/practice/speaking'],
+  ])('also marks the Audio Practice item active when the current route is %s', (path) => {
+    renderAt(<StudentBottomNavigation />, path);
 
     const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
     expect(audioPracticeLink).toHaveAttribute('aria-current', 'page');
+  });
+
+  it.each([
+    ['/practice/vocab/deck-1'],
+    ['/practice/review'],
+  ])('does NOT mark the Audio Practice item active on %s, a different /practice section', (path) => {
+    renderAt(<StudentBottomNavigation />, path);
+
+    const audioPracticeLink = screen.getByRole('link', { name: /audio practice/i });
+    expect(audioPracticeLink).not.toHaveAttribute('aria-current');
   });
 });

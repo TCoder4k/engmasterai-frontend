@@ -18,6 +18,10 @@ import React, { useEffect, useRef } from 'react';
 // aria-hidden, still: this is a picture of a signal, and a screen-reader user
 // gets the same fact in words from RecordingStatusIndicator's live region and
 // from the silence warning beneath it.
+//
+// Used by Shadowing and MicrophonePreflight. Speaking Partner has its own
+// SpeakingVoiceWave (two wings flanking the mic, not one box above it) — see
+// that file's header for why this one wasn't just given a variant prop.
 
 interface RecordingWaveformProps {
   active: boolean;
