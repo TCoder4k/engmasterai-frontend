@@ -133,11 +133,25 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           Đăng nhập Google hiện không khả dụng. Vui lòng dùng email/mật khẩu.
         </p>
       ) : (
-        <div
-          ref={containerRef}
-          data-testid="google-signin-container"
-          className="w-full flex justify-center min-h-[52px]"
-        />
+        <>
+          <div
+            ref={containerRef}
+            data-testid="google-signin-container"
+            className="w-full flex justify-center min-h-[52px]"
+          />
+          {/* Phase 11.1: GIS exposes no official callback for a blocked
+              popup on the button flow (only PromptMomentNotification, which
+              covers One Tap prompt() only) — there is no reliable signal to
+              detect this and show the tip conditionally, so it is shown
+              unconditionally instead. */}
+          <p
+            data-testid="google-signin-popup-tip"
+            className="text-center text-slate-400 text-xs mt-2"
+          >
+            Nút không phản hồi? Trình duyệt có thể đang chặn cửa sổ đăng nhập
+            Google — hãy cho phép pop-up cho trang này rồi thử lại.
+          </p>
+        </>
       )}
     </>
   );
