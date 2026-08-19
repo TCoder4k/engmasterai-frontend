@@ -38,6 +38,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
   onCredentialRef.current = onCredential;
 
   const [unavailable, setUnavailable] = useState(false);
+  // Phase 11.1: a manual, on-demand disclosure — see the comment above the
+  // toggle button below for why this isn't auto-shown on popup failure.
+  const [helpOpen, setHelpOpen] = useState(false);
   // The width GIS was last asked to render at. renderGoogleButton() injects
   // an iframe that self-resizes ASYNCHRONOUSLY once Google's server responds
   // (its HEIGHT, driven by shape/size/text — never something this component
@@ -141,16 +144,32 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
           />
           {/* Phase 11.1: GIS exposes no official callback for a blocked
               popup on the button flow (only PromptMomentNotification, which
-              covers One Tap prompt() only) — there is no reliable signal to
-              detect this and show the tip conditionally, so it is shown
-              unconditionally instead. */}
-          <p
-            data-testid="google-signin-popup-tip"
-            className="text-center text-slate-400 text-xs mt-2"
-          >
-            Nút không phản hồi? Trình duyệt có thể đang chặn cửa sổ đăng nhập
-            Google — hãy cho phép pop-up cho trang này rồi thử lại.
-          </p>
+              covers One Tap prompt() only), so there's no reliable signal to
+              auto-show this only on failure — a timeout-based guess was
+              considered and rejected (false positives for anyone whose
+              popup just opens a little slowly). A permanently-visible
+              paragraph was also rejected: most users never hit this, so it
+              shouldn't occupy space by default. This toggle is the
+              compromise — always present but minimal, expands on demand. */}
+          <div className="text-center mt-2">
+            <button
+              type="button"
+              onClick={() => setHelpOpen((open) => !open)}
+              aria-expanded={helpOpen}
+              className="text-slate-400 text-xs underline underline-offset-2 hover:text-slate-600"
+            >
+              Cần trợ giúp đăng nhập?
+            </button>
+            {helpOpen && (
+              <p
+                data-testid="google-signin-popup-tip"
+                className="text-slate-400 text-xs mt-1"
+              >
+                Trình duyệt có thể đang chặn cửa sổ đăng nhập Google — hãy
+                cho phép pop-up cho trang này rồi thử lại.
+              </p>
+            )}
+          </div>
         </>
       )}
     </>
