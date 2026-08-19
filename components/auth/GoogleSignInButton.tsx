@@ -173,8 +173,9 @@ export const GoogleSignInButton: React.FC<GoogleSignInButtonProps> = ({
                 data-testid="google-signin-popup-tip"
                 className="text-slate-400 text-xs mt-1"
               >
-                Trình duyệt có thể đang chặn cửa sổ đăng nhập Google — hãy
-                cho phép pop-up cho trang này rồi thử lại.
+                Trình duyệt hoặc tiện ích chặn quảng cáo (AdBlock) có thể
+                đang chặn cửa sổ Google — hãy cho phép pop-up cho trang này
+                rồi thử lại.
               </p>
             )}
           </div>
