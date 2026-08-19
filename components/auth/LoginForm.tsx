@@ -184,8 +184,14 @@ export const LoginForm: React.FC = () => {
   // (stale/empty) email+password on every link-confirmation attempt. This
   // branch removes the possibility structurally rather than patching around it.
   if (linkEmail) {
+    // max-w-[400px], not max-w-md (448px) — matches Google's own hard cap
+    // on the Sign-In button's width ("The maximum width is 400 pixels",
+    // per the official GIS reference). At max-w-md the "Đăng Nhập" submit
+    // button (w-full) is visibly wider than the Google button beside it;
+    // capping the whole card keeps every element — inputs, role selector,
+    // both buttons — the same width.
     return (
-      <div className="w-full max-w-md p-2">
+      <div className="w-full max-w-[400px] p-2">
         <Logo />
         <form onSubmit={handleConfirmLink} className="space-y-6">
           <div className="p-5 bg-blue-50/50 border-2 border-blue-100 rounded-2xl space-y-4">
@@ -229,7 +235,7 @@ export const LoginForm: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-md p-2">
+    <div className="w-full max-w-[400px] p-2">
       {/* Logo Section */}
       <Logo />
 

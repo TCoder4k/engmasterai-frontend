@@ -180,8 +180,11 @@ export const RegisterForm: React.FC = () => {
   // onSubmit, firing an unrelated authService.register() call on every
   // link-confirmation attempt).
   if (linkEmail) {
+    // max-w-[400px], not max-w-md — see LoginForm.tsx's identical wrapper
+    // for why: matches Google's hard 400px cap on the Sign-In button's
+    // width so every element in the card lines up with it.
     return (
-      <div className="w-full max-w-md p-2">
+      <div className="w-full max-w-[400px] p-2">
         <Logo />
         <form onSubmit={handleConfirmLink} className="space-y-6">
           <div className="p-5 bg-blue-50/50 border-2 border-blue-100 rounded-2xl space-y-4">
@@ -225,7 +228,7 @@ export const RegisterForm: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-md p-2">
+    <div className="w-full max-w-[400px] p-2">
       {/* Logo Section */}
       <Logo />
 
