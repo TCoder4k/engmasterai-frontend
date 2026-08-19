@@ -142,6 +142,15 @@ describe('GoogleSignInButton', () => {
     expect(googleAuth.renderGoogleButton).toHaveBeenCalledTimes(2);
   });
 
+  it('always shows the popup-blocked tip (Phase 11.1 — no official GIS hook exists to detect it conditionally)', async () => {
+    render(<GoogleSignInButton text="continue_with" onCredential={() => {}} />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByTestId('google-signin-popup-tip')).toBeInTheDocument();
+  });
+
   it('never calls setGoogleCredentialHandler or renderGoogleButton more than once for repeated React re-renders with the same props', async () => {
     const { rerender } = render(
       <GoogleSignInButton text="continue_with" onCredential={() => {}} />,
