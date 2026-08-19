@@ -76,6 +76,18 @@ export function setGoogleCredentialHandler(
   activeHandler = handler;
 }
 
+/** Per Google's own documented guidance: "When the user signs out of your
+ * website, you need to call disableAutoSelect to record the status in
+ * cookies. This prevents a UX dead loop." Without this, GIS keeps
+ * remembering the account picked on a previous visit for this origin and
+ * keeps rendering the button in its "Personalized" (avatar + name) state
+ * even after our own app has logged the user out. No-op if GIS's script
+ * never loaded this page load (e.g. the user never touched Google sign-in)
+ * — there is nothing to disable in that case. */
+export function disableGoogleAutoSelect(): void {
+  window.google?.accounts.id.disableAutoSelect();
+}
+
 /** Renders (or re-renders) the GIS button into `container`. Safe to call
  * repeatedly on the same element (e.g. on a container resize) — GIS paints
  * fresh into whatever is currently in the container each time. */

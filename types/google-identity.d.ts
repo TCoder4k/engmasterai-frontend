@@ -32,6 +32,7 @@ declare global {
             parent: HTMLElement,
             options: GoogleButtonConfiguration,
           ) => void;
+          disableAutoSelect: () => void;
         };
       };
     };
