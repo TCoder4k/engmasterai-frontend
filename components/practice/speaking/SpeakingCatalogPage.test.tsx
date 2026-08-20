@@ -160,7 +160,28 @@ describe('Speaking catalog — language-aware, never mixed (2026-08-20)', () => 
   });
 });
 
-describe('Speaking catalog — two sections: context practice vs. Free Talk', () => {
+describe('Speaking catalog — hero-led layout: Free Talk hero vs. context grid (2026-08-20 redesign)', () => {
+  it('renders Free Talk as the hero feature, not a scenario card', async () => {
+    mockedGetScenarios.mockResolvedValue([SCENARIO_A, FREE_TALK_SCENARIO]);
+
+    renderCatalog();
+
+    const cta = await screen.findByRole('link', { name: /free-talk with ai/i });
+    expect(cta).toHaveAttribute('href', `/practice/speaking/${FREE_TALK_SCENARIO.id}`);
+  });
+
+  it('does not render Free Talk a second time inside the contextual scenario grid', async () => {
+    mockedGetScenarios.mockResolvedValue([SCENARIO_A, FREE_TALK_SCENARIO]);
+
+    renderCatalog();
+
+    await screen.findByRole('link', { name: /free-talk with ai/i });
+    // FREE_TALK_SCENARIO.name is "Free Talk" — if the grid ever regressed to
+    // including it as an ordinary card, a second link with that literal name
+    // would exist alongside the hero CTA above.
+    expect(screen.queryByRole('link', { name: /^Free Talk$/i })).not.toBeInTheDocument();
+  });
+
   it('renders scenario cards under "Practice by context" and links each to its own scenario', async () => {
     mockedGetScenarios.mockResolvedValue([SCENARIO_A, SCENARIO_B]);
 
@@ -169,18 +190,16 @@ describe('Speaking catalog — two sections: context practice vs. Free Talk', ()
     expect(await screen.findByText('Practice by context')).toBeInTheDocument();
     const link = screen.getByRole('link', { name: /ordering coffee/i });
     expect(link).toHaveAttribute('href', `/practice/speaking/${SCENARIO_A.id}`);
-    expect(screen.queryByText('Free Talk')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /free-talk with ai/i })).not.toBeInTheDocument();
   });
 
-  it('renders the one isFreeTalk scenario as its own feature card under "Free Talk"', async () => {
-    mockedGetScenarios.mockResolvedValue([SCENARIO_A, FREE_TALK_SCENARIO]);
+  it('renders the CEFR level badge on a scenario card', async () => {
+    mockedGetScenarios.mockResolvedValue([SCENARIO_A]);
 
     renderCatalog();
 
-    expect(await screen.findByText('Free Talk')).toBeInTheDocument();
-    const cta = screen.getByRole('link', { name: /free conversation/i });
-    expect(cta).toHaveAttribute('href', `/practice/speaking/${FREE_TALK_SCENARIO.id}`);
-    expect(screen.getByText('No topic limit')).toBeInTheDocument();
+    const link = await screen.findByRole('link', { name: /ordering coffee/i });
+    expect(link).toHaveTextContent('A2');
   });
 
   it('omits the "Practice by context" section entirely when only Free Talk exists', async () => {
@@ -188,8 +207,18 @@ describe('Speaking catalog — two sections: context practice vs. Free Talk', ()
 
     renderCatalog();
 
-    await screen.findByText('Free Talk');
+    await screen.findByRole('link', { name: /free-talk with ai/i });
     expect(screen.queryByText('Practice by context')).not.toBeInTheDocument();
+  });
+
+  it('still shows the hero (with no Free Talk CTA) even when the server has no isFreeTalk scenario', async () => {
+    mockedGetScenarios.mockResolvedValue([SCENARIO_A]);
+
+    renderCatalog();
+
+    await screen.findByRole('link', { name: /ordering coffee/i });
+    expect(screen.getByText('Speaking Partner')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /free-talk with ai/i })).not.toBeInTheDocument();
   });
 });
 

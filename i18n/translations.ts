@@ -690,6 +690,19 @@ const en = {
     speakingFreeTalkCardDesc: "Speak freely to build your reflexes and confidence in conversation.",
     speakingFreeTalkCta: "Start chatting",
     speakingCatalogFooterHint: "You can pick a specific situation or chat freely to practice your speaking reflexes.",
+    // SpeakingCatalogPage's hero card (2026-08-20 redesign) — Free Talk is
+    // the strongest entry point, so it leads the page instead of sitting in
+    // its own section below the scenario grid.
+    speakingHeroEyebrow: "AI SPEAKING PARTNER",
+    speakingHeroStatAvailabilityTitle: "24/7",
+    speakingHeroStatAvailabilityDesc: "AI always ready",
+    speakingHeroStatFeedbackTitle: "Instant feedback",
+    speakingHeroStatFeedbackDesc: "Corrects mistakes & suggests instantly",
+    speakingHeroCtaTitle: "Free-talk with AI",
+    speakingHeroCtaSubtitle: "Start right away — no scenario needed",
+    speakingHeroTrustSafe: "Safe & private",
+    speakingHeroTrustOptimized: "AI optimized for learners",
+    speakingScenarioCount: (count: number) => `${count} scenario${count === 1 ? '' : 's'}`,
     speakingStartAction: "Start",
     // Free Talk auto-starts the moment its page loads (no "Start" tap needed
     // — the catalog's own CTA is already the one gesture) — shown briefly
@@ -1808,6 +1821,16 @@ const vi: TranslationDict = {
     speakingFreeTalkCta: "Bắt đầu trò chuyện",
     speakingCatalogFooterHint:
       "Bạn có thể chọn một tình huống cụ thể hoặc nói chuyện tự do để luyện phản xạ giao tiếp.",
+    speakingHeroEyebrow: "AI SPEAKING PARTNER",
+    speakingHeroStatAvailabilityTitle: "24/7",
+    speakingHeroStatAvailabilityDesc: "AI luôn sẵn sàng",
+    speakingHeroStatFeedbackTitle: "Phản hồi tức thì",
+    speakingHeroStatFeedbackDesc: "Sửa lỗi & gợi ý ngay lập tức",
+    speakingHeroCtaTitle: "Trò chuyện tự do với AI",
+    speakingHeroCtaSubtitle: "Bắt đầu ngay không cần chọn kịch bản",
+    speakingHeroTrustSafe: "An toàn & riêng tư",
+    speakingHeroTrustOptimized: "AI được tối ưu cho người học",
+    speakingScenarioCount: (count: number) => `${count} kịch bản`,
     speakingStartAction: "Bắt đầu",
     speakingConnecting: "Đang kết nối...",
     speakingCompleteAction: "Kết thúc buổi học",
