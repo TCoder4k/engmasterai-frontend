@@ -245,10 +245,6 @@ export const RegisterForm: React.FC = () => {
       {/* Logo Section */}
       <Logo />
 
-      <div className="text-center mb-4">
-        <p className="text-slate-500 font-bold">Tham gia cùng hàng nghìn học viên tại EngMasterAI</p>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-2">
         {/* Success Message */}
         {success && (
