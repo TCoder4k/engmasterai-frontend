@@ -72,11 +72,17 @@ const SpeakingSessionPage: React.FC = () => {
   const [liveEnded, setLiveEnded] = useState(false);
   const [summary, setSummary] = useState<SpeakingAttemptSummary | null>(null);
   const [completing, setCompleting] = useState(false);
-  const [showSubtitles, setShowSubtitles] = useState(false);
+  // Vietnamese subtitles default ON — a beginner/intermediate student
+  // shouldn't have to discover and tap a toggle just to understand Engy.
+  const [showSubtitles, setShowSubtitles] = useState(true);
 
   const turnCountRef = useRef(0);
   const autoStartTriggeredRef = useRef(false);
   const socketRef = useRef<SpeakingLiveSocketConnection | null>(null);
+  // Scrolled into view every time a new turn is appended, so the newest
+  // message — whichever side just spoke — is always what's on screen
+  // instead of leaving the student parked wherever they last scrolled.
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const playback = useSpeakingLivePlayback();
 
   // The exercise's public fields are already known from the scenario read
@@ -117,6 +123,13 @@ const SpeakingSessionPage: React.FC = () => {
     },
     [],
   );
+
+  // Every new turn (either side) scrolls the transcript so the latest
+  // message is what's in view — a student mid-conversation should never
+  // have to manually scroll to see what was just said.
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [turns.length]);
 
   // AI_SPEAKING tracks REAL playback, not "a turn is outstanding" — see this
   // file's own header. Never overrides ERROR (a turn-level failure stays
@@ -379,6 +392,7 @@ const SpeakingSessionPage: React.FC = () => {
               {turnError && state === 'ERROR' && (
                 <ErrorState message={turnError} onRetry={() => setState('IDLE')} />
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Voice controls — the ONE surface below the message area:

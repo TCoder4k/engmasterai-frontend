@@ -62,7 +62,9 @@ describe('microphone preference storage', () => {
   it('stores nothing for an anonymous caller rather than under a bare key', () => {
     writePreferredMicrophone('', 'realtek-1');
 
-    expect(localStorage.length).toBe(0);
+    // 'language' is vitest.setup.ts's own unrelated test seed, not anything
+    // this module could have written.
+    expect(Object.keys(localStorage).filter((key) => key !== 'language')).toHaveLength(0);
     expect(readPreferredMicrophone('')).toBeNull();
   });
 

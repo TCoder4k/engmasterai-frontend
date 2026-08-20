@@ -234,6 +234,26 @@ describe('RoadmapStep', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows the AI Advisor badge and renders **bold** segments as <strong>, right after the stats and before the phase list', async () => {
+    mockGetRoadmap.mockResolvedValueOnce(
+      roadmap([item(1, 'c1')], {
+        aiSummary: 'Bạn nên ưu tiên **kỹ năng nghe** trước khi học ngữ pháp.',
+      }),
+    );
+    mockGetProgress.mockResolvedValueOnce(new Map());
+    mockGetAnalytics.mockResolvedValueOnce(analytics(0));
+
+    renderStep();
+
+    expect(await screen.findByText('AI Personal Advisor')).toBeInTheDocument();
+    const bold = await screen.findByText('kỹ năng nghe');
+    expect(bold.tagName).toBe('STRONG');
+    // Full sentence still reads correctly across the split text nodes.
+    expect(screen.getByText(/Bạn nên ưu tiên/)).toHaveTextContent(
+      'Bạn nên ưu tiên kỹ năng nghe trước khi học ngữ pháp.',
+    );
+  });
+
   it('renders no AI-summary section at all when aiSummary is null', async () => {
     mockGetRoadmap.mockResolvedValueOnce(roadmap([item(1, 'c1')], { aiSummary: null }));
     mockGetProgress.mockResolvedValueOnce(new Map());

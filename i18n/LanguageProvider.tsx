@@ -18,7 +18,7 @@ const getInitialLanguage = (): Language => {
   } catch {
     // localStorage unavailable (private mode etc.) — fall through to default.
   }
-  return 'en';
+  return 'vi';
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

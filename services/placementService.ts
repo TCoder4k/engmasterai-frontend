@@ -219,8 +219,16 @@ export interface PlacementStatus {
   hasRoadmap: boolean;
 }
 
-export type RoadmapPillar = CourseType;
-export type RoadmapResourceType = 'COURSE' | 'VOCAB_LIBRARY' | 'LISTENING_CATEGORY';
+// SPEAKING is an optional 4th pillar (GENERAL_ENGLISH goal only), layered on
+// top of the 3 fixed CourseType pillars — not itself a CourseType member,
+// since that type also backs unrelated things (Course.type). See the
+// backend's roadmap-algorithm.ts header for the full rationale.
+export type RoadmapPillar = CourseType | 'SPEAKING';
+export type RoadmapResourceType =
+  | 'COURSE'
+  | 'VOCAB_LIBRARY'
+  | 'LISTENING_CATEGORY'
+  | 'SPEAKING_SCENARIO';
 
 export interface RoadmapItemView {
   phase: number;

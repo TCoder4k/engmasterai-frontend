@@ -1185,6 +1185,7 @@ const en = {
     roadmapCollapse: "Collapse",
     roadmapExpand: "Expand",
     roadmapViewResource: "View",
+    roadmapAiAdvisorLabel: "AI Personal Advisor",
   },
 
   assistant: {
@@ -2236,6 +2237,7 @@ const vi: TranslationDict = {
     roadmapCollapse: "Thu gọn",
     roadmapExpand: "Mở rộng",
     roadmapViewResource: "Xem",
+    roadmapAiAdvisorLabel: "Cố vấn AI cá nhân",
   },
 
   assistant: {

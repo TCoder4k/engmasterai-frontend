@@ -1,4 +1,40 @@
 import '@testing-library/jest-dom/vitest';
+import { beforeEach } from 'vitest';
+
+// LanguageProvider defaults to Vietnamese when localStorage has no stored
+// choice yet (2026-08-20 — real users get 'vi' on a first visit). The whole
+// existing suite was written asserting English strings without ever setting
+// a language explicitly, silently riding on what used to be the
+// implementation's own default — flipping it broke ~560 tests across ~50
+// files at once. Pinning English here, once per test, keeps every one of
+// those tests meaning what it already meant.
+//
+// A plain `beforeEach` here is not enough on its own: many test files ALSO
+// call `localStorage.clear()` in their OWN beforeEach (to reset tokens/
+// cached progress, unrelated to language), and that file-level hook runs
+// AFTER this setup-file-level one — wiping the seed right back out. So
+// `.clear()` itself is patched to always leave the language pinned,
+// regardless of which file called it or why. A test that genuinely wants
+// the true "nothing stored yet" state (LanguageProvider.test.tsx) uses
+// `localStorage.removeItem('language')` instead, which this does not touch.
+//
+// Patched on `Storage.prototype`, not the `localStorage` instance —
+// `Storage` is a legacy platform object whose own-property [[Set]] writes
+// to actual storage entries instead of shadowing prototype methods, so
+// `localStorage.clear = fn` silently does nothing (confirmed directly:
+// `localStorage.clear` afterwards is still the native function). Patching
+// the prototype avoids that entirely.
+const nativeStorageClear = Storage.prototype.clear;
+Storage.prototype.clear = function patchedClear(this: Storage) {
+  nativeStorageClear.call(this);
+  if (this === localStorage) {
+    this.setItem('language', 'en');
+  }
+};
+
+beforeEach(() => {
+  localStorage.setItem('language', 'en');
+});
 
 // Sprint 06B.5 — jsdom has no layout engine and does not drive real
 // animation frames the way a browser does, so framer-motion exit

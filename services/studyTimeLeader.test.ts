@@ -103,8 +103,11 @@ describe('studyTimeLeader', () => {
 
     // Buffered study seconds must NEVER reach storage: they are not
     // authoritative, and a value another tab could read is a replay waiting to
-    // happen.
-    expect(Object.keys(localStorage)).toEqual([STUDY_TIME_LEADER_KEY]);
+    // happen. ('language' is vitest.setup.ts's own unrelated test seed, not
+    // anything this module could have written.)
+    expect(Object.keys(localStorage).filter((key) => key !== 'language')).toEqual([
+      STUDY_TIME_LEADER_KEY,
+    ]);
     const lock = JSON.parse(
       localStorage.getItem(STUDY_TIME_LEADER_KEY) as string,
     ) as Record<string, unknown>;
