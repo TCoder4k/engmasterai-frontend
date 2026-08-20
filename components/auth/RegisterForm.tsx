@@ -6,9 +6,11 @@ import { Logo } from './Logo';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { AccountLinkRequiredError, authService } from '../../services/authService';
 import { getProfile } from '../../services/userService';
+import { useTranslation } from '../../i18n/useTranslation';
 
 export const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
+  const { setLanguage } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState('');
@@ -36,6 +38,13 @@ export const RegisterForm: React.FC = () => {
   // and delays redirecting to /login), a successful Google sign-in already
   // IS an authenticated session — enter it immediately, same as LoginForm.
   const enterSession = async (response: Awaited<ReturnType<typeof authService.googleLogin>>) => {
+    // Every path that reaches this form's success handlers was initiated
+    // from the register page, so it always represents a new-account intent
+    // (a straight sign-up, or linking Google onto the password account just
+    // created here) — default it to Vietnamese, this app's primary
+    // audience, rather than leaving a first-time visitor's English fallback
+    // in place. The language switcher still overrides this afterwards.
+    setLanguage('vi');
     authService.saveAuth(response);
     try {
       const fullProfile = await getProfile();
@@ -138,6 +147,10 @@ export const RegisterForm: React.FC = () => {
         email,
         password,
       });
+
+      // New account via this form — default to Vietnamese, same reasoning
+      // as enterSession()'s identical call above.
+      setLanguage('vi');
 
       // Save auth response
       authService.saveAuth(response);

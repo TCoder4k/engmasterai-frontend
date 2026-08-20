@@ -3,6 +3,7 @@ import { render, screen, waitFor, cleanup } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { RegisterForm } from './RegisterForm';
+import { LanguageProvider } from '../../i18n/LanguageProvider';
 
 // See LoginForm.test.tsx for why this is an integration-style test (real
 // authService/apiFetch stack, only `fetch` mocked) rather than a shallow
@@ -67,9 +68,11 @@ describe('RegisterForm — Google account-link flow', () => {
   const renderAndTriggerLinkRequired = async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(409, ACCOUNT_LINK_REQUIRED_BODY));
     render(
-      <MemoryRouter>
-        <RegisterForm />
-      </MemoryRouter>,
+      <LanguageProvider>
+        <MemoryRouter>
+          <RegisterForm />
+        </MemoryRouter>
+      </LanguageProvider>,
     );
     await userEvent.click(screen.getByText('Mock Continue with Google'));
     expect(await screen.findByText(/đã tồn tại/)).toBeInTheDocument();
@@ -78,9 +81,11 @@ describe('RegisterForm — Google account-link flow', () => {
   it('409 ACCOUNT_LINK_REQUIRED opens the password-linking UI and renders exactly one <form>', async () => {
     const { container } = await (async () => {
       const utils = render(
-        <MemoryRouter>
-          <RegisterForm />
-        </MemoryRouter>,
+        <LanguageProvider>
+          <MemoryRouter>
+            <RegisterForm />
+          </MemoryRouter>
+        </LanguageProvider>,
       );
       fetchMock.mockResolvedValueOnce(jsonResponse(409, ACCOUNT_LINK_REQUIRED_BODY));
       await userEvent.click(screen.getByText('Mock Continue with Google'));
@@ -146,6 +151,10 @@ describe('RegisterForm — Google account-link flow', () => {
 
     await waitFor(() => expect(localStorage.getItem('accessToken')).toBe('issued.access.token'));
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/home'));
+    // A new account reached via this register-page flow defaults to
+    // Vietnamese, this app's primary audience — see RegisterForm's
+    // enterSession().
+    expect(localStorage.getItem('language')).toBe('vi');
   });
 
   it('a rate-limited (429) attempt shows a distinct message and preserves the linking form', async () => {
@@ -198,9 +207,11 @@ describe('RegisterForm — Google credential concurrency (googleInFlightRef)', (
     fetchMock.mockResolvedValueOnce(successResponse('tok1'));
     fetchMock.mockResolvedValueOnce(profileResponse());
     render(
-      <MemoryRouter>
-        <RegisterForm />
-      </MemoryRouter>,
+      <LanguageProvider>
+        <MemoryRouter>
+          <RegisterForm />
+        </MemoryRouter>
+      </LanguageProvider>,
     );
 
     await userEvent.click(
@@ -209,15 +220,20 @@ describe('RegisterForm — Google credential concurrency (googleInFlightRef)', (
     await waitFor(() => expect(navigateMock).toHaveBeenCalledTimes(1));
 
     expect(googleCalls()).toHaveLength(1);
+    // Same default-language behavior as the password-link success test —
+    // see enterSession()'s comment in RegisterForm.tsx.
+    expect(localStorage.getItem('language')).toBe('vi');
   });
 
   it('after the first request resolves, a later credential callback is allowed again', async () => {
     fetchMock.mockResolvedValueOnce(successResponse('tok1'));
     fetchMock.mockResolvedValueOnce(profileResponse());
     render(
-      <MemoryRouter>
-        <RegisterForm />
-      </MemoryRouter>,
+      <LanguageProvider>
+        <MemoryRouter>
+          <RegisterForm />
+        </MemoryRouter>
+      </LanguageProvider>,
     );
 
     await userEvent.click(screen.getByText('Mock Continue with Google'));
@@ -236,9 +252,11 @@ describe('RegisterForm — Google credential concurrency (googleInFlightRef)', (
       jsonResponse(401, { statusCode: 401, message: 'Google sign-in failed' }),
     );
     render(
-      <MemoryRouter>
-        <RegisterForm />
-      </MemoryRouter>,
+      <LanguageProvider>
+        <MemoryRouter>
+          <RegisterForm />
+        </MemoryRouter>
+      </LanguageProvider>,
     );
 
     await userEvent.click(screen.getByText('Mock Continue with Google'));

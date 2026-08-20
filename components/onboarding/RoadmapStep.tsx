@@ -2,7 +2,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Target, TrendingUp, Flame, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { LearningGoal } from '../../types';
-import { RoadmapItemView, RoadmapView, getPlacementRoadmap } from '../../services/placementService';
+import {
+  RoadmapItemView,
+  RoadmapPillar,
+  RoadmapView,
+  getPlacementRoadmap,
+} from '../../services/placementService';
 import {
   CourseProgressSummary,
   continuePath,
@@ -46,6 +51,20 @@ const MASCOT_ASPECT_RATIO = '730 / 342';
 
 const COLLAPSED_PHASE_COUNT = 3;
 
+// LISTENING/SPEAKING items never carry a real resourceThumbnail — neither
+// ListeningCategory nor SpeakingScenario has a thumbnail column (see the
+// backend's placement.service.ts joinLiveResources) — so without this they
+// always fell back to the same flat gray MapPin tile as a genuinely
+// thumbnail-less Course/VocabLibrary. Product-supplied illustrations,
+// mirrors RoadmapCard.tsx's own PILLAR_FALLBACK image entries for the same
+// two pillars (kept in sync manually — GRAMMAR/VOCABULARY still use the
+// plain MapPin fallback here since a real thumbnail is the common case for
+// those two).
+const PILLAR_IMAGE_FALLBACK: Partial<Record<RoadmapPillar, string>> = {
+  LISTENING: '/roadmap/dailytallk.png',
+  SPEAKING: '/roadmap/freedomtalk.jpg',
+};
+
 // Resource-type-aware navigation target — mirrors RoadmapCard.tsx's own
 // targetFor exactly. COURSE keeps the existing progress-aware "continue
 // where you left off" behavior; VOCAB_LIBRARY and LISTENING_CATEGORY route
@@ -66,8 +85,31 @@ const targetFor = (
       return { to: `/vocab/libraries/${item.resourceId}` };
     case 'LISTENING_CATEGORY':
       return { to: '/practice/listening', state: { categoryId: item.resourceId } };
+    case 'SPEAKING_SCENARIO':
+      // Same as RoadmapCard.tsx's own case — the roadmap only ever
+      // recommends the Free Talk scenario, and /practice/speaking/:scenarioId
+      // already auto-redirects into its single exercise.
+      return { to: `/practice/speaking/${item.resourceId}` };
   }
 };
+
+// Parses the AI planner's overallReason for **bold** segments — the ONLY
+// Markdown syntax the prompt asks Gemini to use (see
+// gemini-roadmap-planner.provider.ts's PLANNING_PROMPT) — into plain text
+// and <strong> nodes. Deliberately not a Markdown library: this is one
+// constrained pattern, not general Markdown support. An unpaired `**` (e.g.
+// from a truncated response) is left as literal text rather than throwing.
+const renderBoldSegments = (text: string): React.ReactNode[] =>
+  text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    const match = /^\*\*([^*]+)\*\*$/.exec(part);
+    return match ? (
+      <strong key={index} className="font-bold text-indigo-700 dark:text-indigo-300">
+        {match[1]}
+      </strong>
+    ) : (
+      part
+    );
+  });
 
 interface StatCardProps {
   icon: React.ComponentType<{ size?: number; className?: string }>;
@@ -273,6 +315,29 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
         />
       </div>
 
+      {/* The AI Planner's own overall rationale for this exact roadmap —
+          already generated in the same background call that picked the
+          phases below (see ResultStep.tsx / OnboardingPage.tsx's auto-fire),
+          so it's ready by the time this screen renders. Placed right after
+          the header/stats and BEFORE the phase list on purpose: a student
+          who just finished the placement test wants to know WHY this
+          roadmap before they're asked to read through it step by step — a
+          small italic line buried at the bottom read like a legal
+          disclaimer and got skipped entirely. Omitted whenever that AI call
+          failed or produced no summary — never a placeholder/error, same
+          silent-degrade rule RoadmapCard.tsx follows on the dashboard. */}
+      {roadmap.aiSummary && (
+        <div className="rounded-2xl border border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/70 dark:bg-indigo-500/10 p-4 sm:p-5">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-ink-900 border border-indigo-100 dark:border-indigo-500/30 rounded-full px-2.5 py-1">
+            <Sparkles size={12} aria-hidden="true" />
+            {t.onboarding.roadmapAiAdvisorLabel}
+          </span>
+          <p className="mt-2.5 text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+            {renderBoldSegments(roadmap.aiSummary)}
+          </p>
+        </div>
+      )}
+
       {roadmap.items.length === 0 ? (
         <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-6">
           {t.onboarding.roadmapEmpty}
@@ -314,10 +379,11 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
                   <div className="flex-shrink-0 w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-black flex items-center justify-center">
                     {item.phase}
                   </div>
-                  {item.resourceThumbnail ? (
+                  {item.resourceThumbnail || PILLAR_IMAGE_FALLBACK[item.pillar] ? (
                     <img
-                      src={item.resourceThumbnail}
+                      src={item.resourceThumbnail ?? PILLAR_IMAGE_FALLBACK[item.pillar]}
                       alt=""
+                      aria-hidden={!item.resourceThumbnail}
                       className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
                     />
                   ) : (
@@ -389,22 +455,6 @@ const RoadmapStep: React.FC<RoadmapStepProps> = ({ onFinished }) => {
               );
             })}
           </ol>
-        </div>
-      )}
-
-      {/* The AI Planner's own overall rationale for this exact roadmap —
-          already generated in the same background call that picked the
-          phases above (see ResultStep.tsx / OnboardingPage.tsx's auto-fire),
-          so it's ready by the time this screen renders. Omitted entirely
-          (never a placeholder/error) when that call failed or produced no
-          summary — same silent-degrade rule RoadmapCard.tsx follows on the
-          dashboard. */}
-      {roadmap.aiSummary && (
-        <div className="border-t border-slate-100 dark:border-ink-800 pt-4">
-          <p className="text-xs text-slate-600 dark:text-slate-300 italic leading-relaxed flex gap-2">
-            <Sparkles size={14} className="flex-shrink-0 mt-0.5 text-blue-500" aria-hidden="true" />
-            <span>{roadmap.aiSummary}</span>
-          </p>
         </div>
       )}
 

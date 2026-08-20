@@ -54,13 +54,15 @@ const PILLAR_FALLBACK: Record<
     tileClass: 'bg-emerald-100 dark:bg-emerald-500/15',
     iconClass: 'text-emerald-500 dark:text-emerald-400',
   },
-  // Downloaded once from the product-supplied reference URL into
-  // public/roadmap/listening-tips.jpg rather than hotlinked — an external
-  // host outside our control is not something a production fallback image
-  // should depend on staying up.
+  // public/roadmap/dailytallk.png — product-supplied illustration.
   LISTENING: {
     kind: 'image',
-    src: '/roadmap/listening-tips.jpg',
+    src: '/roadmap/dailytallk.png',
+  },
+  // public/roadmap/freedomtalk.jpg — product-supplied illustration.
+  SPEAKING: {
+    kind: 'image',
+    src: '/roadmap/freedomtalk.jpg',
   },
 };
 
@@ -142,6 +144,13 @@ const targetFor = (
       return { to: `/vocab/libraries/${item.resourceId}` };
     case 'LISTENING_CATEGORY':
       return { to: '/practice/listening', state: { categoryId: item.resourceId } };
+    case 'SPEAKING_SCENARIO':
+      // /practice/speaking/:scenarioId (SpeakingScenarioPage) already
+      // auto-redirects straight into the session when the scenario is
+      // Free Talk with exactly one exercise — the only shape the roadmap
+      // ever recommends (see PlacementService.loadAvailableResources) — so
+      // resourceId alone is enough; no exerciseId to resolve here.
+      return { to: `/practice/speaking/${item.resourceId}` };
   }
 };
 
