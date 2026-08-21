@@ -9,10 +9,6 @@ import {
   BookMarked,
   Headphones,
   ListChecks,
-  Gamepad2,
-  LineChart,
-  Wallet,
-  Settings,
   LogOut
 } from 'lucide-react';
 import { authService } from '../../services/authService';
@@ -25,11 +21,8 @@ const navLinkClass = (isActive: boolean) =>
       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
   }`;
 
-// Nav items with no backing page/API yet — rendered disabled with a "Sắp có"
-// badge rather than a dead href="#" link, so it's honest about what's not
-// built instead of looking like a broken link.
 // Sprint 06D — "Bài học (Lessons)" and "Luyện tập (Practice)" were REMOVED
-// from this list because both were misleading, in different ways:
+// from this nav because both were misleading, in different ways:
 //
 //   Lessons  — already manageable, just not from here. They are reached
 //              through Khóa học → a course → its lessons, which is the right
@@ -40,12 +33,14 @@ const navLinkClass = (isActive: boolean) =>
 //              nav item; a "Coming soon" badge on a shipped feature is the
 //              same lie in the other direction.
 //
-// Entries below are genuinely unbuilt: no page, no API, no route.
-const comingSoonItems = [
-  { icon: <Gamepad2 size={20} />, label: 'Hệ thống Level' },
-  { icon: <LineChart size={20} />, label: 'Phân tích học tập' },
-  { icon: <Wallet size={20} />, label: 'Doanh thu' },
-];
+// 2026-08-21 — "Hệ thống Level", "Phân tích học tập", "Doanh thu" and "Cài
+// đặt hệ thống" (genuinely unbuilt: no page, no API, no route) used to render
+// here as disabled rows with a "Sắp có" badge, on the reasoning that a
+// disabled row is more honest than hiding the roadmap entirely. For a
+// demo-facing build, four repeated "Sắp có" badges reads as unfinished
+// rather than transparent, so they're removed from the nav until they ship —
+// same honesty rule, different audience: nothing here claims to be real, but
+// nothing unbuilt is on display either.
 
 const AdminSidebar: React.FC = () => {
   const navigate = useNavigate();
@@ -127,35 +122,6 @@ const AdminSidebar: React.FC = () => {
           <span>Kiểm tra đầu vào</span>
         </NavLink>
 
-        {comingSoonItems.map((item, index) => (
-          <div
-            key={index}
-            aria-disabled="true"
-            className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-300 cursor-not-allowed select-none"
-          >
-            <span className="flex items-center space-x-3">
-              {item.icon}
-              <span>{item.label}</span>
-            </span>
-            <span className="text-[9px] font-bold uppercase bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-md">
-              Sắp có
-            </span>
-          </div>
-        ))}
-
-        <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-8 mb-4">Cấu hình</p>
-        <div
-          aria-disabled="true"
-          className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-300 cursor-not-allowed select-none"
-        >
-          <span className="flex items-center space-x-3">
-            <Settings size={20} />
-            <span>Cài đặt hệ thống</span>
-          </span>
-          <span className="text-[9px] font-bold uppercase bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded-md">
-            Sắp có
-          </span>
-        </div>
       </nav>
 
       <div className="p-4 border-t border-slate-50 bg-slate-50/50">
