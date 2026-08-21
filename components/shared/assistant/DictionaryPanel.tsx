@@ -7,6 +7,7 @@ import {
   lookupWord,
   suggestWords,
   DictionaryLookupResult,
+  DictionaryMeaning,
   DictionarySuggestion,
 } from '../../../services/dictionaryService';
 import type { TranslationDict } from '../../../i18n/translations';
@@ -483,6 +484,92 @@ const DEFAULT_POS_STYLE = {
   card: 'bg-slate-50 dark:bg-slate-800/60',
 };
 
+// Compact abbreviations for the closed backend PartOfSpeech enum. An
+// EXTERNAL-tier value is free text from freedictionaryapi.com (not this
+// enum), so an unrecognized value falls back to showing itself verbatim
+// rather than being hidden.
+const POS_ABBREVIATIONS: Record<string, string> = {
+  NOUN: 'n.',
+  VERB: 'v.',
+  ADJECTIVE: 'adj.',
+  ADVERB: 'adv.',
+  PRONOUN: 'pron.',
+  PREPOSITION: 'prep.',
+  CONJUNCTION: 'conj.',
+  INTERJECTION: 'interj.',
+  DETERMINER: 'det.',
+  PHRASE: 'phr.',
+  IDIOM: 'idiom',
+};
+
+interface MeaningGroup {
+  partOfSpeech: string | null;
+  /** Curated Vietnamese senses (VOCAB_WORD only), deduplicated. */
+  viMeanings: string[];
+  /** English-English definitions (EXTERNAL/DICTIONARY_CACHE only), deduplicated. */
+  enDefinitions: string[];
+  /** Example sentences, deduplicated. */
+  examples: string[];
+}
+
+// 2026-08-21 bug fix, round 2 — grouping by part of speech is what collapses
+// what used to be one repeated tag ("NOUN" x3) per meaning into ONE tag per
+// distinct part of speech (a word that is genuinely both a noun and a verb
+// still gets two separate groups). Within a group, content is split by
+// LANGUAGE/kind rather than numbered "Meaning 1/2/3" labels that mixed
+// Vietnamese senses, an English-English definition and its own Vietnamese
+// re-translation in one flat, unlabelled list — see the 2026-08-21 UX
+// report. `definitionVi` and `definitionEn` are already mutually exclusive
+// per meaning (VOCAB_WORD only ever fills the former, EXTERNAL/CACHE only
+// the latter — see dictionary.service.ts), so a group naturally ends up
+// showing only the section(s) it actually has data for.
+const groupMeanings = (meanings: DictionaryMeaning[]): MeaningGroup[] => {
+  const groups: MeaningGroup[] = [];
+  const pushUnique = (list: string[], value: string) => {
+    if (!list.includes(value)) list.push(value);
+  };
+
+  for (const meaning of meanings) {
+    let group = groups.find((g) => g.partOfSpeech === meaning.partOfSpeech);
+    if (!group) {
+      group = { partOfSpeech: meaning.partOfSpeech, viMeanings: [], enDefinitions: [], examples: [] };
+      groups.push(group);
+    }
+    if (meaning.definitionVi) pushUnique(group.viMeanings, meaning.definitionVi);
+    if (meaning.definitionEn) pushUnique(group.enDefinitions, meaning.definitionEn);
+    if (meaning.exampleEn) pushUnique(group.examples, meaning.exampleEn);
+  }
+
+  // Never render a card with nothing in it.
+  return groups.filter(
+    (g) => g.viMeanings.length > 0 || g.enDefinitions.length > 0 || g.examples.length > 0,
+  );
+};
+
+// A single item renders as one plain line; two or more render as a numbered
+// list — the numbering is what used to be the "Meaning N" label, now scoped
+// to one language section instead of the whole (mixed-language) card.
+const MeaningTextList: React.FC<{ items: string[]; className: string; quoted?: boolean }> = ({
+  items,
+  className,
+  quoted,
+}) => {
+  const render = (text: string) => (quoted ? `“${text}”` : text);
+  if (items.length === 1) {
+    return <p className={className}>{render(items[0])}</p>;
+  }
+  return (
+    <ol className="space-y-0.5">
+      {items.map((item, index) => (
+        <li key={index} className={className}>
+          <span className="font-semibold mr-1">{index + 1}.</span>
+          {render(item)}
+        </li>
+      ))}
+    </ol>
+  );
+};
+
 const DictionaryResultView: React.FC<{ data: DictionaryLookupResult; t: TranslationDict }> = ({
   data,
   t,
@@ -548,33 +635,61 @@ const DictionaryResultView: React.FC<{ data: DictionaryLookupResult; t: Translat
         </div>
       </div>
 
-      {data.viTranslation && (
+      {/* VOCAB_WORD's quick headline would just repeat the "Nghĩa tiếng Việt"
+          section's own first line below (both read firstMeaning.meaning) —
+          shown only for EXTERNAL/CACHE, whose only Vietnamese text IS this
+          line (per-meaning definitionVi is never populated for that tier). */}
+      {data.viTranslation && data.source !== 'VOCAB_WORD' && (
         <p className="text-sm font-bold text-blue-700 dark:text-blue-300">{data.viTranslation}</p>
       )}
 
       <div className="border-t border-slate-100 dark:border-slate-800" />
 
       <div className="space-y-2">
-        {data.meanings.map((meaning, index) => {
-          const style = meaning.partOfSpeech
-            ? (POS_STYLES[meaning.partOfSpeech.toUpperCase()] ?? DEFAULT_POS_STYLE)
+        {groupMeanings(data.meanings).map((group) => {
+          const style = group.partOfSpeech
+            ? (POS_STYLES[group.partOfSpeech.toUpperCase()] ?? DEFAULT_POS_STYLE)
             : DEFAULT_POS_STYLE;
+          const tagLabel = group.partOfSpeech
+            ? (POS_ABBREVIATIONS[group.partOfSpeech.toUpperCase()] ?? group.partOfSpeech)
+            : null;
           return (
-            <div key={index} className={`rounded-xl p-2.5 text-sm ${style.card}`}>
-              <div className="flex items-start gap-2">
-                {meaning.partOfSpeech && (
-                  <span
-                    className={`shrink-0 mt-0.5 inline-block px-1.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide ${style.tag}`}
-                  >
-                    {meaning.partOfSpeech}
-                  </span>
-                )}
-                {meaning.definitionEn && (
-                  <span className="text-slate-700 dark:text-slate-200">{meaning.definitionEn}</span>
-                )}
-              </div>
-              {meaning.exampleEn && (
-                <p className="mt-1 text-slate-500 dark:text-slate-400 italic">“{meaning.exampleEn}”</p>
+            <div
+              key={group.partOfSpeech ?? 'unlabelled'}
+              className={`rounded-xl p-2.5 text-sm space-y-2 ${style.card}`}
+            >
+              {tagLabel && (
+                <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-bold ${style.tag}`}>
+                  {tagLabel}
+                </span>
+              )}
+              {group.viMeanings.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">
+                    {t.dictionary.vietnameseMeaning}
+                  </p>
+                  <MeaningTextList items={group.viMeanings} className="text-slate-700 dark:text-slate-200" />
+                </div>
+              )}
+              {group.enDefinitions.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">
+                    {t.dictionary.englishDefinitionLabel}
+                  </p>
+                  <MeaningTextList items={group.enDefinitions} className="text-slate-700 dark:text-slate-200" />
+                </div>
+              )}
+              {group.examples.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">
+                    {t.dictionary.exampleLabel}
+                  </p>
+                  <MeaningTextList
+                    items={group.examples}
+                    className="text-slate-500 dark:text-slate-400 italic"
+                    quoted
+                  />
+                </div>
               )}
             </div>
           );
