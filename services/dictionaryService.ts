@@ -6,6 +6,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 export interface DictionaryMeaning {
   partOfSpeech: string | null;
   definitionEn: string | null;
+  /** Curated Vietnamese sense — only ever populated for a VOCAB_WORD hit. */
+  definitionVi: string | null;
   exampleEn: string | null;
 }
 

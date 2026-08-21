@@ -1023,7 +1023,7 @@ function resultFixture(
     normalizedWord: 'hello',
     ipa: '/hɛˈloʊ/',
     audioUrl: null,
-    meanings: [{ partOfSpeech: 'interjection', definitionEn: 'A greeting.', exampleEn: null }],
+    meanings: [{ partOfSpeech: 'interjection', definitionEn: 'A greeting.', definitionVi: null, exampleEn: null }],
     synonyms: ['hi'],
     viTranslation: 'Xin chào',
     viTranslationSource: 'AI',
