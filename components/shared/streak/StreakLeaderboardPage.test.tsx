@@ -84,6 +84,22 @@ describe('StreakLeaderboardPage', () => {
     expect(name.closest('button')).toBeInTheDocument();
   });
 
+  // A plain <div> is block-level and fills its podium column by default;
+  // <button> defaults to display:inline-block and shrinks to its content
+  // instead. Only the viewer's own card ever swaps to <button>, so a
+  // missing width override here would visibly shrink ONLY that one card —
+  // exactly the bug reported: fine normally, broken only when "your own
+  // pair" is on the podium.
+  it("renders the viewer's own podium card at full width, not shrunk to its content", async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
+      entryOf({ pairId: 'pair-own', isCurrentUserPair: true }),
+    ]);
+    renderPage();
+
+    const card = (await screen.findByText(/hoang long & mai anh/i)).closest('button')!;
+    expect(card.className).toMatch(/\bw-full\b/);
+  });
+
   it('shows the lower flame tiers for shorter streaks in the #4+ list', async () => {
     vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
       entryOf({ rank: 1, pairId: 'p1', currentStreak: 148 }),

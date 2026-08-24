@@ -60,7 +60,7 @@ const PodiumCard: React.FC<{
     <Tag
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`text-center space-y-1.5 sm:space-y-3 rounded-2xl sm:rounded-3xl p-2 sm:p-4 md:p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+      className={`block w-full text-center space-y-1.5 sm:space-y-3 rounded-2xl sm:rounded-3xl p-2 sm:p-4 md:p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
         isChampion
           ? 'md:-translate-y-3 bg-gradient-to-b from-[#1C182A] via-[#151B2E] to-[#0F1424] border-2 border-amber-400 shadow-2xl shadow-amber-500/20 text-white'
           : `bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ${
