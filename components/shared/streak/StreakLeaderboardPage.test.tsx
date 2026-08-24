@@ -66,6 +66,24 @@ describe('StreakLeaderboardPage', () => {
     expect(screen.queryByText(/ielts/i)).not.toBeInTheDocument();
   });
 
+  it("does not let the viewer click into a STRANGER's champion card either — the backend 403s a non-participant", async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([entryOf({ isCurrentUserPair: false })]);
+    renderPage();
+
+    const name = await screen.findByText(/hoang long & mai anh/i);
+    expect(name.closest('button')).not.toBeInTheDocument();
+  });
+
+  it('DOES let the viewer click into their own champion card', async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
+      entryOf({ pairId: 'pair-own', isCurrentUserPair: true }),
+    ]);
+    renderPage();
+
+    const name = await screen.findByText(/hoang long & mai anh/i);
+    expect(name.closest('button')).toBeInTheDocument();
+  });
+
   it('shows the lower flame tiers for shorter streaks in the #4+ list', async () => {
     vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
       entryOf({ rank: 1, pairId: 'p1', currentStreak: 148 }),
@@ -100,14 +118,28 @@ describe('StreakLeaderboardPage', () => {
     expect(within(card).getByText(/your pair/i)).toBeInTheDocument();
   });
 
-  it('navigates to the streak detail page when a card is clicked', async () => {
-    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([entryOf({ pairId: 'pair-42' })]);
+  it("navigates to the streak detail page when the viewer's OWN card is clicked", async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
+      entryOf({ pairId: 'pair-42', isCurrentUserPair: true }),
+    ]);
     renderPage();
 
     const card = (await screen.findByText(/hoang long & mai anh/i)).closest('button')!;
     card.click();
 
     expect(await screen.findByText('streak detail page')).toBeInTheDocument();
+  });
+
+  // The backend 403s a non-participant reading another pair's streak
+  // detail, so a stranger's card must not even offer to navigate there.
+  it("does not let the viewer click into a STRANGER's pair", async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
+      entryOf({ pairId: 'pair-42', isCurrentUserPair: false }),
+    ]);
+    renderPage();
+
+    const name = await screen.findByText(/hoang long & mai anh/i);
+    expect(name.closest('button')).not.toBeInTheDocument();
   });
 
   it('shows an empty state when no pair has ever qualified', async () => {

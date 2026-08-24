@@ -416,17 +416,6 @@ const UserHome: React.FC = () => {
             roadmapCompletionPercent={roadmapCompletionPercent}
           />
 
-          {/* The Duo Streak Hall of Fame preview lives in UserSidebar, which
-              is desktop-only (`hidden lg:block` below). This is the SAME
-              component rendered a second time, mobile-only, so phones get it
-              too — matching the sidebar's own established convention for
-              widgets that need both placements. Not the whole sidebar: Daily
-              Goal/Weekly Streak/Today's Progress/Achievements stay
-              desktop-only, unchanged, since only this one was asked for. */}
-          <div className="lg:hidden">
-            <DuoLeaderboardWidget />
-          </div>
-
           <ContinueLearningCard
             dueTotal={dueTotal}
             listeningDetail={listeningDetail}
@@ -517,6 +506,19 @@ const UserHome: React.FC = () => {
               ))}
             </div>
           </section>
+
+          {/* The Duo Streak Hall of Fame preview lives in UserSidebar, which
+              is desktop-only (`hidden lg:block` below). This is the SAME
+              component rendered a second time, mobile-only, at the very
+              bottom of the page, so phones get it too without competing with
+              higher-priority content above — matching the sidebar's own
+              established convention for widgets that need both placements.
+              Not the whole sidebar: Daily Goal/Weekly Streak/Today's
+              Progress/Achievements stay desktop-only, unchanged, since only
+              this one was asked for. */}
+          <div className="lg:hidden">
+            <DuoLeaderboardWidget />
+          </div>
         </div>
 
         {/* ---- Desktop-only right widget column ---- */}

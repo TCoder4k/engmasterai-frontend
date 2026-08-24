@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ChevronRight, Crown, Flame } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Crown, Flame } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { getStreakLeaderboard, type LeaderboardEntry } from '../../services/streakService';
 import CommunityAvatar from '../shared/assistant/community-chat/CommunityAvatar';
@@ -16,7 +16,6 @@ const RANK_GLYPH: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 // dropped.
 const DuoLeaderboardWidget: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   // undefined = loading, null = the request failed, array = loaded (top 3,
   // possibly empty if no pair has ever qualified).
   const [entries, setEntries] = useState<LeaderboardEntry[] | null | undefined>(undefined);
@@ -76,32 +75,37 @@ const DuoLeaderboardWidget: React.FC = () => {
       {entries !== undefined && entries !== null && entries.length > 0 && (
         <ul className="space-y-2">
           {entries.map((entry) => (
-            <li key={entry.pairId}>
-              <button
-                type="button"
-                onClick={() => navigate(`/streaks/${entry.pairId}`)}
-                className="w-full flex items-center gap-2.5 p-2.5 rounded-2xl bg-slate-50 dark:bg-ink-950 border border-slate-100 dark:border-ink-700 text-left hover:bg-slate-100 dark:hover:bg-ink-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-              >
-                <span className="w-5 text-center text-sm shrink-0" aria-hidden="true">
-                  {RANK_GLYPH[entry.rank] ?? `#${entry.rank}`}
-                </span>
-                <div className="flex items-center -space-x-2 shrink-0">
-                  <div className="ring-2 ring-slate-50 dark:ring-ink-950 rounded-full">
-                    <CommunityAvatar name={entry.userA.name} avatarUrl={entry.userA.avatarUrl} size={28} />
-                  </div>
-                  <div className="ring-2 ring-slate-50 dark:ring-ink-950 rounded-full">
-                    <CommunityAvatar name={entry.userB.name} avatarUrl={entry.userB.avatarUrl} size={28} />
-                  </div>
+            // A plain row, deliberately NOT a link/button: a stranger's pair
+            // detail is not something the viewer is allowed to open (the
+            // backend's getStreakDetail 403s any non-participant), so this
+            // preview shows rank only — no navigation, no chevron implying
+            // there's somewhere to tap through to.
+            <li
+              key={entry.pairId}
+              className="flex items-center gap-2 p-2.5 rounded-2xl bg-slate-50 dark:bg-ink-950 border border-slate-100 dark:border-ink-700"
+            >
+              <span className="w-5 text-center text-sm shrink-0" aria-hidden="true">
+                {RANK_GLYPH[entry.rank] ?? `#${entry.rank}`}
+              </span>
+              <div className="flex items-center -space-x-2 shrink-0">
+                <div className="ring-2 ring-slate-50 dark:ring-ink-950 rounded-full">
+                  <CommunityAvatar name={entry.userA.name} avatarUrl={entry.userA.avatarUrl} size={28} />
                 </div>
-                <span className="min-w-0 flex-1 text-xs font-bold text-slate-900 dark:text-white truncate">
-                  {entry.userA.name} & {entry.userB.name}
-                </span>
-                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-50 dark:bg-orange-500/10 pl-2 pr-1 py-1 text-xs font-black text-orange-600 dark:text-orange-400 tabular-nums">
-                  <Flame size={12} className="fill-orange-500" aria-hidden="true" />
-                  {t.streak.dayCount(entry.currentStreak)}
-                  <ChevronRight size={12} className="text-orange-300 dark:text-orange-500/60" aria-hidden="true" />
-                </span>
-              </button>
+                <div className="ring-2 ring-slate-50 dark:ring-ink-950 rounded-full">
+                  <CommunityAvatar name={entry.userB.name} avatarUrl={entry.userB.avatarUrl} size={28} />
+                </div>
+              </div>
+              {/* Both names, always — allowed to wrap to 2 lines at a small
+                  size rather than truncating one of the two people away.
+                  line-clamp only kicks in for a genuinely long pair of
+                  names. */}
+              <span className="min-w-0 flex-1 text-[11px] leading-snug font-bold text-slate-900 dark:text-white line-clamp-2 break-words">
+                {entry.userA.name} & {entry.userB.name}
+              </span>
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-orange-50 dark:bg-orange-500/10 px-2 py-1 text-xs font-black text-orange-600 dark:text-orange-400 tabular-nums">
+                <Flame size={12} className="fill-orange-500" aria-hidden="true" />
+                {t.streak.dayCount(entry.currentStreak)}
+              </span>
             </li>
           ))}
         </ul>

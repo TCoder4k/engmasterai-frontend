@@ -46,13 +46,19 @@ const PairAvatars: React.FC<{ entry: LeaderboardEntry; size: number }> = ({ entr
 const PodiumCard: React.FC<{
   entry: LeaderboardEntry;
   t: ReturnType<typeof useTranslation>['t'];
-  onClick: () => void;
+  // undefined for anyone else's pair — the backend 403s a non-participant
+  // reading streak detail, so this deliberately renders as a plain,
+  // non-interactive card rather than a dead/erroring link. Only the
+  // viewer's own pair (entry.isCurrentUserPair) is ever passed a real
+  // handler, from the call site below.
+  onClick: (() => void) | undefined;
 }> = ({ entry, t, onClick }) => {
   const isChampion = entry.rank === 1;
+  const Tag = onClick ? 'button' : 'div';
 
   return (
-    <button
-      type="button"
+    <Tag
+      type={onClick ? 'button' : undefined}
       onClick={onClick}
       className={`text-center space-y-1.5 sm:space-y-3 rounded-2xl sm:rounded-3xl p-2 sm:p-4 md:p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
         isChampion
@@ -126,7 +132,7 @@ const PodiumCard: React.FC<{
       >
         {flameTier(t, entry.currentStreak)}
       </p>
-    </button>
+    </Tag>
   );
 };
 
@@ -197,31 +203,49 @@ const StreakLeaderboardPage: React.FC = () => {
           <div className="grid grid-cols-3 gap-1.5 sm:gap-3 md:gap-5 items-end">
             {top3[1] && (
               <div className="order-2 md:order-1">
-                <PodiumCard entry={top3[1]} t={t} onClick={() => goToPair(top3[1].pairId)} />
+                <PodiumCard
+                  entry={top3[1]}
+                  t={t}
+                  onClick={top3[1].isCurrentUserPair ? () => goToPair(top3[1].pairId) : undefined}
+                />
               </div>
             )}
             {top3[0] && (
               <div className="order-1 md:order-2">
-                <PodiumCard entry={top3[0]} t={t} onClick={() => goToPair(top3[0].pairId)} />
+                <PodiumCard
+                  entry={top3[0]}
+                  t={t}
+                  onClick={top3[0].isCurrentUserPair ? () => goToPair(top3[0].pairId) : undefined}
+                />
               </div>
             )}
             {top3[2] && (
               <div className="order-3">
-                <PodiumCard entry={top3[2]} t={t} onClick={() => goToPair(top3[2].pairId)} />
+                <PodiumCard
+                  entry={top3[2]}
+                  t={t}
+                  onClick={top3[2].isCurrentUserPair ? () => goToPair(top3[2].pairId) : undefined}
+                />
               </div>
             )}
           </div>
 
           {rest.length > 0 && (
             <div className="space-y-3">
-              {rest.map((entry) => (
-                <button
+              {rest.map((entry) => {
+                // Same rule as the podium above: a stranger's pair detail
+                // 403s server-side, so only the viewer's own row gets a real
+                // handler and interactive semantics — everyone else's row is
+                // a plain, non-clickable card.
+                const RowTag = entry.isCurrentUserPair ? 'button' : 'div';
+                return (
+                <RowTag
                   key={entry.pairId}
-                  type="button"
-                  onClick={() => goToPair(entry.pairId)}
-                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left shadow-sm hover:shadow-md transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+                  type={entry.isCurrentUserPair ? 'button' : undefined}
+                  onClick={entry.isCurrentUserPair ? () => goToPair(entry.pairId) : undefined}
+                  className={`w-full p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-left shadow-sm transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                     entry.isCurrentUserPair
-                      ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30'
+                      ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30 hover:shadow-md'
                       : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800'
                   }`}
                 >
@@ -267,8 +291,9 @@ const StreakLeaderboardPage: React.FC = () => {
                     </div>
                     <span className="text-[11px] text-slate-400 font-bold">{entry.totalXp} XP</span>
                   </div>
-                </button>
-              ))}
+                </RowTag>
+                );
+              })}
             </div>
           )}
         </div>
