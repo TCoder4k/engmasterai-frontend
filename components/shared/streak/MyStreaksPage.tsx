@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, Copy, Facebook, Flame, MessageCircle, MoreHorizontal, Trophy } from 'lucide-react';
+import { Check, Copy, Facebook, Flame, Mail, MessageCircle, MoreHorizontal, Trophy } from 'lucide-react';
 import StudentLayout from '../../user/StudentLayout';
 import EmptyState from '../EmptyState';
 import ErrorState from '../ErrorState';
@@ -254,7 +254,8 @@ const MyStreaksPage: React.FC = () => {
         <div className="space-y-8">
           {pendingInvitations.length > 0 && (
             <section>
-              <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-3">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-slate-800 dark:text-white mb-3">
+                <Mail size={18} className="text-orange-500" aria-hidden="true" />
                 {t.streak.pendingInvitationsTitle}
               </h2>
               <div className="space-y-3">
@@ -296,7 +297,10 @@ const MyStreaksPage: React.FC = () => {
           )}
 
           <section>
-            <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-3">{t.streak.myStreaksTitle}</h2>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-800 dark:text-white mb-3">
+              <Flame size={18} className="text-orange-500" aria-hidden="true" />
+              {t.streak.myStreaksListTitle}
+            </h2>
             {streaks.length === 0 ? (
               <EmptyState icon={<Flame size={32} />} message={t.streak.noStreaksYet} />
             ) : (
