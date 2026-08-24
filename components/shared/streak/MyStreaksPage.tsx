@@ -142,28 +142,6 @@ const CreateStreakLinkCard: React.FC = () => {
   );
 };
 
-// "Tham gia chuỗi cùng bạn bè" — purely informational here. The real join
-// action lives entirely on /invite/:token (StreakInviteLandingPage), so
-// this card never becomes interactive — it just tells a visitor who landed
-// on this page directly (not via a link) what to expect.
-const JoinStreakLinkCard: React.FC = () => {
-  const { t } = useTranslation();
-  return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow dark:shadow-none dark:border dark:border-slate-800 p-5 sm:p-6">
-      <h2 className="text-base font-extrabold text-slate-900 dark:text-white mb-1">
-        {t.streak.joinLinkCardTitle}
-      </h2>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{t.streak.joinLinkCardDescription}</p>
-      <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-4 py-3">
-        <Check size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
-        <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
-          {t.streak.joinLinkCardPlaceholder}
-        </p>
-      </div>
-    </div>
-  );
-};
-
 // The "My Streaks" list (Sprint — Streak Together, §F) — needed because
 // multiple concurrent streaks per user are allowed, so a single chip isn't
 // enough to see everything at once. Reached from the sidebar's new
@@ -236,9 +214,8 @@ const MyStreaksPage: React.FC = () => {
         </Link>
       </div>
 
-      <div className="space-y-5 mb-8">
+      <div className="mb-8">
         <CreateStreakLinkCard />
-        <JoinStreakLinkCard />
       </div>
 
       {loadState === 'loading' && (

@@ -99,15 +99,6 @@ describe('MyStreaksPage — create-link card', () => {
   });
 });
 
-describe('MyStreaksPage — join-link card', () => {
-  it('always shows the static "join a friend\'s streak" placeholder', async () => {
-    vi.spyOn(streakService, 'listMyStreaks').mockResolvedValue([]);
-    renderPage();
-
-    expect(await screen.findByText(/when you click an invite link/i)).toBeInTheDocument();
-  });
-});
-
 describe('MyStreaksPage — streak list', () => {
   it('shows an empty state when the viewer has no streaks', async () => {
     vi.spyOn(streakService, 'listMyStreaks').mockResolvedValue([]);
