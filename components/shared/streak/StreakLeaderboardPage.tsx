@@ -60,10 +60,10 @@ const PodiumCard: React.FC<{
     <Tag
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`block w-full text-center space-y-1.5 sm:space-y-3 rounded-2xl sm:rounded-3xl p-2 sm:p-4 md:p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+      className={`block w-full text-center rounded-2xl sm:rounded-3xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
         isChampion
-          ? 'md:-translate-y-3 bg-gradient-to-b from-[#1C182A] via-[#151B2E] to-[#0F1424] border-2 border-amber-400 shadow-2xl shadow-amber-500/20 text-white'
-          : `bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ${
+          ? 'space-y-2 sm:space-y-3 p-3 sm:p-5 md:p-7 -translate-y-2 sm:-translate-y-4 md:-translate-y-6 bg-gradient-to-b from-[#1C182A] via-[#151B2E] to-[#0F1424] border-2 border-amber-400 shadow-2xl shadow-amber-500/20 text-white'
+          : `space-y-1 sm:space-y-1.5 p-2 sm:p-3 md:p-4 translate-y-1.5 sm:translate-y-2 md:translate-y-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ${
               entry.isCurrentUserPair ? 'ring-2 ring-orange-400' : ''
             }`
       }`}
@@ -89,7 +89,7 @@ const PodiumCard: React.FC<{
       </div>
 
       <div className="flex items-center justify-center">
-        <PairAvatars entry={entry} size={isChampion ? 40 : 32} />
+        <PairAvatars entry={entry} size={isChampion ? 44 : 28} />
       </div>
 
       <h3
