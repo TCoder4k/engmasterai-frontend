@@ -7,6 +7,8 @@ import {
   playIncorrect,
   playTimeout,
   playComplete,
+  playMilestone,
+  playFlameWhoosh,
   playRecordStart,
   playRecordStop,
 } from './feedbackSounds';
@@ -27,6 +29,8 @@ describe('feedbackSounds', () => {
       playIncorrect();
       playTimeout();
       playComplete();
+      playMilestone();
+      playFlameWhoosh();
       playRecordStart();
       playRecordStop();
     }).not.toThrow();

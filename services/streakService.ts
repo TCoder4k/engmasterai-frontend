@@ -26,12 +26,27 @@ export interface StreakDayStatus {
   day: string;
   meQualified: boolean;
   partnerQualified: boolean;
+  isFuture: boolean;
 }
 
 export interface StreakActivityToday {
   qualified: boolean;
-  label: 'lesson' | 'practice' | 'vocab' | null;
+  label: 'lesson' | 'practice' | 'vocab' | 'listening' | null;
   at: string | null;
+}
+
+// GET /streaks/leaderboard — deliberately minimal, matching the backend DTO:
+// no invented "flame tier" name, no per-pair tagline/motto (no such data
+// exists anywhere). totalXp is real (both members' totalPoints summed).
+export interface LeaderboardEntry {
+  rank: number;
+  pairId: string;
+  userA: StreakPartner;
+  userB: StreakPartner;
+  currentStreak: number;
+  longestStreak: number;
+  totalXp: number;
+  isCurrentUserPair: boolean;
 }
 
 export interface StreakDetail extends StreakPair {
@@ -111,6 +126,12 @@ export const cancelStreakInvitation = async (invitationId: string): Promise<void
 export const listMyStreaks = async (): Promise<StreakPair[]> => {
   const response = await apiFetch(`${API_BASE_URL}/streaks`);
   if (!response.ok) return throwApiError(response, 'Failed to load streaks');
+  return response.json();
+};
+
+export const getStreakLeaderboard = async (): Promise<LeaderboardEntry[]> => {
+  const response = await apiFetch(`${API_BASE_URL}/streaks/leaderboard`);
+  if (!response.ok) return throwApiError(response, 'Failed to load leaderboard');
   return response.json();
 };
 

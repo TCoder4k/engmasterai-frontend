@@ -203,6 +203,10 @@ const en = {
     wordsReviewed: "Words reviewed",
     statsUnavailable: "Could not load your stats",
     statsRetry: "Try again",
+    // Dashboard redesign — the right-rail preview of the Duo Streak Hall of
+    // Fame (StreakLeaderboardPage), sitting where Today's Progress used to.
+    duoLeaderboardTitle: "Duo Streak Hall of Fame",
+    viewFullLeaderboard: "View full leaderboard",
     // Sprint 10 — the level widget. `{level}` and `{xp}` are substituted at
     // render time; the achievement NAMES moved to their own `achievements`
     // block below, keyed by the server's AchievementKey.
@@ -1282,6 +1286,7 @@ const en = {
     activityLesson: "Completed a lesson",
     activityPractice: "Completed a practice",
     activityVocab: "Reviewed vocabulary",
+    activityListening: "Practiced listening",
     activeStatus: "🔥 This streak is active — keep it going!",
     infoTitle: "Streak info",
     startedAt: "Started on",
@@ -1294,6 +1299,7 @@ const en = {
     shareCaption: (name: string, days: number) =>
       `🔥 I've been studying with ${name} for ${days} day${days === 1 ? "" : "s"}!\n\nMotivation doesn't show up every day, so we decided to study together.\n\nLearn English with EngMasterAI`,
     copyLink: "Copy link",
+    copyButton: "Copy",
     copied: "Copied!",
     moreOptions: "More",
     myStreaksTitle: "Streak Together",
@@ -1305,6 +1311,21 @@ const en = {
     publicDaysUnit: "days",
     publicTagline: "Keeping up their English learning, together.",
     publicCta: "🔥 Start your own streak",
+    milestoneModalTitle: (days: number) => `${days}-Day Streak!`,
+    milestoneModalSubtitle: "🔥 Your streak is blazing!",
+    milestoneModalDescription: (partnerName: string, days: number) =>
+      `Amazing! You and ${partnerName} have kept it going for ${days} days straight.`,
+    milestoneModalContinue: "Continue",
+    leaderboardNavLink: "Leaderboard",
+    leaderboardTitle: "🔥 Streak Together",
+    leaderboardSubtitle: "Study with friends, keep your streak every day, and climb the hall of fame!",
+    leaderboardChampionBadge: "👑 Legendary Champion",
+    leaderboardYourPair: "Your pair",
+    leaderboardEmpty: "No streaks have made the leaderboard yet.",
+    flameTier1: "Little Spark",
+    flameTier7: "Fire Tiger",
+    flameTier30: "Blazing Phoenix",
+    flameTier100: "Eternal Flame Dragon",
   },
   notifications: {
     title: "Notifications",
@@ -1505,6 +1526,8 @@ const vi: TranslationDict = {
     attempts: "Lượt luyện tập",
     wordsReviewed: "Từ đã ôn",
     statsUnavailable: "Không tải được số liệu",
+    duoLeaderboardTitle: "Bảng Vàng Xếp Hạng Cặp Đôi",
+    viewFullLeaderboard: "Xem bảng xếp hạng đầy đủ",
     statsRetry: "Thử lại",
     levelNumber: "Cấp {level}",
     levelUp: "Đã lên cấp {level}!",
@@ -2431,6 +2454,7 @@ const vi: TranslationDict = {
     activityLesson: "Hoàn thành bài học",
     activityPractice: "Hoàn thành bài luyện tập",
     activityVocab: "Ôn từ vựng",
+    activityListening: "Luyện nghe",
     activeStatus: "🔥 Chuỗi đang hoạt động! Hãy tiếp tục phát huy nhé!",
     infoTitle: "Thông tin chuỗi",
     startedAt: "Bắt đầu từ",
@@ -2443,6 +2467,7 @@ const vi: TranslationDict = {
     shareCaption: (name: string, days: number) =>
       `🔥 Tôi và ${name} đã học cùng nhau ${days} ngày!\n\nKhông phải ngày nào cũng có động lực, nên tụi mình quyết định học cùng nhau.\n\nHọc tiếng Anh cùng EngMasterAI`,
     copyLink: "Sao chép liên kết",
+    copyButton: "Sao chép",
     copied: "Đã sao chép!",
     moreOptions: "Thêm",
     myStreaksTitle: "Chuỗi cùng nhau",
@@ -2454,6 +2479,21 @@ const vi: TranslationDict = {
     publicDaysUnit: "ngày",
     publicTagline: "Cùng nhau duy trì việc học tiếng Anh mỗi ngày.",
     publicCta: "🔥 Tạo chuỗi học của bạn",
+    milestoneModalTitle: (days: number) => `${days} NGÀY CHUỖI!`,
+    milestoneModalSubtitle: "🔥 Chuỗi đang cháy rực rỡ!",
+    milestoneModalDescription: (partnerName: string, days: number) =>
+      `Tuyệt vời! Bạn và ${partnerName} đã giữ vững chuỗi ${days} ngày liên tiếp!`,
+    milestoneModalContinue: "Tiếp tục",
+    leaderboardNavLink: "Bảng xếp hạng",
+    leaderboardTitle: "🔥 Chuỗi cùng nhau",
+    leaderboardSubtitle: "Học cùng bạn bè, giữ chuỗi mỗi ngày và chinh phục bảng vàng!",
+    leaderboardChampionBadge: "👑 Quán quân huyền thoại",
+    leaderboardYourPair: "Cặp của bạn",
+    leaderboardEmpty: "Chưa có chuỗi nào lọt bảng xếp hạng.",
+    flameTier1: "Đốm Lửa Nhỏ",
+    flameTier7: "Hổ Lửa",
+    flameTier30: "Phượng Hoàng Lửa",
+    flameTier100: "Rồng Lửa Bất Diệt",
   },
   notifications: {
     title: "Thông báo",

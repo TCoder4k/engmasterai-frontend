@@ -87,12 +87,22 @@ interface ToneStep {
   type?: OscillatorType;
 }
 
-const playTones = (steps: ToneStep[], volume = 0.08): void => {
+// Shared guard for every sound below: respects mute, no-ops on a
+// missing/broken AudioContext, and never lets a synthesis failure escape
+// into the caller's flow.
+const withAudioContext = (run: (ctx: AudioContext, now: number) => void): void => {
   if (isMuted()) return;
   const ctx = getContext();
   if (!ctx) return;
   try {
-    const now = ctx.currentTime;
+    run(ctx, ctx.currentTime);
+  } catch {
+    // Never let a sound failure break the practice flow.
+  }
+};
+
+const playTones = (steps: ToneStep[], volume = 0.08): void =>
+  withAudioContext((ctx, now) => {
     for (const step of steps) {
       const oscillator = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -108,10 +118,7 @@ const playTones = (steps: ToneStep[], volume = 0.08): void => {
       oscillator.start(start);
       oscillator.stop(end + 0.02);
     }
-  } catch {
-    // Never let a sound failure break the practice flow.
-  }
-};
+  });
 
 // Sprint 06B.5 — the sound of CHOOSING, not of being right.
 //
@@ -146,6 +153,42 @@ export const playComplete = (): void =>
     { frequency: 784, startAt: 0.2, duration: 0.1 },
     { frequency: 1047, startAt: 0.3, duration: 0.22 },
   ]);
+
+// Streak Together — a milestone crossing (1/3/7/30/100 days). Deliberately
+// bigger than playComplete: same rising major-arpeggio language so it still
+// reads as "success" at a glance, but one note taller and a touch louder, so
+// a streak milestone feels like the bigger, rarer win it is.
+export const playMilestone = (): void =>
+  playTones(
+    [
+      { frequency: 523, startAt: 0, duration: 0.09 },
+      { frequency: 659, startAt: 0.09, duration: 0.09 },
+      { frequency: 784, startAt: 0.18, duration: 0.09 },
+      { frequency: 1047, startAt: 0.27, duration: 0.12 },
+      { frequency: 1319, startAt: 0.39, duration: 0.3 },
+    ],
+    0.09,
+  );
+
+// Streak Together — a low "whoosh" (a triangle wave sweeping 120Hz down to
+// 40Hz) that precedes playMilestone by a beat, giving the fanfare a bit of
+// a wind-up rather than starting cold. Needs a frequency RAMP within a
+// single tone, which the fixed-frequency playTones() steps can't express,
+// hence its own small function on the same withAudioContext guard.
+export const playFlameWhoosh = (): void =>
+  withAudioContext((ctx, now) => {
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(120, now);
+    oscillator.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+    oscillator.connect(gain);
+    gain.connect(ctx.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.45);
+  });
 
 // Speaking Partner — a rising blip on record START and a falling one on
 // record STOP/send, mirroring playCorrect/playIncorrect's own

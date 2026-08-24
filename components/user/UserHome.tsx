@@ -9,6 +9,7 @@ import RoadmapCard from './RoadmapCard';
 import DashboardStatCards from './DashboardStatCards';
 import LearningTrackCard from './LearningTrackCard';
 import UserSidebar from './UserSidebar';
+import DuoLeaderboardWidget from './DuoLeaderboardWidget';
 import CourseCard from './CourseCard';
 import { authService } from '../../services/authService';
 import { getPublishedCourses } from '../../services/courseService';
@@ -414,6 +415,17 @@ const UserHome: React.FC = () => {
             totalCompletedLessons={totalCompletedLessons}
             roadmapCompletionPercent={roadmapCompletionPercent}
           />
+
+          {/* The Duo Streak Hall of Fame preview lives in UserSidebar, which
+              is desktop-only (`hidden lg:block` below). This is the SAME
+              component rendered a second time, mobile-only, so phones get it
+              too — matching the sidebar's own established convention for
+              widgets that need both placements. Not the whole sidebar: Daily
+              Goal/Weekly Streak/Today's Progress/Achievements stay
+              desktop-only, unchanged, since only this one was asked for. */}
+          <div className="lg:hidden">
+            <DuoLeaderboardWidget />
+          </div>
 
           <ContinueLearningCard
             dueTotal={dueTotal}

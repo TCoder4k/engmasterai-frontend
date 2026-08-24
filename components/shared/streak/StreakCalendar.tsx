@@ -23,15 +23,26 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ days, locale }) => {
         const label = formatter.format(new Date(`${day.day}T12:00:00.000Z`));
         return (
           <div key={day.day} className="flex flex-col items-center gap-1.5">
-            <span className="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">{label}</span>
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                bothQualified
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'
+            <span
+              className={`text-[10px] font-bold uppercase ${
+                day.isFuture ? 'text-slate-300 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500'
               }`}
             >
-              {bothQualified ? <Check size={16} aria-hidden="true" /> : <Minus size={14} aria-hidden="true" />}
+              {label}
+            </span>
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                day.isFuture
+                  ? 'border border-dashed border-slate-200 dark:border-slate-700'
+                  : bothQualified
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'
+              }`}
+            >
+              {/* A future day hasn't happened yet — it must never look like
+                  a missed one, so it gets neither the check nor the dash. */}
+              {!day.isFuture &&
+                (bothQualified ? <Check size={16} aria-hidden="true" /> : <Minus size={14} aria-hidden="true" />)}
             </div>
           </div>
         );

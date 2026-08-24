@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Flame } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Flame, Trophy } from 'lucide-react';
 import StudentLayout from '../../user/StudentLayout';
 import EmptyState from '../EmptyState';
 import ErrorState from '../ErrorState';
@@ -74,10 +74,19 @@ const MyStreaksPage: React.FC = () => {
 
   return (
     <StudentLayout>
-      <h1 className="text-xl font-extrabold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-        <Flame size={22} className="text-orange-500" aria-hidden="true" />
-        {t.streak.myStreaksTitle}
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+          <Flame size={22} className="text-orange-500" aria-hidden="true" />
+          {t.streak.myStreaksTitle}
+        </h1>
+        <Link
+          to="/streaks/leaderboard"
+          className="flex items-center gap-1.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold px-3 py-2 text-xs hover:bg-amber-100 dark:hover:bg-amber-500/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        >
+          <Trophy size={14} aria-hidden="true" />
+          {t.streak.leaderboardNavLink}
+        </Link>
+      </div>
 
       {loadState === 'loading' && (
         <div className="space-y-3" aria-hidden="true">

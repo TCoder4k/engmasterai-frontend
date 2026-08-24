@@ -3,6 +3,7 @@ import { Flame, Target, TrendingUp } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DashboardAnalytics } from '../../services/analyticsService';
 import AchievementsWidget from './AchievementsWidget';
+import DuoLeaderboardWidget from './DuoLeaderboardWidget';
 import { DEFAULT_DAILY_TARGETS, targetPercent } from './dailyTargets';
 
 // Dashboard stat widgets, restyled to `ai-studio-dashboard-reference`'s
@@ -311,10 +312,12 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
                     }`}
                     // The tick is decorative; the date and its state are carried
                     // by the label below plus this title, so activity is never
-                    // signalled by colour alone.
+                    // signalled by colour alone. Inactive days show a neutral
+                    // dash rather than repeating the weekday label already
+                    // printed underneath.
                     title={day.date}
                   >
-                    {day.active ? '✓' : t.widgets.weekDays[weekdayIndex(day.date)]}
+                    {day.active ? '✓' : '–'}
                   </span>
                   <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                     {t.widgets.weekDays[weekdayIndex(day.date)]}
@@ -325,6 +328,12 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
           </>
         )}
       </WidgetCard>
+
+      {/* ---- Duo Streak Hall of Fame preview — takes the slot Today's
+          Progress used to sit in; Today's Progress is pushed down one slot
+          below rather than removed. Self-contained (own fetch, own
+          loading/error/empty states), same convention as AchievementsWidget. */}
+      <DuoLeaderboardWidget />
 
       {/* ---- REAL: today's counts ---- */}
       <WidgetCard

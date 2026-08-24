@@ -1,9 +1,12 @@
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../../i18n/LanguageProvider';
 import UserSidebar from './UserSidebar';
 import { DashboardAnalytics } from '../../services/analyticsService';
+import * as streakService from '../../services/streakService';
+import type { LeaderboardEntry } from '../../services/streakService';
 
 // Sprint 09 — the right-rail widgets, which had NO test file before this.
 //
@@ -52,12 +55,27 @@ const renderSidebar = (
   } = {},
 ) =>
   render(
-    <LanguageProvider>
-      <UserSidebar {...props} />
-    </LanguageProvider>,
+    <MemoryRouter>
+      <LanguageProvider>
+        <UserSidebar {...props} />
+      </LanguageProvider>
+    </MemoryRouter>,
   );
 
-afterEach(() => cleanup());
+// The Duo Streak Hall of Fame preview widget fetches independently of the
+// `analytics` prop above (see the describe block near the bottom of this
+// file). Defaulted to an empty leaderboard here so every other test in this
+// file — most of which assert exact counts of shared strings like "Could not
+// load your stats" across the analytics-backed widgets — is not disturbed by
+// it. Tests that care about this widget specifically override the mock.
+beforeEach(() => {
+  vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([]);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('UserSidebar — loading state', () => {
   it('renders no numbers at all while the request is in flight', () => {
@@ -345,5 +363,93 @@ describe('UserSidebar — the widgets that are still placeholder', () => {
     expect(todayCard().queryByText(/sample data/i)).not.toBeInTheDocument();
     expect(streakCard().queryByText(/sample data/i)).not.toBeInTheDocument();
     expect(goalCard().queryByText(/sample data/i)).not.toBeInTheDocument();
+  });
+});
+
+const entryOf = (overrides: Partial<LeaderboardEntry> = {}): LeaderboardEntry => ({
+  rank: 1,
+  pairId: 'pair-1',
+  userA: { id: 'a', name: 'Hoang Long', avatarUrl: null, level: 10 },
+  userB: { id: 'b', name: 'Mai Anh', avatarUrl: null, level: 9 },
+  currentStreak: 12,
+  longestStreak: 12,
+  totalXp: 900,
+  isCurrentUserPair: false,
+  ...overrides,
+});
+
+const leaderboardCard = () =>
+  within(screen.getByRole('region', { name: /duo streak hall of fame/i }));
+
+// Dashboard redesign — the Duo Streak Hall of Fame preview took over Today's
+// Progress's old slot; Today's Progress moved down one slot rather than
+// being dropped. See UserSidebar.tsx.
+describe('UserSidebar — Duo Streak Hall of Fame preview', () => {
+  it('renders the top pairs from the same leaderboard the full page uses', async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
+      entryOf({ rank: 1, pairId: 'p1', currentStreak: 148 }),
+      entryOf({
+        rank: 2,
+        pairId: 'p2',
+        currentStreak: 12,
+        userA: { id: 'c', name: 'Minh', avatarUrl: null, level: 5 },
+      }),
+    ]);
+    renderSidebar({ analytics: analytics() });
+
+    expect(await leaderboardCard().findByText(/hoang long & mai anh/i)).toBeInTheDocument();
+    expect(leaderboardCard().getByText(/minh & mai anh/i)).toBeInTheDocument();
+    expect(leaderboardCard().getByText('148 days')).toBeInTheDocument();
+  });
+
+  it('shows only the top three even when the leaderboard has more pairs', async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([
+      entryOf({ rank: 1, pairId: 'p1' }),
+      entryOf({ rank: 2, pairId: 'p2' }),
+      entryOf({ rank: 3, pairId: 'p3' }),
+      entryOf({ rank: 4, pairId: 'p4' }),
+    ]);
+    renderSidebar({ analytics: analytics() });
+
+    expect(await leaderboardCard().findAllByText(/hoang long & mai anh/i)).toHaveLength(3);
+  });
+
+  it('shows an empty-state hint when no pair has ever qualified', async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([]);
+    renderSidebar({ analytics: analytics() });
+
+    expect(await leaderboardCard().findByText(/no streaks have made the leaderboard yet/i)).toBeInTheDocument();
+  });
+
+  it('shows a retry control, independent of the analytics widgets, when the leaderboard fails to load', async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockRejectedValue(new Error('boom'));
+    renderSidebar({ analytics: analytics() });
+
+    expect(await leaderboardCard().findByText(/could not load your stats/i)).toBeInTheDocument();
+    // The three analytics widgets are healthy in this test — only the
+    // independently-fetched leaderboard widget failed.
+    expect(screen.getAllByText(/could not load your stats/i)).toHaveLength(1);
+  });
+
+  it('links "view full leaderboard" to the full leaderboard page', async () => {
+    vi.spyOn(streakService, 'getStreakLeaderboard').mockResolvedValue([entryOf()]);
+    renderSidebar({ analytics: analytics() });
+
+    await leaderboardCard().findByText(/hoang long & mai anh/i);
+    expect(leaderboardCard().getByRole('link', { name: /view full leaderboard/i })).toHaveAttribute(
+      'href',
+      '/streaks/leaderboard',
+    );
+  });
+
+  it('sits above Today\'s Progress in the rail, which is pushed down rather than removed', () => {
+    renderSidebar({ analytics: analytics() });
+
+    const regionNames = screen
+      .getAllByRole('region')
+      .map((region) => region.getAttribute('aria-label'));
+    expect(regionNames.indexOf('Duo Streak Hall of Fame')).toBeLessThan(
+      regionNames.indexOf("Today's Progress"),
+    );
   });
 });

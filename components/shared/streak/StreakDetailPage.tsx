@@ -12,20 +12,49 @@ import { getStreakDetail, type StreakDetail } from '../../../services/streakServ
 import CommunityAvatar from '../assistant/community-chat/CommunityAvatar';
 import StreakCalendar from './StreakCalendar';
 import ShareStreakModal from './ShareStreakModal';
+import StreakMilestoneModal from './StreakMilestoneModal';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+// Mirrors the backend's MILESTONES list (src/streak/streak.service.ts) —
+// kept in lockstep deliberately rather than sourced from the API, since the
+// only thing this drives is a client-side "have I celebrated this yet"
+// check, not the actual milestone/notification logic itself.
+const MILESTONES = [1, 3, 7, 30, 100] as const;
+
+const milestoneSeenKey = (streakId: string) => `engmasterai:streakMilestoneSeen:${streakId}`;
+
+// Device-level, best-effort — same convention as feedbackSounds.ts's mute
+// preference. Guards the confetti+chime so re-opening or refreshing the page
+// never re-fires a milestone already celebrated for this streak.
+const readSeenMilestone = (streakId: string): number => {
+  try {
+    return Number(localStorage.getItem(milestoneSeenKey(streakId))) || 0;
+  } catch {
+    return 0;
+  }
+};
+
+const writeSeenMilestone = (streakId: string, milestone: number): void => {
+  try {
+    localStorage.setItem(milestoneSeenKey(streakId), String(milestone));
+  } catch {
+    // Best-effort only — worst case the celebration replays once more.
+  }
+};
 
 const activityLabel = (
   t: ReturnType<typeof useTranslation>['t'],
   activity: StreakDetail['meActivityToday'],
 ): string | null => {
   if (!activity.qualified || !activity.label) return null;
-  const label =
-    activity.label === 'lesson'
-      ? t.streak.activityLesson
-      : activity.label === 'practice'
-        ? t.streak.activityPractice
-        : t.streak.activityVocab;
+  const labelByKind: Record<NonNullable<StreakDetail['meActivityToday']['label']>, string> = {
+    lesson: t.streak.activityLesson,
+    practice: t.streak.activityPractice,
+    vocab: t.streak.activityVocab,
+    listening: t.streak.activityListening,
+  };
+  const label = labelByKind[activity.label];
   const time = activity.at
     ? new Date(activity.at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
     : '';
@@ -47,6 +76,7 @@ const StreakDetailPage: React.FC = () => {
   const [streak, setStreak] = useState<StreakDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [celebratedMilestone, setCelebratedMilestone] = useState<number | null>(null);
 
   const load = () => {
     if (!id) return;
@@ -55,6 +85,12 @@ const StreakDetailPage: React.FC = () => {
       .then((result) => {
         setStreak(result);
         setLoadState('ready');
+
+        const highestCrossed = [...MILESTONES].reverse().find((m) => m <= result.currentStreak);
+        if (highestCrossed && highestCrossed > readSeenMilestone(result.id)) {
+          writeSeenMilestone(result.id, highestCrossed);
+          setCelebratedMilestone(highestCrossed);
+        }
       })
       .catch((err) => {
         setError(handleAuthError(err, navigate) || t.streak.loadError);
@@ -185,8 +221,26 @@ const StreakDetailPage: React.FC = () => {
         <ShareStreakModal
           streakId={streak.id}
           partnerName={streak.partner.name}
+          partnerAvatarUrl={streak.partner.avatarUrl}
           currentStreak={streak.currentStreak}
+          meName={currentUser?.name ?? t.streak.you}
+          meAvatarUrl={currentUser?.avatarUrl ?? null}
           onClose={() => setShareOpen(false)}
+        />
+      )}
+
+      {celebratedMilestone !== null && streak && (
+        <StreakMilestoneModal
+          days={celebratedMilestone}
+          meName={currentUser?.name ?? t.streak.you}
+          meAvatarUrl={currentUser?.avatarUrl ?? null}
+          partnerName={streak.partner.name}
+          partnerAvatarUrl={streak.partner.avatarUrl}
+          onClose={() => setCelebratedMilestone(null)}
+          onShare={() => {
+            setCelebratedMilestone(null);
+            setShareOpen(true);
+          }}
         />
       )}
     </StudentLayout>

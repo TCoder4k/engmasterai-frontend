@@ -46,6 +46,7 @@ import SpeakingSessionPage from './components/practice/speaking/SpeakingSessionP
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import MyStreaksPage from './components/shared/streak/MyStreaksPage';
+import StreakLeaderboardPage from './components/shared/streak/StreakLeaderboardPage';
 import StreakDetailPage from './components/shared/streak/StreakDetailPage';
 import PublicStreakPage from './components/shared/streak/PublicStreakPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
@@ -257,6 +258,7 @@ const App: React.FC = () => {
               but this keeps the list readable in the order a user
               encounters them. */}
           <Route path="/streaks" element={<MyStreaksPage />} />
+          <Route path="/streaks/leaderboard" element={<StreakLeaderboardPage />} />
           <Route path="/streaks/:id" element={<StreakDetailPage />} />
           </Route>
           </Route>
