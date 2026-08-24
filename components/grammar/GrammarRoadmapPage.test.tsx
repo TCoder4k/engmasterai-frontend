@@ -129,7 +129,12 @@ describe('GrammarRoadmapPage — data', () => {
     renderPage();
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-    expect(fetchMock.mock.calls[0][0]).toContain('type=GRAMMAR');
+    // Not necessarily the FIRST call any more — StudentLayout's
+    // NotificationBell (Streak Together) now also fetches on mount. Find
+    // the courses request specifically, same pattern already used
+    // elsewhere in this file for concurrent-fetch safety.
+    const coursesCall = fetchMock.mock.calls.find(([url]) => (url as string).includes('/courses'));
+    expect(coursesCall?.[0]).toContain('type=GRAMMAR');
   });
 
   it('renders real course data and real lesson counts', async () => {
@@ -302,8 +307,13 @@ describe('GrammarRoadmapPage — progress is real or absent', () => {
     const { container } = renderPage();
 
     await screen.findByText('Grammar Fundamentals');
-    expect(container.textContent).not.toMatch(/XP/i);
-    expect(container.textContent).not.toMatch(/streak/i);
-    expect(container.textContent).not.toMatch(/accuracy/i);
+    // Scoped to StudentLayout's <main> — the page's OWN content — not the
+    // whole container. The sidebar now legitimately links to the real
+    // Streak Together feature (a genuine nav item, not a fabricated claim
+    // about THIS page's data), which would otherwise trip this assertion.
+    const main = container.querySelector('main')?.textContent ?? '';
+    expect(main).not.toMatch(/XP/i);
+    expect(main).not.toMatch(/streak/i);
+    expect(main).not.toMatch(/accuracy/i);
   });
 });

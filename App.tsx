@@ -45,6 +45,9 @@ import SpeakingScenarioPage from './components/practice/speaking/SpeakingScenari
 import SpeakingSessionPage from './components/practice/speaking/SpeakingSessionPage';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
+import MyStreaksPage from './components/shared/streak/MyStreaksPage';
+import StreakDetailPage from './components/shared/streak/StreakDetailPage';
+import PublicStreakPage from './components/shared/streak/PublicStreakPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import OnboardingGateBoundary from './components/shared/OnboardingGateBoundary';
 import OnboardingPage from './components/onboarding/OnboardingPage';
@@ -85,6 +88,14 @@ const App: React.FC = () => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        {/* Streak Together — PUBLIC, unauthenticated share page (the first
+            route in this app outside /login-adjacent ones). Deliberately
+            NOT inside AuthLayout: that shell renders auth-page branding
+            unrelated to a shared-streak card, and this route needs no auth
+            form chrome at all. A separate Vercel Edge Middleware intercepts
+            this same path for known bot user-agents (see
+            /middleware.ts) — real visitors always reach this component. */}
+        <Route path="/streak/:shareId" element={<PublicStreakPage />} />
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
@@ -238,6 +249,15 @@ const App: React.FC = () => {
           />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
+          {/* Streak Together — authenticated pages, inside the same
+              boundary group as every other student route (earns study time,
+              has the gamification profile/dictionary/Engy chrome available).
+              /streaks/:id is declared after /streaks so the literal prefix
+              is unambiguous; React Router matches by path shape regardless,
+              but this keeps the list readable in the order a user
+              encounters them. */}
+          <Route path="/streaks" element={<MyStreaksPage />} />
+          <Route path="/streaks/:id" element={<StreakDetailPage />} />
           </Route>
           </Route>
           </Route>

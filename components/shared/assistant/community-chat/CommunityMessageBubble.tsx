@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from '../../../../i18n/useTranslation';
 import type { CommunityMessage } from '../../../../services/communityChatService';
 import CommunityAvatar from './CommunityAvatar';
 import LevelBadge from './LevelBadge';
+import StreakEntryPopover from '../../streak/StreakEntryPopover';
 
 interface CommunityMessageBubbleProps {
   message: CommunityMessage;
@@ -65,6 +66,12 @@ const renderMessageContent = (text: string): React.ReactNode =>
 const CommunityMessageBubble: React.FC<CommunityMessageBubbleProps> = ({ message, isOwn }) => {
   const { language } = useTranslation();
   const at = formatRelativeTime(message.createdAt, language);
+  // Streak Together's Community Chat entry point — the avatar/name for
+  // another user's message opens a popover offering "🔥 Giữ chuỗi cùng
+  // nhau". Own messages have no avatar/name at all (see CommunityMessageBubble's
+  // own-message branch below) and there is no self-invite flow, so this
+  // state only ever applies to the other-message branch.
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   if (isOwn) {
     return (
@@ -81,12 +88,22 @@ const CommunityMessageBubble: React.FC<CommunityMessageBubbleProps> = ({ message
 
   return (
     <div className="flex justify-start gap-2">
-      <CommunityAvatar name={message.author.name} avatarUrl={message.author.avatarUrl} size={28} />
+      <button
+        type="button"
+        onClick={() => setPopoverOpen(true)}
+        className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+      >
+        <CommunityAvatar name={message.author.name} avatarUrl={message.author.avatarUrl} size={28} />
+      </button>
       <div className="max-w-[78%] min-w-0">
         <div className="flex items-center mb-0.5 min-w-0">
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate mr-2.5">
+          <button
+            type="button"
+            onClick={() => setPopoverOpen(true)}
+            className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate mr-2.5 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 rounded"
+          >
             @{message.author.name}
-          </span>
+          </button>
           <LevelBadge level={message.author.level} />
           {at && <span className="ml-1.5 text-[10px] text-slate-400 dark:text-slate-500 shrink-0">{at}</span>}
         </div>
@@ -94,6 +111,15 @@ const CommunityMessageBubble: React.FC<CommunityMessageBubbleProps> = ({ message
           <span className="whitespace-pre-wrap break-words">{renderMessageContent(message.content)}</span>
         </div>
       </div>
+      {popoverOpen && (
+        <StreakEntryPopover
+          userId={message.author.id}
+          name={message.author.name}
+          avatarUrl={message.author.avatarUrl}
+          level={message.author.level}
+          onClose={() => setPopoverOpen(false)}
+        />
+      )}
     </div>
   );
 };

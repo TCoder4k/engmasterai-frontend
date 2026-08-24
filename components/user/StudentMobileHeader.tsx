@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Flame } from 'lucide-react';
 import AvatarMenu, { AvatarMenuUser } from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
@@ -43,6 +44,14 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
             avatar dropdown here (mobile/tablet only) rather than sitting as
             separate header icons — the desktop header keeps them visible. */}
         <div className="flex items-center space-x-1 sm:space-x-1.5">
+          <Link
+            to="/streaks"
+            aria-label={t.nav.streaks}
+            title={t.nav.streaks}
+            className="relative w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-orange-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400 dark:hover:text-orange-400 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          >
+            <Flame size={19} aria-hidden="true" />
+          </Link>
           <NotificationBell />
           <AvatarMenu
             user={user}

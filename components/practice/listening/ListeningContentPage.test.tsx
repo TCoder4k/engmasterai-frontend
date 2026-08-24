@@ -18,6 +18,20 @@ vi.mock('../../../services/listeningService', () => ({
   submitDictationAttempt: vi.fn(),
 }));
 
+// StudentLayout's header (rendered by every page in this file's tests) now
+// includes NotificationBell (Streak Together), which fetches on mount —
+// a safe default here so it never attempts a real network call in a test
+// that isn't about it, same convention CommunityChatPanel.test.tsx uses
+// for chatService.getChatSession. Without this, these tests' own
+// debounce-driven submit/alert timing (asserted against a fixed 3000ms
+// window) can flake under the full suite's parallel load.
+vi.mock('../../../services/notificationService', () => ({
+  getUnreadNotificationCount: vi.fn().mockResolvedValue(0),
+  listNotifications: vi.fn().mockResolvedValue({ data: [], meta: { hasMore: false, oldestId: null } }),
+  markNotificationRead: vi.fn().mockResolvedValue(undefined),
+  markAllNotificationsRead: vi.fn().mockResolvedValue(undefined),
+}));
+
 // The real embed loads YouTube's IFrame API over the network. The mock stands
 // in for the provider and immediately reports a ready player, which is what
 // makes the transport controls testable at all. Its spies are hoisted so tests

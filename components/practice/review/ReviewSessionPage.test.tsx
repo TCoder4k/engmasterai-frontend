@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, waitFor } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
@@ -357,8 +357,13 @@ describe('ReviewSessionPage', () => {
     expect(await screen.findByText('Review session complete!')).toBeInTheDocument();
     expect(screen.getByText('100%')).toBeInTheDocument(); // 1 reviewed, 0 again
     expect(screen.getByText('Your ratings')).toBeInTheDocument();
-    expect(screen.queryByText(/\bXP\b/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/streak/i)).not.toBeInTheDocument();
+    // Scoped to StudentLayout's <main> — the page's OWN content — not the
+    // whole document. The sidebar now legitimately links to the real
+    // Streak Together feature (a genuine nav item, not a fabricated claim
+    // about THIS page's data), which would otherwise trip this assertion.
+    const main = within(document.querySelector('main')!);
+    expect(main.queryByText(/\bXP\b/)).not.toBeInTheDocument();
+    expect(main.queryByText(/streak/i)).not.toBeInTheDocument();
     expectWordNotShown('alpha'); // the flip card is gone, replaced by the summary
   });
 

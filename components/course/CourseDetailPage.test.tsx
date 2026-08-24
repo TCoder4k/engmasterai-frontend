@@ -293,10 +293,15 @@ describe('CourseDetailPage — real data only', () => {
     const { container } = renderPage();
 
     await screen.findByText('Present Simple');
-    expect(container.textContent).not.toMatch(/XP/i);
-    expect(container.textContent).not.toMatch(/accuracy/i);
-    expect(container.textContent).not.toMatch(/streak/i);
+    // Scoped to StudentLayout's <main> — the page's OWN content — not the
+    // whole container. The sidebar now legitimately links to the real
+    // Streak Together feature (a genuine nav item, not a fabricated claim
+    // about THIS page's data), which would otherwise trip this assertion.
+    const main = container.querySelector('main')?.textContent ?? '';
+    expect(main).not.toMatch(/XP/i);
+    expect(main).not.toMatch(/accuracy/i);
+    expect(main).not.toMatch(/streak/i);
     // Nothing completed in this test's localStorage, so no percentage.
-    expect(container.textContent).not.toMatch(/%/);
+    expect(main).not.toMatch(/%/);
   });
 });

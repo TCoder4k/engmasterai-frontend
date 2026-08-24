@@ -9,6 +9,7 @@ import {
   Settings,
   Crown,
   Gem,
+  Flame,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { Logo } from '../shared/Logo';
@@ -110,6 +111,15 @@ const StudentDesktopSidebar: React.FC = () => {
         <NavLink to="/vocab" className={({ isActive }) => navLinkClass(isActive)}>
           <BookMarked size={20} aria-hidden="true" />
           <span>{t.nav.vocabulary}</span>
+        </NavLink>
+
+        {/* Streak Together — entered from Community Chat, but a user with
+            multiple concurrent streaks (allowed by product decision) needs
+            somewhere to see all of them at once, hence this nav entry
+            pointing at the list page (/streaks). */}
+        <NavLink to="/streaks" className={({ isActive }) => navLinkClass(isActive)}>
+          <Flame size={20} aria-hidden="true" />
+          <span>{t.nav.streaks}</span>
         </NavLink>
 
         <NavLink to="/profile" className={({ isActive }) => navLinkClass(isActive)}>
