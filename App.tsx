@@ -49,6 +49,7 @@ import MyStreaksPage from './components/shared/streak/MyStreaksPage';
 import StreakLeaderboardPage from './components/shared/streak/StreakLeaderboardPage';
 import StreakDetailPage from './components/shared/streak/StreakDetailPage';
 import PublicStreakPage from './components/shared/streak/PublicStreakPage';
+import StreakInviteLandingPage from './components/shared/streak/StreakInviteLandingPage';
 import ProtectedRoute from './components/shared/ProtectedRoute';
 import OnboardingGateBoundary from './components/shared/OnboardingGateBoundary';
 import OnboardingPage from './components/onboarding/OnboardingPage';
@@ -97,6 +98,12 @@ const App: React.FC = () => {
             this same path for known bot user-agents (see
             /middleware.ts) — real visitors always reach this component. */}
         <Route path="/streak/:shareId" element={<PublicStreakPage />} />
+        {/* Streak Together — PUBLIC, unauthenticated invite-link landing
+            page (singular "invite", distinct from "/streak/:shareId" above
+            and the authenticated plural "/streaks*" routes below). Handles
+            its own auth state instead of ProtectedRoute, since it must walk
+            a logged-out visitor through /login or /register and back. */}
+        <Route path="/invite/:token" element={<StreakInviteLandingPage />} />
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />

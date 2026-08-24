@@ -4,6 +4,7 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import { generateStreakShareLink } from '../../../services/streakService';
 import Modal from '../Modal';
 import CommunityAvatar from '../assistant/community-chat/CommunityAvatar';
+import { useLinkSharing } from './useLinkSharing';
 
 interface ShareStreakModalProps {
   streakId: string;
@@ -42,7 +43,7 @@ const ShareStreakModal: React.FC<ShareStreakModalProps> = ({
   const { t } = useTranslation();
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [shareUrl, setShareUrl] = useState('');
-  const [copied, setCopied] = useState(false);
+  const { copied, handleCopy, handleShareOrCopy } = useLinkSharing(shareUrl);
 
   useEffect(() => {
     generateStreakShareLink(streakId)
@@ -56,33 +57,6 @@ const ShareStreakModal: React.FC<ShareStreakModalProps> = ({
   const caption = t.streak.shareCaption(partnerName, currentStreak);
   const [hook, reason, tagline] = caption.split('\n\n');
   const domain = shareUrl ? new URL(shareUrl).host : '';
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard permission denied or unavailable — the link is still
-      // visible and selectable in the input below, so the student can
-      // copy it manually.
-    }
-  };
-
-  // Shared by the Messenger, Zalo and "More" icons — see the module comment
-  // above for why. A cancelled/unsupported native share silently falls
-  // back to copying the link rather than doing nothing.
-  const handleShareOrCopy = async () => {
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: t.streak.shareTitle, text: caption, url: shareUrl });
-        return;
-      } catch {
-        // User cancelled, or the share failed — fall through to copy.
-      }
-    }
-    await handleCopy();
-  };
 
   return (
     <Modal title={t.streak.shareTitle} onClose={onClose}>
@@ -148,21 +122,21 @@ const ShareStreakModal: React.FC<ShareStreakModalProps> = ({
               <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Facebook</span>
             </a>
 
-            <button type="button" onClick={handleShareOrCopy} className="flex flex-col items-center gap-1.5 group">
+            <button type="button" onClick={() => handleShareOrCopy(t.streak.shareTitle, caption)} className="flex flex-col items-center gap-1.5 group">
               <span className="w-11 h-11 rounded-full bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-white flex items-center justify-center group-hover:brightness-110">
                 <MessageCircle size={18} />
               </span>
               <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Messenger</span>
             </button>
 
-            <button type="button" onClick={handleShareOrCopy} className="flex flex-col items-center gap-1.5 group">
+            <button type="button" onClick={() => handleShareOrCopy(t.streak.shareTitle, caption)} className="flex flex-col items-center gap-1.5 group">
               <span className="w-11 h-11 rounded-full bg-[#0068FF] text-white flex items-center justify-center font-black text-sm group-hover:brightness-110">
                 Z
               </span>
               <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Zalo</span>
             </button>
 
-            <button type="button" onClick={handleShareOrCopy} className="flex flex-col items-center gap-1.5 group">
+            <button type="button" onClick={() => handleShareOrCopy(t.streak.shareTitle, caption)} className="flex flex-col items-center gap-1.5 group">
               <span className="w-11 h-11 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-slate-200 dark:group-hover:bg-slate-700">
                 <MoreHorizontal size={18} />
               </span>

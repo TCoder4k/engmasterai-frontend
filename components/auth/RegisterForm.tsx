@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Logo } from './Logo';
 import { GoogleSignInButton } from './GoogleSignInButton';
@@ -10,6 +10,7 @@ import { useTranslation } from '../../i18n/useTranslation';
 
 export const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setLanguage } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,11 +53,10 @@ export const RegisterForm: React.FC = () => {
     } catch (profileErr) {
       console.warn('Could not fetch full profile:', profileErr);
     }
-    if (response.user.role === 'ADMIN') {
-      navigate('/admin');
-    } else {
-      navigate('/home');
-    }
+    // See LoginForm.tsx's identical `from` handling — set by pages like
+    // StreakInviteLandingPage's "Đăng ký" link.
+    const from = (location.state as { from?: string } | null)?.from;
+    navigate(from ?? (response.user.role === 'ADMIN' ? '/admin' : '/home'));
   };
 
   const handleGoogleCredential = async (credential: string) => {
@@ -172,8 +172,13 @@ export const RegisterForm: React.FC = () => {
       // Failure Semantics).
       setEmailDeliveryStatus(response.emailDeliveryStatus);
       setSuccess(true);
+      // saveAuth already ran above, so the account is a real authenticated
+      // session at this point — when a `from` destination was set (see
+      // LoginForm.tsx's identical handling), send the visitor straight
+      // there instead of the default /login bounce.
+      const from = (location.state as { from?: string } | null)?.from;
       setTimeout(() => {
-        navigate('/login');
+        navigate(from ?? '/login');
       }, 2000);
     } catch (err: any) {
       if (err.errors && Array.isArray(err.errors)) {

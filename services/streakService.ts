@@ -84,6 +84,18 @@ export interface PublicStreak {
   userB: { name: string; avatarUrl: string | null };
 }
 
+// A persistent, reusable per-user invite link (not a per-invite token) —
+// distinct from sendStreakInvitation's targeted flow below, which needs a
+// known inviteeId. See streak.service.ts's getOrCreateInviteLink.
+export interface StreakInviteLink {
+  token: string;
+}
+
+export interface StreakInviteLinkPreview {
+  inviterName: string;
+  inviterAvatarUrl: string | null;
+}
+
 export const sendStreakInvitation = async (inviteeId: string): Promise<StreakInvitation> => {
   const response = await apiFetch(`${API_BASE_URL}/streaks/invitations`, {
     method: 'POST',
@@ -162,5 +174,27 @@ export const generateStreakShareLink = async (streakId: string): Promise<{ share
 export const getPublicStreak = async (shareId: string): Promise<PublicStreak> => {
   const response = await fetch(`${API_BASE_URL}/streaks/public/${shareId}`);
   if (!response.ok) return throwApiError(response, 'Streak not found');
+  return response.json();
+};
+
+// Get-or-lazily-create MY OWN persistent invite link/token.
+export const getMyInviteLink = async (): Promise<StreakInviteLink> => {
+  const response = await apiFetch(`${API_BASE_URL}/streaks/invite-link`);
+  if (!response.ok) return throwApiError(response, 'Failed to load invite link');
+  return response.json();
+};
+
+// PUBLIC — unauthenticated, called from StreakInviteLandingPage before the
+// visitor is necessarily logged in. Same plain-fetch reasoning as
+// getPublicStreak above.
+export const getInviteLinkPreview = async (token: string): Promise<StreakInviteLinkPreview> => {
+  const response = await fetch(`${API_BASE_URL}/streaks/invite-link/${token}`);
+  if (!response.ok) return throwApiError(response, 'Invite link not found');
+  return response.json();
+};
+
+export const acceptInviteLink = async (token: string): Promise<StreakPair> => {
+  const response = await apiFetch(`${API_BASE_URL}/streaks/invite-link/${token}/accept`, { method: 'POST' });
+  if (!response.ok) return throwApiError(response, 'Failed to join streak');
   return response.json();
 };

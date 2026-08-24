@@ -270,3 +270,59 @@ describe('RegisterForm — Google credential concurrency (googleInFlightRef)', (
     expect(googleCalls()).toHaveLength(2);
   });
 });
+
+// Streak Together's invite-link landing page sets `state: { from }` on its
+// "Đăng ký" link — see LoginForm.test.tsx's identical suite. The password
+// register path is a special case: authService.saveAuth already ran by the
+// time the 2-second success-message delay elapses, so `from` must win over
+// the existing default (/login), not /home.
+describe('RegisterForm — honors a router-state redirect target', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    navigateMock.mockClear();
+    fetchMock = vi.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it('navigates to location.state.from instead of /login after the success delay', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        user: { id: 'user-1', name: 'Tu', email: 'tucaqn1@gmail.com', role: 'USER', emailVerified: false },
+        accessToken: 'issued.access.token',
+        emailDeliveryStatus: 'sent',
+      }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        id: 'user-1', name: 'Tu', email: 'tucaqn1@gmail.com', avatarUrl: null, role: 'USER',
+        totalPoints: 0, level: 1, createdAt: '2026-01-01T00:00:00.000Z', emailVerified: false,
+      }),
+    );
+
+    render(
+      <LanguageProvider>
+        <MemoryRouter initialEntries={[{ pathname: '/register', state: { from: '/invite/ABCD1234' } }]}>
+          <RegisterForm />
+        </MemoryRouter>
+      </LanguageProvider>,
+    );
+
+    await userEvent.type(screen.getByPlaceholderText('Nguyễn Văn A'), 'Tu');
+    await userEvent.type(screen.getByPlaceholderText('example@gmail.com'), 'tucaqn1@gmail.com');
+    const [password, confirmPassword] = screen.getAllByPlaceholderText('••••••••');
+    await userEvent.type(password, 'correct-password');
+    await userEvent.type(confirmPassword, 'correct-password');
+    await userEvent.click(screen.getByRole('checkbox'));
+    await userEvent.click(screen.getByText('ĐĂNG KÝ NGAY'));
+
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/invite/ABCD1234'), { timeout: 3000 });
+    expect(navigateMock).not.toHaveBeenCalledWith('/login');
+  });
+});

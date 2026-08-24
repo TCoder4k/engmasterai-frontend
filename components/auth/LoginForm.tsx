@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Logo } from './Logo';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { AccountLinkRequiredError, authService } from '../../services/authService';
@@ -46,6 +46,7 @@ export enum UserRole {
 
 export const LoginForm: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>(UserRole.LEARNER);
   const [isLoading, setIsLoading] = useState(false);
@@ -67,6 +68,12 @@ export const LoginForm: React.FC = () => {
   // Post-success handling (saveAuth -> best-effort profile fetch -> navigate
   // by role) is shared by every sign-in path (password/Google/link-confirm)
   // — kept as one small helper so the three call sites can't drift apart.
+  //
+  // `location.state.from` — set by pages like StreakInviteLandingPage's
+  // "Đăng nhập" link — sends the visitor back to what they were trying to
+  // do instead of always landing on /home. No other page in this app sets
+  // it yet, so the default (role-based) target is unchanged for every
+  // existing entry point into /login.
   const enterSession = async (response: Awaited<ReturnType<typeof authService.login>>) => {
     authService.saveAuth(response);
     try {
@@ -75,11 +82,8 @@ export const LoginForm: React.FC = () => {
     } catch (profileErr) {
       console.warn('Could not fetch full profile:', profileErr);
     }
-    if (response.user.role === 'ADMIN') {
-      navigate('/admin');
-    } else {
-      navigate('/home');
-    }
+    const from = (location.state as { from?: string } | null)?.from;
+    navigate(from ?? (response.user.role === 'ADMIN' ? '/admin' : '/home'));
   };
 
   const handleGoogleCredential = async (credential: string) => {

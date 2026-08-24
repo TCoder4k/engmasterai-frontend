@@ -325,3 +325,53 @@ describe('LoginForm — Google credential concurrency (googleInFlightRef)', () =
     expect(googleCalls()).toHaveLength(2);
   });
 });
+
+// Streak Together's invite-link landing page sets `state: { from }` on its
+// "Đăng nhập" link so a visitor who had to log in first lands back on the
+// invite instead of /home. Every OTHER entry point into /login sets no
+// state at all, so the default (role-based) target must stay exactly what
+// it was — covered implicitly by every test above that asserts
+// navigateMock is called with '/home'.
+describe('LoginForm — honors a router-state redirect target', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    localStorage.clear();
+    navigateMock.mockClear();
+    fetchMock = vi.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("navigates to location.state.from instead of /home after a successful password login", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        user: { id: 'user-1', name: 'Tu', email: 'tucaqn1@gmail.com', role: 'USER', emailVerified: true },
+        accessToken: 'issued.access.token',
+      }),
+    );
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        id: 'user-1', name: 'Tu', email: 'tucaqn1@gmail.com', avatarUrl: null, role: 'USER',
+        totalPoints: 0, level: 1, createdAt: '2026-01-01T00:00:00.000Z', emailVerified: true,
+      }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { from: '/invite/ABCD1234' } }]}>
+        <LoginForm />
+      </MemoryRouter>,
+    );
+
+    await userEvent.type(screen.getByPlaceholderText('ten-dang-nhap@gmail.com'), 'tucaqn1@gmail.com');
+    await userEvent.type(screen.getByPlaceholderText('••••••••'), 'correct-password');
+    await userEvent.click(screen.getByText('Đăng Nhập'));
+
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/invite/ABCD1234'));
+    expect(navigateMock).not.toHaveBeenCalledWith('/home');
+  });
+});
