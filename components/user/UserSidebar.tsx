@@ -110,12 +110,15 @@ const StatsError: React.FC<{ onRetry?: () => void }> = ({ onRetry }) => {
   );
 };
 
-// The activity window is a ROLLING seven days ending today, not a Monday-Sunday
-// week, so the weekday label has to come from each date rather than from a
-// fixed array position. Parsed into a local Date from its parts: `new
-// Date('2026-07-31')` is UTC midnight, which reads as the previous day for
-// anyone west of Greenwich — the same class of bug this sprint fixed on the
-// server.
+// The calendar is now a FIXED Monday-Sunday week (previously a rolling seven
+// days ending today, which on any day but Sunday displayed with today's tile
+// stranded mid-row or at the far right instead of matching how a week is
+// normally read — see the backend's enumerateCalendarWeekInTimeZone). Still
+// computed from each date rather than assumed from array position, as cheap
+// self-verification against the server's own labelling. Parsed into a local
+// Date from its parts: `new Date('2026-07-31')` is UTC midnight, which reads
+// as the previous day for anyone west of Greenwich — the same class of bug
+// this sprint fixed on the server.
 const weekdayIndex = (isoDate: string): number => {
   const [year, month, day] = isoDate.split('-').map(Number);
   const local = new Date(year, month - 1, day);
@@ -272,19 +275,15 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
         )}
       </WidgetCard>
 
-      {/* ---- REAL: rolling seven-day activity and streak ---- */}
+      {/* ---- REAL: this week's calendar and streak ---- */}
+      {/* No `trailing` badge here — it used to repeat the exact same
+          "{streakDays} ngày" the big number below already shows, twice in a
+          few square centimetres. The body's larger figure (plus "Giữ phong
+          độ!") is the one place this widget states the count. */}
       <WidgetCard
         icon={<Flame className="w-4 h-4 text-amber-600 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" aria-hidden="true" />}
         iconTileClass="bg-amber-100 dark:bg-amber-500/15"
         title={t.widgets.weeklyStreak}
-        trailing={
-          streakDays !== null ? (
-            <span className="text-xs font-black text-amber-500 dark:text-amber-400">
-              {streakDays}
-              {analytics?.activity.streakCapped ? '+' : ''} {t.widgets.days}
-            </span>
-          ) : undefined
-        }
       >
         {isLoading && <StatSkeleton />}
         {hasFailed && <StatsError onRetry={onRetryAnalytics} />}
@@ -306,18 +305,21 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
                 <li key={day.date} className="flex flex-col items-center gap-1.5">
                   <span
                     className={`w-8 h-8 rounded-xl font-bold text-xs flex items-center justify-center transition-all ${
-                      day.active
-                        ? 'bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-black shadow-lg shadow-emerald-500/20'
-                        : 'bg-slate-100 dark:bg-ink-950 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-ink-700'
+                      day.isFuture
+                        ? 'border border-dashed border-slate-200 dark:border-ink-700'
+                        : day.active
+                          ? 'bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-black shadow-lg shadow-emerald-500/20'
+                          : 'bg-slate-100 dark:bg-ink-950 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-ink-700'
                     }`}
                     // The tick is decorative; the date and its state are carried
                     // by the label below plus this title, so activity is never
                     // signalled by colour alone. Inactive days show a neutral
                     // dash rather than repeating the weekday label already
-                    // printed underneath.
+                    // printed underneath. A day that hasn't happened yet shows
+                    // neither — it must never look like a missed one.
                     title={day.date}
                   >
-                    {day.active ? '✓' : '–'}
+                    {!day.isFuture && (day.active ? '✓' : '–')}
                   </span>
                   <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                     {t.widgets.weekDays[weekdayIndex(day.date)]}

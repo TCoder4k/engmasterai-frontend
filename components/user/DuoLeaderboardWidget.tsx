@@ -113,7 +113,7 @@ const DuoLeaderboardWidget: React.FC = () => {
 
       <Link
         to="/streaks/leaderboard"
-        className="flex items-center justify-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 pt-1"
+        className="flex items-center justify-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 pt-1"
       >
         {t.widgets.viewFullLeaderboard}
         <ArrowRight size={12} aria-hidden="true" />

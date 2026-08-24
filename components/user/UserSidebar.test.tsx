@@ -33,13 +33,13 @@ const analytics = (
   activity: {
     windowDays: 7,
     days: [
-      { date: '2026-07-25', active: false },
-      { date: '2026-07-26', active: true },
-      { date: '2026-07-27', active: true },
-      { date: '2026-07-28', active: false },
-      { date: '2026-07-29', active: true },
-      { date: '2026-07-30', active: true },
-      { date: '2026-07-31', active: true },
+      { date: '2026-07-25', active: false, isFuture: false },
+      { date: '2026-07-26', active: true, isFuture: false },
+      { date: '2026-07-27', active: true, isFuture: false },
+      { date: '2026-07-28', active: false, isFuture: false },
+      { date: '2026-07-29', active: true, isFuture: false },
+      { date: '2026-07-30', active: true, isFuture: false },
+      { date: '2026-07-31', active: true, isFuture: false },
     ],
     currentStreakDays: 3,
     streakCapped: false,
@@ -229,6 +229,44 @@ describe('UserSidebar — loaded state', () => {
     expect(streakCard().getAllByText('✓')).toHaveLength(5);
   });
 
+  // A day that hasn't happened yet must never render as a missed one — no
+  // check, no dash, just an empty dashed-border tile.
+  it('renders a future day as neither checked nor missed', () => {
+    renderSidebar({
+      analytics: analytics({
+        activity: {
+          windowDays: 7,
+          days: [
+            { date: '2026-07-27', active: true, isFuture: false },
+            { date: '2026-07-28', active: true, isFuture: false },
+            { date: '2026-07-29', active: true, isFuture: false },
+            { date: '2026-07-30', active: false, isFuture: false },
+            { date: '2026-07-31', active: false, isFuture: false }, // today
+            { date: '2026-08-01', active: false, isFuture: true },
+            { date: '2026-08-02', active: false, isFuture: true },
+          ],
+          currentStreakDays: 3,
+          streakCapped: false,
+        },
+      }),
+    });
+
+    // 3 real checks, 2 real dashes (07-30 and today), and the 2 future tiles
+    // contribute NEITHER symbol — not a 4th dash.
+    expect(streakCard().getAllByText('✓')).toHaveLength(3);
+    expect(streakCard().getAllByText('–')).toHaveLength(2);
+  });
+
+  // The header used to repeat the exact same "{streakDays} ngày" the body
+  // already shows, a few pixels away — genuinely redundant, unlike Daily
+  // Goal's trailing badge (a %, a different figure from its own body).
+  it('does not repeat the streak count in a header badge', () => {
+    renderSidebar({ analytics: analytics() });
+
+    // Exactly one "3 days" anywhere in this card — the body's, only.
+    expect(streakCard().getAllByText(/3 days/)).toHaveLength(1);
+  });
+
   it('shows the streak count without a plus when the window is not full', () => {
     renderSidebar({ analytics: analytics() });
 
@@ -251,7 +289,7 @@ describe('UserSidebar — loaded state', () => {
             '2026-07-29',
             '2026-07-30',
             '2026-07-31',
-          ].map((date) => ({ date, active: true })),
+          ].map((date) => ({ date, active: true, isFuture: false })),
           currentStreakDays: 7,
           streakCapped: true,
         },

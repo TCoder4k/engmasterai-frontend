@@ -47,14 +47,20 @@ export interface TodayAnalytics {
 export interface ActivityDay {
   date: string;
   active: boolean;
+  /** True for a day after today — the rest of this fixed calendar week,
+   * which hasn't happened yet. Render as "not yet", never as "missed". */
+  isFuture: boolean;
 }
 
 export interface ActivityAnalytics {
   windowDays: number;
-  /** Ascending, `windowDays` long, last element is today. */
+  /** Ascending, `windowDays` long — the FIXED Monday-Sunday calendar week
+   * containing today, not a rolling window. Today is not always the last
+   * element; use `isFuture` to tell the rest of the week apart from it. */
   days: ActivityDay[];
   currentStreakDays: number;
-  /** Every day in the window is active, so the real streak may be longer. */
+  /** Every day in the (separate, rolling) streak window is active, so the
+   * real streak may be longer than that window can see. */
   streakCapped: boolean;
 }
 
