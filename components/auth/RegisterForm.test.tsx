@@ -292,6 +292,11 @@ describe('RegisterForm — honors a router-state redirect target', () => {
   });
 
   it('navigates to location.state.from instead of /login after the success delay', async () => {
+    // Explicit timeout (2026-08-25): this test's own 2s success-delay plus a
+    // full userEvent form-fill was already close to Vitest's 5s default;
+    // RegisterForm mounting a TurnstileWidget (an extra async effect on
+    // every render, see TurnstileWidget.tsx) tips it over under full-suite
+    // parallel load, though it's inert here (VITE_TURNSTILE_SITE_KEY unset).
     fetchMock.mockResolvedValueOnce(
       jsonResponse(200, {
         user: { id: 'user-1', name: 'Tu', email: 'tucaqn1@gmail.com', role: 'USER', emailVerified: false },
@@ -324,5 +329,5 @@ describe('RegisterForm — honors a router-state redirect target', () => {
 
     await waitFor(() => expect(navigateMock).toHaveBeenCalledWith('/invite/ABCD1234'), { timeout: 3000 });
     expect(navigateMock).not.toHaveBeenCalledWith('/login');
-  });
+  }, 15000);
 });

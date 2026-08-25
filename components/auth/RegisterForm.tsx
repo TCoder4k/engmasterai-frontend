@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Logo } from './Logo';
 import { GoogleSignInButton } from './GoogleSignInButton';
+import { TurnstileWidget, TurnstileWidgetHandle } from './TurnstileWidget';
+import { TURNSTILE_SITE_KEY } from '../../services/turnstileWidget';
 import { AccountLinkRequiredError, authService } from '../../services/authService';
 import { getProfile } from '../../services/userService';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -20,6 +22,8 @@ export const RegisterForm: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
   const [emailDeliveryStatus, setEmailDeliveryStatus] = useState<
     'sent' | 'failed' | undefined
   >(undefined);
@@ -146,6 +150,7 @@ export const RegisterForm: React.FC = () => {
         name,
         email,
         password,
+        captchaToken,
       });
 
       // New account via this form — default to Vietnamese, same reasoning
@@ -186,6 +191,11 @@ export const RegisterForm: React.FC = () => {
       } else {
         setError(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
       }
+      // A Turnstile token is single-use and short-lived — whatever caused
+      // this failure (CAPTCHA rejection or anything else), the widget must
+      // be re-solved before the next attempt.
+      turnstileRef.current?.reset();
+      setCaptchaToken('');
     } finally {
       setIsLoading(false);
     }
@@ -363,9 +373,15 @@ export const RegisterForm: React.FC = () => {
           </label>
         </div>
 
+        <TurnstileWidget
+          ref={turnstileRef}
+          onToken={setCaptchaToken}
+          onExpire={() => setCaptchaToken('')}
+        />
+
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || (Boolean(TURNSTILE_SITE_KEY) && !captchaToken)}
           className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl shadow-blue-200 transform transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2"
         >
           {isLoading ? (

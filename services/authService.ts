@@ -37,6 +37,10 @@ export interface RegisterRequest {
   name: string;
   email: string;
   password: string;
+  // Cloudflare Turnstile token (2026-08-25) — absent/empty whenever the
+  // widget is unconfigured (VITE_TURNSTILE_SITE_KEY unset); the backend
+  // enforces "required" only once TURNSTILE_ENABLED is true there.
+  captchaToken?: string;
 }
 
 export interface LoginRequest {

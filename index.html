@@ -70,6 +70,11 @@
          VITE_GOOGLE_CLIENT_ID is unset — components/auth/GoogleSignInButton
          simply never calls initialize()/renderButton() in that case. -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Cloudflare Turnstile (2026-08-25) — same pattern as GIS above.
+         services/turnstileWidget.ts waits for window.turnstile to exist;
+         harmless if VITE_TURNSTILE_SITE_KEY is unset, since
+         components/auth/TurnstileWidget never calls render() in that case. -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Quicksand:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
