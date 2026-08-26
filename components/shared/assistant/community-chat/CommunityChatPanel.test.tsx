@@ -532,18 +532,106 @@ describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
     expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(2);
   });
 
-  it('does NOT mark-read for a live message while the tab is inactive (Engy is the visible tab)', async () => {
+  it('does NOT mark-read for a live message while the tab is inactive (Engy is the visible tab), but DOES refresh the badge count live instead of waiting for the 60s poll', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openCommunity(user); // activates the socket + fires the activation mark-read
     await waitFor(() => expect(capturedHandlers).not.toBeNull());
     await switchToEngy(user);
-    const callsAfterActivation = (communityChatService.markCommunityMessagesRead as unknown as { mock: { calls: unknown[] } })
-      .mock.calls.length;
+    const markReadCallsAfterActivation = (
+      communityChatService.markCommunityMessagesRead as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
+    const refreshCallsBeforeMessage = (
+      communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
 
     capturedHandlers!.onMessage(makeMessage({ id: 'while-hidden', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 } }));
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(callsAfterActivation);
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(markReadCallsAfterActivation);
+    expect(
+      (communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }).mock.calls
+        .length,
+    ).toBeGreaterThan(refreshCallsBeforeMessage);
+  });
+
+  it('a live message from the viewer\'s own account while inactive triggers neither mark-read nor an extra badge refresh', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openCommunity(user);
+    await waitFor(() => expect(capturedHandlers).not.toBeNull());
+    await switchToEngy(user);
+    const markReadCallsBefore = (
+      communityChatService.markCommunityMessagesRead as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
+    const refreshCallsBefore = (
+      communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
+
+    capturedHandlers!.onMessage(
+      makeMessage({ id: 'own-while-hidden', clientMessageId: 'own-echo-2', author: { id: 'me', name: 'Me', avatarUrl: null, level: 1 } }),
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(markReadCallsBefore);
+    expect(
+      (communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }).mock.calls
+        .length,
+    ).toBe(refreshCallsBefore);
+  });
+
+  it('a burst of several incoming messages while inactive produces exactly one extra badge refresh, not one per message', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openCommunity(user);
+    await waitFor(() => expect(capturedHandlers).not.toBeNull());
+    await switchToEngy(user);
+    const refreshCallsBefore = (
+      communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
+
+    for (let i = 0; i < 5; i += 1) {
+      capturedHandlers!.onMessage(
+        makeMessage({
+          id: `burst-hidden-${i}`,
+          content: `burst ${i}`,
+          author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 },
+        }),
+      );
+    }
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(
+      (communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }).mock.calls
+        .length,
+    ).toBe(refreshCallsBefore + 1);
+  });
+
+  it('switching to the tab before the debounce window elapses resolves the pending reaction as mark-read, not a bare refresh — proving it reads active state at fire time, not at message-arrival time', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openCommunity(user);
+    await waitFor(() => expect(capturedHandlers).not.toBeNull());
+    await switchToEngy(user);
+    const markReadCallsBefore = (
+      communityChatService.markCommunityMessagesRead as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
+
+    capturedHandlers!.onMessage(
+      makeMessage({ id: 'arrives-then-switch', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 } }),
+    );
+    await vi.advanceTimersByTimeAsync(200); // inside the 500ms debounce window — reaction still pending
+    // Switching back to Community fires its OWN immediate mark-read (the
+    // pre-existing "opening/returning to the tab" effect, unchanged by this
+    // fix) — that's +1 on its own. The pending debounced reaction from the
+    // message above then ALSO fires shortly after, and must resolve as a
+    // SECOND mark-read (not a bare refresh) because activeRef.current is
+    // true by the time it runs — that's the +2 this test is really pinning.
+    // If the ref read stale schedule-time state instead, this would stop at
+    // +1, since the reaction would wrongly take the refresh-only branch.
+    await switchToCommunity(user);
+    await vi.advanceTimersByTimeAsync(400); // lets the pending reaction timer fire
+
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(markReadCallsBefore + 2);
   });
 });

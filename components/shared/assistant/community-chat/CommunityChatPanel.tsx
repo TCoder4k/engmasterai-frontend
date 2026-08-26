@@ -53,7 +53,14 @@ const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
   // value object changes identity whenever communityUnreadCount updates.
   const assistantRef = useRef(assistant);
   assistantRef.current = assistant;
-  const markReadDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Same ref-mirror idiom, for the same reason: scheduleDebouncedReaction's
+  // setTimeout callback must see whether the tab is active AT THE MOMENT IT
+  // FIRES, not whichever `active` closure happened to be current when the
+  // message arrived — a message that lands right as the student switches
+  // tabs should react to where they end up, not where they started.
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const reactionDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
@@ -84,14 +91,27 @@ const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
       .catch(() => {});
   }, []);
 
-  const scheduleDebouncedMarkRead = useCallback(() => {
-    if (markReadDebounceTimerRef.current) clearTimeout(markReadDebounceTimerRef.current);
-    markReadDebounceTimerRef.current = setTimeout(triggerMarkRead, MARK_READ_DEBOUNCE_MS);
+  // What "react to a live non-own message" means depends on whether the tab
+  // is active when the debounce timer fires: if the student is looking at
+  // it, the message is already visible, so it's marked read (same as
+  // before); otherwise there's nothing to mark read yet, but the badge
+  // count should still climb live rather than sit stale until the next 60s
+  // background poll (AssistantBoundary.tsx) — this is the fix for "the
+  // badge only updates on refresh" reported 2026-08-26.
+  const scheduleDebouncedReaction = useCallback(() => {
+    if (reactionDebounceTimerRef.current) clearTimeout(reactionDebounceTimerRef.current);
+    reactionDebounceTimerRef.current = setTimeout(() => {
+      if (activeRef.current) {
+        triggerMarkRead();
+      } else {
+        assistantRef.current?.refreshCommunityUnreadCount();
+      }
+    }, MARK_READ_DEBOUNCE_MS);
   }, [triggerMarkRead]);
 
   useEffect(
     () => () => {
-      if (markReadDebounceTimerRef.current) clearTimeout(markReadDebounceTimerRef.current);
+      if (reactionDebounceTimerRef.current) clearTimeout(reactionDebounceTimerRef.current);
     },
     [],
   );
@@ -136,14 +156,14 @@ const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
         return [...prev, incoming];
       });
       setPending((prev) => (prev && prev.clientMessageId === incoming.clientMessageId ? null : prev));
-      // A message arriving from someone else while this tab is the one the
-      // student is actually looking at counts as read the moment it's seen —
-      // otherwise the background 60s poll would tick the badge up for a
-      // message already visible on screen. Debounced: a burst of several
-      // messages must produce one POST, not one per message.
-      if (active && incoming.author.id !== currentUserId) scheduleDebouncedMarkRead();
+      // A message from someone else always gets a reaction — see
+      // scheduleDebouncedReaction for what that reaction is. Debounced: a
+      // burst of several messages must produce one network call, not one
+      // per message, whether that call ends up being mark-read or a bare
+      // count refresh.
+      if (incoming.author.id !== currentUserId) scheduleDebouncedReaction();
     },
-    [active, currentUserId, scheduleDebouncedMarkRead],
+    [currentUserId, scheduleDebouncedReaction],
   );
 
   const { status: connectionStatus, retryNow } = useCommunityChatSocket(activated, upsertMessage);

@@ -56,8 +56,14 @@ export interface AssistantContextValue {
   consumeHandoff: () => void;
   /** Community Chat unread badge (2026-08-26) — one shared count read by
    * both AssistantLauncher's mascot badge and ChatToolTabBar's Tán gẫu pill,
-   * so the two never disagree. Polled every 60s (see AssistantBoundary.tsx),
-   * plus an immediate refresh after CommunityChatPanel marks messages read. */
+   * so the two never disagree. Polled every 60s (see AssistantBoundary.tsx)
+   * as a baseline that always eventually catches up; refreshed immediately
+   * after CommunityChatPanel marks messages read, AND (2026-08-26 follow-up)
+   * on a live incoming message while Tán gẫu has been opened at least once
+   * this session but isn't the currently-visible tab — see
+   * CommunityChatPanel.tsx's scheduleDebouncedReaction. Before that first
+   * open, or once the assistant panel is fully closed (which tears the
+   * socket down), only the 60s poll moves the count. */
   communityUnreadCount: number;
   refreshCommunityUnreadCount: () => void;
 }
