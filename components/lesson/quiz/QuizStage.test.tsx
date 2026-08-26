@@ -434,6 +434,31 @@ describe('QuizStage — keyboard', () => {
     await userEvent.keyboard('{Enter}');
     expect(await screen.findByText('Correct!')).toBeInTheDocument();
   });
+
+  // Regression: grading locks the chosen option (disabled + correctness
+  // styling), and browsers drop keyboard focus the instant a focused element
+  // becomes disabled. A second Enter meant to advance to the next question
+  // used to rely on the event bubbling from a focused descendant of the
+  // card, so once focus was gone it silently did nothing until the student
+  // clicked. Blurring here (rather than depending on jsdom's exact
+  // disabled/blur behaviour) reproduces that "nothing is focused" state
+  // directly.
+  it('advances with a second Enter even when grading left nothing focused', async () => {
+    vi.mocked(quizService.answerQuizQuestion).mockResolvedValue(
+      answerResponse('q1', true, { optionId: 'b' }, null, 1, 1),
+    );
+    renderStage();
+    await screen.findByText('She ___ to work every day.');
+
+    screen.getByRole('radio', { name: /^go$/ }).focus();
+    await userEvent.keyboard('2');
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByText('Correct!')).toBeInTheDocument();
+
+    (document.activeElement as HTMLElement | null)?.blur();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByText('Present Simple can describe habits.')).toBeInTheDocument();
+  });
 });
 
 // SPRINT 07 — the reported bug: "a completed quiz does not reliably restore

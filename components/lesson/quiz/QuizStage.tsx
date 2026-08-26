@@ -202,6 +202,29 @@ const QuizStage: React.FC<QuizStageProps> = ({
     writeQuizDraft(userId, lessonId, draft);
   }, [userId, lessonId, phase, clientAttemptId, answers, currentIndex]);
 
+  // Enter-to-advance, at the window level rather than a bubbled onKeyDown on
+  // the card. Grading disables the just-focused input/option (FillBlankInput,
+  // MultipleChoiceInput's radio buttons, ...) — browsers drop keyboard focus
+  // the instant an element becomes disabled, so a second Enter meant to move
+  // to the next question would otherwise have no focused descendant to bubble
+  // from and silently do nothing. A window listener still fires regardless of
+  // where (or whether) focus landed; assigned via a ref so this effect can be
+  // declared once, unconditionally, ahead of the loading/error early returns
+  // below, while the handler body itself (defined near the JSX, once
+  // `handleNext` and the derived answer state exist) always sees this render.
+  const handleKeydownRef = useRef<(e: KeyboardEvent) => void>(() => {});
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => handleKeydownRef.current(e);
+    window.addEventListener('keydown', listener);
+    return () => window.removeEventListener('keydown', listener);
+  }, []);
+  useEffect(() => {
+    // Closes the gap between phase leaving 'answering' (e.g. a retake's
+    // 'loading' round-trip) and this render's later assignment running —
+    // without it the ref could keep firing a stale answering-phase closure.
+    if (phase !== 'answering') handleKeydownRef.current = () => {};
+  }, [phase]);
+
   if (phase === 'loading') {
     return (
       <div className="space-y-4">
@@ -351,10 +374,13 @@ const QuizStage: React.FC<QuizStageProps> = ({
     loadQuiz(true); // re-fetches — ORDERING options get a fresh server-side shuffle
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  // Enter means "the obvious next thing": check, advance, or finish. Wired
+  // through the ref-listener declared above so it still fires after grading
+  // has disabled (and defocused) whatever the student was just interacting
+  // with — see that effect's comment for why a plain onKeyDown can't.
+  handleKeydownRef.current = (e: KeyboardEvent) => {
     if (e.key !== 'Enter' || phase !== 'answering') return;
     if (checking) return;
-    // Enter means "the obvious next thing": check, advance, or finish.
     if (isImmediate ? !currentValue && !currentGraded : !canProceed) return;
     e.preventDefault();
     handleNext();
@@ -398,7 +424,7 @@ const QuizStage: React.FC<QuizStageProps> = ({
   }
 
   return (
-    <div onKeyDown={handleKeyDown}>
+    <div>
       <QuizProgressBar current={currentIndex} total={totalQuestions} answeredCount={answeredCount} />
 
       {/*
