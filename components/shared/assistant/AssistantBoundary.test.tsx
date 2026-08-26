@@ -7,6 +7,7 @@ import AssistantBoundary from './AssistantBoundary';
 import { useAssistant, useAssistantLessonContext, useAssistantLock } from './useAssistant';
 import * as dictionaryService from '../../../services/dictionaryService';
 import * as chatService from '../../../services/chatService';
+import * as communityChatService from '../../../services/communityChatService';
 import { ApiError } from '../../../services/apiError';
 
 // Phase A + Phase B + Phase C — the floating shell (single-slot open/close,
@@ -73,6 +74,10 @@ beforeEach(() => {
   // Safe default so opening ChatPanel in a test that isn't ABOUT session
   // restore never hits a real network call.
   vi.spyOn(chatService, 'getChatSession').mockResolvedValue({ turns: [], expiresAt: null });
+  // AssistantBoundary itself polls this on mount (Community Chat unread
+  // badge, 2026-08-26) regardless of which tool/tab a test cares about —
+  // same "safe default" reasoning as the two mocks above.
+  vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount').mockResolvedValue(0);
 });
 
 afterEach(() => {

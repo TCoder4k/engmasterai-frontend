@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LanguageProvider } from '../../../../i18n/LanguageProvider';
@@ -70,6 +70,12 @@ beforeEach(() => {
     meta: { hasMore: false, oldestId: null },
   });
   vi.spyOn(communityChatService, 'issueCommunityLiveTicket').mockResolvedValue({ ticket: 'test-ticket' });
+  // AssistantBoundary polls this on mount regardless of which tab a test
+  // cares about; CommunityChatPanel also calls markCommunityMessagesRead on
+  // tab activation — both safe defaults so a test that isn't ABOUT the
+  // unread badge never hits a real network call.
+  vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount').mockResolvedValue(0);
+  vi.spyOn(communityChatService, 'markCommunityMessagesRead').mockResolvedValue(undefined);
   vi.spyOn(communityChatSocket, 'connectCommunityLive').mockImplementation((_ticket, handlers) => {
     capturedHandlers = handlers;
     return { close: vi.fn() };
@@ -446,5 +452,98 @@ describe('CommunityChatPanel — connection status', () => {
     await user.click(screen.getByRole('button', { name: /reconnect/i }));
 
     await waitFor(() => expect(ticketSpy).toHaveBeenCalled());
+  });
+});
+
+describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
+  it('shows the same count on both the mascot launcher and the Tán gẫu tab, capped at 9+', async () => {
+    vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount').mockResolvedValue(12);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+
+    // Visible on the launcher without ever opening the panel.
+    await waitFor(() => expect(within(chatLauncher()!).getByText('9+')).toBeInTheDocument());
+
+    await openChat(user);
+    expect(within(screen.getByRole('tab', { name: /community/i })).getByText('9+')).toBeInTheDocument();
+  });
+
+  it('shows nothing when the count is 0', async () => {
+    renderBoundary();
+    await waitFor(() => expect(communityChatService.getUnreadCommunityMessageCount).toHaveBeenCalled());
+
+    expect(within(chatLauncher()!).queryByText(/\d/)).not.toBeInTheDocument();
+  });
+
+  it('opening the Tán gẫu tab marks read once immediately and clears both badges', async () => {
+    vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount')
+      .mockResolvedValueOnce(5) // initial poll on mount
+      .mockResolvedValue(0); // the refresh triggered right after mark-read
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await waitFor(() => expect(within(chatLauncher()!).getByText('5')).toBeInTheDocument());
+
+    await openCommunity(user);
+
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(within(chatLauncher()!).queryByText(/\d/)).not.toBeInTheDocument());
+    expect(
+      within(screen.getByRole('tab', { name: /community/i })).queryByText(/\d/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('a live message from someone else while the tab is active triggers a debounced mark-read call; the count stays flat for the sender\'s own echoed message', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openCommunity(user);
+    await waitFor(() => expect(capturedHandlers).not.toBeNull());
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(1); // from activation
+
+    capturedHandlers!.onMessage(makeMessage({ id: 'live-1', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 } }));
+    await waitFor(() => expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(2));
+
+    capturedHandlers!.onMessage(
+      makeMessage({ id: 'live-2', clientMessageId: 'own-echo', author: { id: 'me', name: 'Me', avatarUrl: null, level: 1 } }),
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(2);
+  });
+
+  it('a burst of several incoming messages while active produces exactly one debounced mark-read call, not one per message', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openCommunity(user);
+    await waitFor(() => expect(capturedHandlers).not.toBeNull());
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(1); // from activation
+
+    for (let i = 0; i < 5; i += 1) {
+      capturedHandlers!.onMessage(
+        makeMessage({
+          id: `burst-${i}`,
+          content: `burst ${i}`,
+          author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 },
+        }),
+      );
+    }
+
+    await waitFor(() => expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(2));
+    // No further calls once the debounce window has long passed.
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(2);
+  });
+
+  it('does NOT mark-read for a live message while the tab is inactive (Engy is the visible tab)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openCommunity(user); // activates the socket + fires the activation mark-read
+    await waitFor(() => expect(capturedHandlers).not.toBeNull());
+    await switchToEngy(user);
+    const callsAfterActivation = (communityChatService.markCommunityMessagesRead as unknown as { mock: { calls: unknown[] } })
+      .mock.calls.length;
+
+    capturedHandlers!.onMessage(makeMessage({ id: 'while-hidden', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 } }));
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(callsAfterActivation);
   });
 });

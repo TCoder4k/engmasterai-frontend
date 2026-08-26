@@ -106,7 +106,11 @@ const ChatPanel: React.FC = () => {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1 shrink-0 border-b border-slate-100 dark:border-slate-800">
-          <ChatToolTabBar activeTab={activeSubTab} onChange={setActiveSubTab} />
+          <ChatToolTabBar
+            activeTab={activeSubTab}
+            onChange={setActiveSubTab}
+            communityUnreadCount={assistant.communityUnreadCount}
+          />
           <button
             type="button"
             onClick={() => {

@@ -54,6 +54,12 @@ export interface AssistantContextValue {
   pendingHandoff: ChatHandoffPayload | null;
   handoffToChat: (payload: ChatHandoffPayload) => void;
   consumeHandoff: () => void;
+  /** Community Chat unread badge (2026-08-26) — one shared count read by
+   * both AssistantLauncher's mascot badge and ChatToolTabBar's Tán gẫu pill,
+   * so the two never disagree. Polled every 60s (see AssistantBoundary.tsx),
+   * plus an immediate refresh after CommunityChatPanel marks messages read. */
+  communityUnreadCount: number;
+  refreshCommunityUnreadCount: () => void;
 }
 
 export const AssistantContext = createContext<AssistantContextValue | null>(null);

@@ -65,6 +65,25 @@ export const sendCommunityMessage = async (
   return response.json();
 };
 
+// GET /community/messages/unread-count — mirrors notificationService.ts's
+// getUnreadNotificationCount shape exactly. Backend excludes the caller's
+// own messages and lazily starts a brand-new user's cursor at "now" (see
+// docs/CLAUDE.md), so this never charges anyone for pre-existing history.
+export const getUnreadCommunityMessageCount = async (): Promise<number> => {
+  const response = await apiFetch(`${API_BASE_URL}/community/messages/unread-count`);
+  if (!response.ok) return throwApiError(response, 'Failed to load unread message count');
+  const body = await response.json();
+  return body.count;
+};
+
+// POST /community/messages/read — advances the caller's read cursor to now.
+// "Read" here means "everything before this moment", not a per-message
+// receipt — the right granularity for a global room, not a DM.
+export const markCommunityMessagesRead = async (): Promise<void> => {
+  const response = await apiFetch(`${API_BASE_URL}/community/messages/read`, { method: 'POST' });
+  if (!response.ok) return throwApiError(response, 'Failed to mark messages read');
+};
+
 // POST /community/live-ticket — issues a short-lived, single-use ticket for
 // the /community/live WebSocket handshake (see communityChatSocket.ts).
 // Requested fresh before every connection attempt, including reconnects —

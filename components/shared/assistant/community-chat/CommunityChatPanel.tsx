@@ -6,9 +6,11 @@ import { ApiError } from '../../../../services/apiError';
 import { newUuidV4 } from '../../../../services/clientSessionId';
 import {
   listCommunityMessages,
+  markCommunityMessagesRead,
   sendCommunityMessage,
   type CommunityMessage,
 } from '../../../../services/communityChatService';
+import { useAssistant } from '../useAssistant';
 import EmptyState from '../../EmptyState';
 import ErrorState from '../../ErrorState';
 import Skeleton from '../../Skeleton';
@@ -18,6 +20,10 @@ import CommunityComposer from './CommunityComposer';
 import { useCommunityChatSocket } from './useCommunityChatSocket';
 
 const MAX_COMMUNITY_MESSAGE_LENGTH = 500; // mirrors SendCommunityMessageDto's backend limit
+// A busy room sending several messages in a burst while the tab is open
+// must produce ONE mark-read call, not one per message — see the debounced
+// trigger inside upsertMessage below.
+const MARK_READ_DEBOUNCE_MS = 500;
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -41,6 +47,13 @@ interface CommunityChatPanelProps {
 const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
   const { t } = useTranslation();
   const currentUserId = authService.getUser()?.id ?? null;
+  const assistant = useAssistant();
+  // Read via a ref so triggerMarkRead below can stay referentially stable
+  // (useCallback deps []) without going stale — assistant's own context
+  // value object changes identity whenever communityUnreadCount updates.
+  const assistantRef = useRef(assistant);
+  assistantRef.current = assistant;
+  const markReadDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [messages, setMessages] = useState<CommunityMessage[]>([]);
@@ -62,9 +75,34 @@ const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(false);
 
+  // Fire-and-forget, best-effort: a failed mark-read just leaves the badge
+  // as-is until the next successful call or the 60s background poll catches
+  // up (see AssistantBoundary.tsx) — never surfaced to the student.
+  const triggerMarkRead = useCallback(() => {
+    void markCommunityMessagesRead()
+      .then(() => assistantRef.current?.refreshCommunityUnreadCount())
+      .catch(() => {});
+  }, []);
+
+  const scheduleDebouncedMarkRead = useCallback(() => {
+    if (markReadDebounceTimerRef.current) clearTimeout(markReadDebounceTimerRef.current);
+    markReadDebounceTimerRef.current = setTimeout(triggerMarkRead, MARK_READ_DEBOUNCE_MS);
+  }, [triggerMarkRead]);
+
+  useEffect(
+    () => () => {
+      if (markReadDebounceTimerRef.current) clearTimeout(markReadDebounceTimerRef.current);
+    },
+    [],
+  );
+
   useEffect(() => {
-    if (active) setActivated(true);
-  }, [active]);
+    if (!active) return;
+    setActivated(true);
+    // Opening/returning to the tab is a single deliberate action — marks
+    // everything before this moment read immediately, no debounce.
+    triggerMarkRead();
+  }, [active, triggerMarkRead]);
 
   const loadMessages = useCallback(() => {
     setLoadState('loading');
@@ -90,14 +128,23 @@ const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
   // message, in whichever order they arrive (no ordering guarantee between
   // the two transports). Deduped by real server id, so whichever of the two
   // arrives second is a no-op.
-  const upsertMessage = useCallback((incoming: CommunityMessage) => {
-    setMessages((prev) => {
-      if (prev.some((existing) => existing.id === incoming.id)) return prev;
-      shouldScrollRef.current = true;
-      return [...prev, incoming];
-    });
-    setPending((prev) => (prev && prev.clientMessageId === incoming.clientMessageId ? null : prev));
-  }, []);
+  const upsertMessage = useCallback(
+    (incoming: CommunityMessage) => {
+      setMessages((prev) => {
+        if (prev.some((existing) => existing.id === incoming.id)) return prev;
+        shouldScrollRef.current = true;
+        return [...prev, incoming];
+      });
+      setPending((prev) => (prev && prev.clientMessageId === incoming.clientMessageId ? null : prev));
+      // A message arriving from someone else while this tab is the one the
+      // student is actually looking at counts as read the moment it's seen —
+      // otherwise the background 60s poll would tick the badge up for a
+      // message already visible on screen. Debounced: a burst of several
+      // messages must produce one POST, not one per message.
+      if (active && incoming.author.id !== currentUserId) scheduleDebouncedMarkRead();
+    },
+    [active, currentUserId, scheduleDebouncedMarkRead],
+  );
 
   const { status: connectionStatus, retryNow } = useCommunityChatSocket(activated, upsertMessage);
 

@@ -54,7 +54,7 @@ const AssistantLauncher: React.FC = () => {
         aria-label={t.assistant.openLauncher}
         aria-haspopup="dialog"
         aria-expanded={assistant.activeTool === 'chat'}
-        className="w-[58px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 rounded-full"
+        className="relative w-[58px] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 rounded-full"
       >
         <img
           src="/mascot/engy-icon.png"
@@ -62,6 +62,17 @@ const AssistantLauncher: React.FC = () => {
           aria-hidden="true"
           className="w-full h-auto object-contain select-none pointer-events-none"
         />
+        {/* Community Chat unread badge — same styling precedent as
+            NotificationBell.tsx's badge, the one other unread indicator in
+            this app. Represents Tán gẫu's unread count specifically (Engy AI
+            is a synchronous 1:1 AI chat with no "unread from someone else"
+            concept), but sits on the shared launcher since it's the one
+            button that opens both. */}
+        {assistant.communityUnreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none">
+            {assistant.communityUnreadCount > 9 ? '9+' : assistant.communityUnreadCount}
+          </span>
+        )}
       </button>
     </div>
   );

@@ -13,6 +13,9 @@ import {
 import AssistantLauncher from './AssistantLauncher';
 import DictionaryPanel from './DictionaryPanel';
 import ChatPanel from './ChatPanel';
+import { getUnreadCommunityMessageCount } from '../../../services/communityChatService';
+
+const COMMUNITY_UNREAD_POLL_INTERVAL_MS = 60_000;
 
 // Floating Dictionary + Engy shell, Phase A + Phase B + Phase C.
 //
@@ -41,6 +44,11 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   // Phase C
   const [lessonContext, setLessonContext] = useState<AssistantLessonContext | null>(null);
   const [pendingHandoff, setPendingHandoff] = useState<ChatHandoffPayload | null>(null);
+  // Community Chat unread badge — polled here (not inside AssistantLauncher/
+  // ChatToolTabBar individually) so both badge locations share one number,
+  // same REST-poll-only precedent as NotificationBell.tsx (no WebSocket
+  // involved in the count itself).
+  const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
 
   const registerLock = useCallback((id: number, entry: AssistantLockEntry) => {
     setLockedIds((prev) => {
@@ -92,6 +100,24 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   }, []);
   const consumeHandoff = useCallback(() => setPendingHandoff(null), []);
 
+  const refreshCommunityUnreadCount = useCallback(() => {
+    getUnreadCommunityMessageCount()
+      .then(setCommunityUnreadCount)
+      .catch(() => {
+        // Best-effort — a failed poll just leaves the last known count, same
+        // convention as NotificationBell.tsx's refreshUnreadCount.
+      });
+  }, []);
+
+  useEffect(() => {
+    refreshCommunityUnreadCount();
+    const interval = window.setInterval(
+      refreshCommunityUnreadCount,
+      COMMUNITY_UNREAD_POLL_INTERVAL_MS,
+    );
+    return () => window.clearInterval(interval);
+  }, [refreshCommunityUnreadCount]);
+
   const value = useMemo<AssistantContextValue>(
     () => ({
       activeTool: isLocked ? null : activeTool,
@@ -103,6 +129,8 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       pendingHandoff,
       handoffToChat,
       consumeHandoff,
+      communityUnreadCount,
+      refreshCommunityUnreadCount,
     }),
     [
       activeTool,
@@ -114,6 +142,8 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       pendingHandoff,
       handoffToChat,
       consumeHandoff,
+      communityUnreadCount,
+      refreshCommunityUnreadCount,
     ],
   );
 

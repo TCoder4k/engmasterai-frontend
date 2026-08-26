@@ -7,6 +7,9 @@ export type ChatSubTab = 'engy' | 'community';
 interface ChatToolTabBarProps {
   activeTab: ChatSubTab;
   onChange: (tab: ChatSubTab) => void;
+  /** Community Chat unread badge — sourced from useAssistant() by the parent
+   * (ChatPanel.tsx), keeping this component purely presentational. */
+  communityUnreadCount: number;
 }
 
 // The in-panel tab strip added for Community Chat — a horizontal strip
@@ -15,7 +18,11 @@ interface ChatToolTabBarProps {
 // in this codebase (confirmed by a full-repo search) — this is a small, new
 // primitive, deliberately minimal rather than a generic reusable component
 // since nothing else needs a tab strip yet.
-const ChatToolTabBar: React.FC<ChatToolTabBarProps> = ({ activeTab, onChange }) => {
+const ChatToolTabBar: React.FC<ChatToolTabBarProps> = ({
+  activeTab,
+  onChange,
+  communityUnreadCount,
+}) => {
   const { t } = useTranslation();
   const tabs: { id: ChatSubTab; label: string; Icon: typeof Bot }[] = [
     { id: 'engy', label: t.assistant.engyTabLabel, Icon: Bot },
@@ -39,7 +46,7 @@ const ChatToolTabBar: React.FC<ChatToolTabBarProps> = ({ activeTab, onChange }) 
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
               selected
                 ? selectedClass
                 : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -47,6 +54,13 @@ const ChatToolTabBar: React.FC<ChatToolTabBarProps> = ({ activeTab, onChange }) 
           >
             <Icon size={14} aria-hidden="true" />
             {label}
+            {/* Same badge styling precedent as NotificationBell.tsx/
+                AssistantLauncher.tsx — one unread-badge look across the app. */}
+            {id === 'community' && communityUnreadCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none">
+                {communityUnreadCount > 9 ? '9+' : communityUnreadCount}
+              </span>
+            )}
           </button>
         );
       })}
