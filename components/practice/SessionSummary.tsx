@@ -1,5 +1,5 @@
 import React from 'react';
-import { PartyPopper } from 'lucide-react';
+import { PartyPopper, ArrowRight } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { SessionResult } from './types';
 
@@ -7,6 +7,11 @@ interface SessionSummaryProps {
   result: SessionResult;
   onRestart: () => void;
   onExit: () => void;
+  // Optional — the caller only passes these when there's a next practice
+  // mode to jump to (VocabPracticeSessionPage omits them past the last tab),
+  // so this generic summary stays agnostic of the mode list itself.
+  onNext?: () => void;
+  nextModeLabel?: string;
 }
 
 // End-of-session card — this component itself is client-side-only and
@@ -14,7 +19,7 @@ interface SessionSummaryProps {
 // Again/Hard/Good/Easy ratings ARE persisted server-side (real SRS
 // progress) even though this summary card is not; only Dictation's
 // suggested-rating flow and Games' score remain purely session-local.
-const SessionSummary: React.FC<SessionSummaryProps> = ({ result, onRestart, onExit }) => {
+const SessionSummary: React.FC<SessionSummaryProps> = ({ result, onRestart, onExit, onNext, nextModeLabel }) => {
   const { t } = useTranslation();
   const percent = result.totalCards > 0 ? Math.round((result.correctCount / result.totalCards) * 100) : 0;
 
@@ -44,6 +49,16 @@ const SessionSummary: React.FC<SessionSummaryProps> = ({ result, onRestart, onEx
         >
           {t.practice.backToDecks}
         </button>
+        {onNext && nextModeLabel && (
+          <button
+            type="button"
+            onClick={onNext}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            {t.practice.nextModeAction(nextModeLabel)}
+            <ArrowRight size={15} aria-hidden="true" />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PartyPopper, RotateCcw } from 'lucide-react';
+import { PartyPopper, RotateCcw, ArrowRight } from 'lucide-react';
 import { useTranslation } from '../../../i18n/useTranslation';
 import Modal from '../../shared/Modal';
 
@@ -10,6 +10,10 @@ interface GuessWordSessionSummaryProps {
   onReviewStruggled: () => void;
   onRestartFull: () => void;
   onExit: () => void;
+  // Optional — see SessionSummary.tsx's identical props for why these are
+  // opt-in rather than always required.
+  onNext?: () => void;
+  nextModeLabel?: string;
 }
 
 // Dedicated summary for Guess-the-Word, not the generic SessionSummary —
@@ -25,6 +29,8 @@ const GuessWordSessionSummary: React.FC<GuessWordSessionSummaryProps> = ({
   onReviewStruggled,
   onRestartFull,
   onExit,
+  onNext,
+  nextModeLabel,
 }) => {
   const { t } = useTranslation();
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -82,6 +88,16 @@ const GuessWordSessionSummary: React.FC<GuessWordSessionSummaryProps> = ({
         >
           {t.practice.backToDecks}
         </button>
+        {onNext && nextModeLabel && (
+          <button
+            type="button"
+            onClick={onNext}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          >
+            {t.practice.nextModeAction(nextModeLabel)}
+            <ArrowRight size={15} aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* Destructive — this deletes the deck's persisted Guess-mode

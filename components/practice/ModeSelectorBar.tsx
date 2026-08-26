@@ -1,6 +1,7 @@
 import React from 'react';
 import { Layers, HelpCircle, Headphones, Gamepad2, PenLine } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
+import { TranslationDict } from '../../i18n/translations';
 import { VocabPracticeMode } from './types';
 
 interface ModeSelectorBarProps {
@@ -8,19 +9,48 @@ interface ModeSelectorBarProps {
   onSelect: (mode: VocabPracticeMode) => void;
 }
 
+// The single source of truth for tab order — VocabPracticeSessionPage reuses
+// this (not the ?mode= validation list in VALID_PRACTICE_MODES, which is
+// unordered) to work out "next tab" for its post-session shortcut, so the
+// two never drift apart.
+export const PRACTICE_MODE_ORDER: VocabPracticeMode[] = [
+  'flashcard',
+  'guess',
+  'games',
+  'contextual',
+  'dictation',
+];
+
+export const practiceModeLabel = (mode: VocabPracticeMode, t: TranslationDict): string => {
+  switch (mode) {
+    case 'flashcard':
+      return t.practice.modeFlashcards;
+    case 'guess':
+      return t.practice.modeGuess;
+    case 'games':
+      return t.practice.modeGames;
+    case 'contextual':
+      return t.practice.modeContextual;
+    case 'dictation':
+      return t.practice.modeDictation;
+  }
+};
+
 // All five modes are live. `comingSoon` stays supported in the shape below
 // (never a dead link, shown disabled with a "Soon" cue) for whatever the
 // next one turns out to be — it just isn't set on any entry right now.
 const ModeSelectorBar: React.FC<ModeSelectorBarProps> = ({ activeMode, onSelect }) => {
   const { t } = useTranslation();
 
-  const modes: { id: VocabPracticeMode; label: string; icon: React.ReactNode; comingSoon?: boolean }[] = [
-    { id: 'flashcard', label: t.practice.modeFlashcards, icon: <Layers size={16} /> },
-    { id: 'guess', label: t.practice.modeGuess, icon: <HelpCircle size={16} /> },
-    { id: 'games', label: t.practice.modeGames, icon: <Gamepad2 size={16} /> },
-    { id: 'contextual', label: t.practice.modeContextual, icon: <PenLine size={16} /> },
-    { id: 'dictation', label: t.practice.modeDictation, icon: <Headphones size={16} /> },
-  ];
+  const icons: Record<VocabPracticeMode, React.ReactNode> = {
+    flashcard: <Layers size={16} />,
+    guess: <HelpCircle size={16} />,
+    games: <Gamepad2 size={16} />,
+    contextual: <PenLine size={16} />,
+    dictation: <Headphones size={16} />,
+  };
+  const modes: { id: VocabPracticeMode; label: string; icon: React.ReactNode; comingSoon?: boolean }[] =
+    PRACTICE_MODE_ORDER.map((id) => ({ id, label: practiceModeLabel(id, t), icon: icons[id] }));
 
   return (
     <div

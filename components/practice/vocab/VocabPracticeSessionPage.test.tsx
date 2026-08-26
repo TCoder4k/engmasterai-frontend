@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import { ThemeProvider } from '../../../theme/ThemeProvider';
@@ -151,5 +152,77 @@ describe('VocabPracticeSessionPage — canonical initial mode', () => {
     expect(contextualTab).toHaveAttribute('aria-selected', 'true');
     const flashcardTab = screen.getByRole('tab', { name: /flashcards/i });
     expect(flashcardTab).toHaveAttribute('aria-selected', 'false');
+  });
+});
+
+// The "next mode" shortcut requested for the post-session screens: instead
+// of manually clicking back up to ModeSelectorBar, a completed session's
+// summary offers a button straight to the next tab in that bar's own order
+// (flashcard -> guess -> games -> contextual -> dictation). Exercised here
+// end-to-end (real FlashcardSession completion flow, real tab switch) rather
+// than only at the SessionSummary/GuessWordSessionSummary unit level, so the
+// actual wiring in VocabPracticeSessionPage is covered too.
+describe('VocabPracticeSessionPage — next mode shortcut', () => {
+  beforeEach(() => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('/guess-progress')) {
+        return Promise.resolve(
+          jsonResponse(200, { deckId: 'deck-1', totalWords: MOCK_WORDS.length, learnedWordIds: [] }),
+        );
+      }
+      if (url.includes('/vocab/decks/deck-1/words')) {
+        return Promise.resolve(jsonResponse(200, { data: MOCK_WORDS }));
+      }
+      if (url.includes('/vocab/decks/deck-1')) {
+        return Promise.resolve(jsonResponse(200, MOCK_DECK));
+      }
+      if (url.includes('/vocab/libraries/lib-1')) {
+        return Promise.resolve(jsonResponse(200, MOCK_LIBRARY));
+      }
+      if (url.includes('/vocab/words/')) {
+        return Promise.resolve(jsonResponse(200, { examples: [] }));
+      }
+      if (url.includes('/learning/words/') && url.endsWith('/progress')) {
+        return Promise.resolve(
+          jsonResponse(200, { progress: null, previewIntervals: { again: 1, hard: 1, good: 1, easy: 4 } }),
+        );
+      }
+      if (url.includes('/learning/words/') && url.endsWith('/review')) {
+        return Promise.resolve(
+          jsonResponse(200, {
+            state: 'REVIEW',
+            intervalDays: 1,
+            nextReviewAt: new Date().toISOString(),
+            easeFactor: 2.5,
+            repetitions: 1,
+            lapses: 0,
+            version: 1,
+          }),
+        );
+      }
+      return Promise.resolve(jsonResponse(404, { message: 'Not found' }));
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it('finishing Flashcard offers a shortcut straight to Guess the Word, and clicking it switches tabs', async () => {
+    renderSessionPage('/practice/vocab/deck-1');
+    await screen.findByRole('tab', { name: /flashcards/i });
+
+    // Rate both of MOCK_WORDS' cards "Good" to reach the summary — the
+    // rating buttons work unflipped (see FlashcardSession.tsx).
+    await userEvent.click(await screen.findByRole('button', { name: /^Good/ }));
+    await userEvent.click(await screen.findByRole('button', { name: /^Good/ }));
+
+    const nextButton = await screen.findByRole('button', { name: /next: guess the word/i });
+    await userEvent.click(nextButton);
+
+    const guessTab = await screen.findByRole('tab', { name: /guess the word/i });
+    expect(guessTab).toHaveAttribute('aria-selected', 'true');
   });
 });

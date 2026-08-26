@@ -17,6 +17,8 @@ interface GuessWordSessionProps {
   deckId: string;
   words: VocabWordListItem[];
   onExit: () => void;
+  onNext?: () => void;
+  nextModeLabel?: string;
 }
 
 // The prompt is VI -> EN: the headline shows the word's Vietnamese meaning
@@ -59,7 +61,13 @@ const playWordAudio = (word: Pick<VocabWordListItem, 'audioUrl' | 'text'>): (() 
 // not worth extracting for this.
 const normalize = (value: string): string => value.trim().toLowerCase().replace(/[^a-z0-9'\s-]/g, '');
 
-const GuessWordSession: React.FC<GuessWordSessionProps> = ({ deckId, words, onExit }) => {
+const GuessWordSession: React.FC<GuessWordSessionProps> = ({
+  deckId,
+  words,
+  onExit,
+  onNext,
+  nextModeLabel,
+}) => {
   const { t } = useTranslation();
   const {
     currentWord,
@@ -157,6 +165,8 @@ const GuessWordSession: React.FC<GuessWordSessionProps> = ({ deckId, words, onEx
           onReviewStruggled={restartStruggled}
           onRestartFull={restartFull}
           onExit={onExit}
+          onNext={onNext}
+          nextModeLabel={nextModeLabel}
         />
       </div>
     );

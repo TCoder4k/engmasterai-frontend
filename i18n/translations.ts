@@ -762,6 +762,7 @@ const en = {
     sessionComplete: "Session complete!",
     scoreLabel: "Score",
     backToDecks: "Back to decks",
+    nextModeAction: (modeLabel: string) => `Next: ${modeLabel}`,
     guessLearnedOfTotal: (learned: number, total: number) =>
       `${learned}/${total} learned`,
     guessDeckComplete: "Deck complete!",
@@ -1997,6 +1998,7 @@ const vi: TranslationDict = {
     sessionComplete: "Hoàn thành phiên luyện tập!",
     scoreLabel: "Điểm số",
     backToDecks: "Quay lại danh sách bộ từ",
+    nextModeAction: (modeLabel: string) => `Tiếp theo: ${modeLabel}`,
     guessLearnedOfTotal: (learned: number, total: number) =>
       `${learned}/${total} từ đã học`,
     guessDeckComplete: "Hoàn thành bộ từ!",

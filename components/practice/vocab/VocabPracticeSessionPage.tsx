@@ -5,7 +5,7 @@ import EmptyState from '../../shared/EmptyState';
 import ErrorState from '../../shared/ErrorState';
 import Skeleton from '../../shared/Skeleton';
 import { useStudyActivity } from '../../shared/StudyTimeBoundary';
-import ModeSelectorBar from '../ModeSelectorBar';
+import ModeSelectorBar, { PRACTICE_MODE_ORDER, practiceModeLabel } from '../ModeSelectorBar';
 import SessionHeader from './SessionHeader';
 import FlashcardSession from './FlashcardSession';
 import GuessWordSession from './GuessWordSession';
@@ -118,6 +118,16 @@ const VocabPracticeSessionPage: React.FC = () => {
     setSessionKey((k) => k + 1);
   };
 
+  // Convenience shortcut requested for the post-session screens: jump
+  // straight to the next tab in ModeSelectorBar's own order rather than
+  // making the student go back up and click it manually. `undefined` past
+  // the last tab (dictation) — SessionSummary/GuessWordSessionSummary only
+  // render the button when both onNext and nextModeLabel are present.
+  const modeIndex = PRACTICE_MODE_ORDER.indexOf(mode);
+  const nextMode = modeIndex >= 0 ? PRACTICE_MODE_ORDER[modeIndex + 1] : undefined;
+  const handleNextMode = nextMode ? () => handleSelectMode(nextMode) : undefined;
+  const nextModeLabel = nextMode ? practiceModeLabel(nextMode, t) : undefined;
+
   // Exits back to the deck's own vocabulary library — not the generic
   // Practice Hub — matching the canonical Vocabulary -> Library -> Deck ->
   // Flashcard flow (Sprint 03D). Falls back to the library list only in the
@@ -176,11 +186,24 @@ const VocabPracticeSessionPage: React.FC = () => {
         <ModeSelectorBar activeMode={mode} onSelect={handleSelectMode} />
 
         {result ? (
-          <SessionSummary result={result} onRestart={handleRestart} onExit={handleExit} />
+          <SessionSummary
+            result={result}
+            onRestart={handleRestart}
+            onExit={handleExit}
+            onNext={handleNextMode}
+            nextModeLabel={nextModeLabel}
+          />
         ) : mode === 'flashcard' ? (
           <FlashcardSession key={sessionKey} words={words} onComplete={handleComplete} />
         ) : mode === 'guess' ? (
-          <GuessWordSession key={sessionKey} deckId={deckId!} words={words} onExit={handleExit} />
+          <GuessWordSession
+            key={sessionKey}
+            deckId={deckId!}
+            words={words}
+            onExit={handleExit}
+            onNext={handleNextMode}
+            nextModeLabel={nextModeLabel}
+          />
         ) : mode === 'dictation' ? (
           <DictationSession key={sessionKey} words={words} onComplete={handleComplete} />
         ) : mode === 'games' ? (
