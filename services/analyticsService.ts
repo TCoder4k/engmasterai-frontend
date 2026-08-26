@@ -95,3 +95,26 @@ export const getDashboardAnalytics = async (): Promise<DashboardAnalytics> => {
   }
   return response.json();
 };
+
+// GET /analytics/top-students — every student's own view of the same
+// all-time study-time leaderboard the admin dashboard shows. Deliberately no
+// `email` field on this type at all: unlike the admin-only equivalent, this
+// endpoint is not role-gated, so a fellow student's email must never be
+// something this shape could even hold.
+export interface PublicTopStudent {
+  id: string;
+  name: string;
+  level: number;
+  /** SUM(StudyTimeEvent.creditedSeconds), all time. */
+  totalStudySeconds: number;
+  /** COUNT(LessonTaskProgress WHERE completedAt IS NOT NULL) — task-level. */
+  completedTasks: number;
+}
+
+export const getTopStudents = async (): Promise<PublicTopStudent[]> => {
+  const response = await apiFetch(`${API_BASE_URL}/analytics/top-students`);
+  if (!response.ok) {
+    return throwApiError(response, 'Failed to load top students');
+  }
+  return response.json();
+};

@@ -207,6 +207,12 @@ const en = {
     // Fame (StreakLeaderboardPage), sitting where Today's Progress used to.
     duoLeaderboardTitle: "Duo Streak Hall of Fame",
     viewFullLeaderboard: "View full leaderboard",
+    // The dashboard's own view of the admin panel's all-time study-time
+    // leaderboard — same ranking, no email field in the response at all.
+    topStudentsTitle: "Top Diligent Students",
+    topStudentsSubtitle: "Ranked by total study time",
+    topStudentsEmpty: "No study data yet.",
+    topStudentsTasksCount: (count: number) => `${count} task${count === 1 ? '' : 's'}`,
     // Sprint 10 — the level widget. `{level}` and `{xp}` are substituted at
     // render time; the achievement NAMES moved to their own `achievements`
     // block below, keyed by the server's AchievementKey.
@@ -1551,6 +1557,10 @@ const vi: TranslationDict = {
     duoLeaderboardTitle: "Bảng Vàng Xếp Hạng Cặp Đôi",
     viewFullLeaderboard: "Xem bảng xếp hạng đầy đủ",
     statsRetry: "Thử lại",
+    topStudentsTitle: "Top Học viên chăm chỉ",
+    topStudentsSubtitle: "Xếp hạng theo tổng thời gian học",
+    topStudentsEmpty: "Chưa có dữ liệu học tập nào.",
+    topStudentsTasksCount: (count: number) => `${count} bài`,
     levelNumber: "Cấp {level}",
     levelUp: "Đã lên cấp {level}!",
     xpToNextLevel: "Còn {xp} XP để lên cấp",

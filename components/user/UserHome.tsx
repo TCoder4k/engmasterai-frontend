@@ -10,6 +10,7 @@ import DashboardStatCards from './DashboardStatCards';
 import LearningTrackCard from './LearningTrackCard';
 import UserSidebar from './UserSidebar';
 import DuoLeaderboardWidget from './DuoLeaderboardWidget';
+import TopStudentsWidget from './TopStudentsWidget';
 import CourseCard from './CourseCard';
 import { authService } from '../../services/authService';
 import { getPublishedCourses } from '../../services/courseService';
@@ -519,6 +520,14 @@ const UserHome: React.FC = () => {
           <div className="lg:hidden">
             <DuoLeaderboardWidget />
           </div>
+
+          {/* The all-time study-time leaderboard, own view of the admin
+              dashboard's TopStudentsTable — requested to sit at the very
+              bottom of the page. Unlike the Duo Streak preview above, this
+              one is not breakpoint-gated: it's the true last element of the
+              main content column on every viewport, not a mobile-only
+              duplicate of a desktop sidebar widget. */}
+          <TopStudentsWidget />
         </div>
 
         {/* ---- Desktop-only right widget column ---- */}
