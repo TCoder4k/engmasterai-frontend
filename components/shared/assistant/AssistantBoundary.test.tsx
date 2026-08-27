@@ -1095,7 +1095,7 @@ const badgeMessage = (overrides: Partial<CommunityMessage> = {}): CommunityMessa
   content: 'hello',
   clientMessageId: 'client-1',
   createdAt: new Date().toISOString(),
-  author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 },
+  author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5, isAdmin: false },
   ...overrides,
 });
 
@@ -1145,6 +1145,92 @@ describe('AssistantBoundary — always-on Community Chat badge socket (2026-08-2
       (communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }).mock.calls
         .length,
     ).toBe(callsBefore + 1);
+  });
+});
+
+// The bell dropdown's mute preference is per-user (see
+// communityNotificationPreference.ts) — these tests drive it through a real
+// `localStorage['user']` so the real per-user key gets exercised, not a
+// mocked authService.
+const MUTE_TEST_USER_ID = 'mute-test-user';
+const muteStorageKey = `engmasterai:community-notifications-muted:${MUTE_TEST_USER_ID}`;
+const signInAsMuteTestUser = () => {
+  localStorage.setItem('user', JSON.stringify({ id: MUTE_TEST_USER_ID, name: 'Test', role: 'USER' }));
+};
+
+describe('Community Chat notification mute (bell dropdown)', () => {
+  afterEach(() => {
+    localStorage.removeItem('user');
+    localStorage.removeItem(muteStorageKey);
+  });
+
+  it('the bell renders only while the Community tab is active, not on Engy\'s', async () => {
+    signInAsMuteTestUser();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+
+    await user.click(chatLauncher()!);
+    expect(screen.queryByRole('button', { name: /notifications/i })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: /community/i }));
+    expect(screen.getByRole('button', { name: /notifications/i })).toBeInTheDocument();
+  });
+
+  it('muting suppresses the mascot badge immediately even though the real count stays > 0, and unmuting restores it with no new fetch', async () => {
+    signInAsMuteTestUser();
+    vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount').mockResolvedValue(3);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await waitFor(() => expect(within(chatLauncher()!).getByText('3')).toBeInTheDocument());
+    const fetchCountBeforeToggling = (
+      communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
+
+    await user.click(chatLauncher()!);
+    await user.click(screen.getByRole('tab', { name: /community/i }));
+    await user.click(screen.getByRole('button', { name: /notifications/i }));
+    await user.click(screen.getByRole('menuitemradio', { name: /turn off notifications/i }));
+
+    expect(within(chatLauncher()!).queryByText('3')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /notifications/i }));
+    await user.click(screen.getByRole('menuitemradio', { name: /all notifications/i }));
+
+    expect(within(chatLauncher()!).getByText('3')).toBeInTheDocument();
+    // Unmuting shows the real number instantly from already-known state —
+    // no extra network call was needed to recover it.
+    expect(
+      (communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }).mock.calls
+        .length,
+    ).toBe(fetchCountBeforeToggling);
+  });
+
+  it('reads a pre-existing muted preference from localStorage on mount, keyed per user', async () => {
+    signInAsMuteTestUser();
+    localStorage.setItem(muteStorageKey, 'true');
+    vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount').mockResolvedValue(5);
+    renderBoundary();
+
+    await waitFor(() => expect(communityChatService.getUnreadCommunityMessageCount).toHaveBeenCalled());
+    expect(within(chatLauncher()!).queryByText('5')).not.toBeInTheDocument();
+  });
+
+  it('toggling the bell persists the choice to localStorage under this user\'s own key', async () => {
+    signInAsMuteTestUser();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+
+    await user.click(chatLauncher()!);
+    await user.click(screen.getByRole('tab', { name: /community/i }));
+    await user.click(screen.getByRole('button', { name: /notifications/i }));
+    await user.click(screen.getByRole('menuitemradio', { name: /turn off notifications/i }));
+
+    expect(localStorage.getItem(muteStorageKey)).toBe('true');
+
+    await user.click(screen.getByRole('button', { name: /notifications/i }));
+    await user.click(screen.getByRole('menuitemradio', { name: /all notifications/i }));
+
+    expect(localStorage.getItem(muteStorageKey)).toBeNull();
   });
 });
 

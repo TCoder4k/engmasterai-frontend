@@ -66,6 +66,18 @@ export interface AssistantContextValue {
    * socket down), only the 60s poll moves the count. */
   communityUnreadCount: number;
   refreshCommunityUnreadCount: () => void;
+  /**
+   * The bell dropdown in ChatPanel.tsx's header (Community tab only). A
+   * client-side-only, per-user preference (see
+   * services/communityNotificationPreference.ts) — muting does NOT stop the
+   * background poll/socket that computes `communityUnreadCount` above; it
+   * only masks what that count reports while active, so unmuting instantly
+   * shows the accurate number with no resync needed. Both AssistantLauncher's
+   * mascot badge and ChatToolTabBar's Tán gẫu pill read `communityUnreadCount`
+   * as-is and need no awareness of muting at all — see AssistantBoundary.tsx.
+   */
+  communityNotificationsMuted: boolean;
+  setCommunityNotificationsMuted: (muted: boolean) => void;
 }
 
 export const AssistantContext = createContext<AssistantContextValue | null>(null);

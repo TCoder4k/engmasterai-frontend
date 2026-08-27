@@ -1352,6 +1352,11 @@ const en = {
     disconnected: "Couldn't reconnect.",
     retryConnection: "Reconnect",
     messageListLabel: "Messages",
+    adminBadge: "ADMIN",
+    notificationsBellLabelOn: "Notifications on — click to mute",
+    notificationsBellLabelOff: "Notifications muted — click to turn on",
+    notificationsAllOption: "All notifications",
+    notificationsOffOption: "Turn off notifications",
   },
   streak: {
     profileTitle: "Profile",
@@ -2624,6 +2629,11 @@ const vi: TranslationDict = {
     disconnected: "Không thể kết nối lại.",
     retryConnection: "Kết nối lại",
     messageListLabel: "Tin nhắn",
+    adminBadge: "ADMIN",
+    notificationsBellLabelOn: "Đang bật thông báo — bấm để tắt",
+    notificationsBellLabelOff: "Đã tắt thông báo — bấm để bật",
+    notificationsAllOption: "Tất cả thông báo",
+    notificationsOffOption: "Tắt thông báo",
   },
   streak: {
     profileTitle: "Hồ sơ",

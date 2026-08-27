@@ -8,6 +8,10 @@ export interface CommunityMessageAuthor {
   name: string;
   avatarUrl: string | null;
   level: number;
+  // Computed server-side from User.role — see community-chat.types.ts's own
+  // comment on the backend for why this (unlike email) is safe to expose.
+  // Drives CommunityMessageBubble's admin-announcement styling.
+  isAdmin: boolean;
 }
 
 export interface CommunityMessage {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Megaphone } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/useTranslation';
 import type { CommunityMessage } from '../../../../services/communityChatService';
 import CommunityAvatar from './CommunityAvatar';
@@ -64,7 +65,7 @@ const renderMessageContent = (text: string): React.ReactNode =>
   );
 
 const CommunityMessageBubble: React.FC<CommunityMessageBubbleProps> = ({ message, isOwn }) => {
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const at = formatRelativeTime(message.createdAt, language);
   // Streak Together's Community Chat entry point — the avatar/name for
   // another user's message opens a popover offering "🔥 Giữ chuỗi cùng
@@ -72,6 +73,35 @@ const CommunityMessageBubble: React.FC<CommunityMessageBubbleProps> = ({ message
   // own-message branch below) and there is no self-invite flow, so this
   // state only ever applies to the other-message branch.
   const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // Checked BEFORE isOwn on purpose: an admin's own announcement should
+  // still read as an announcement to them too, not flip to the ordinary
+  // right-aligned blue "own message" bubble just because they're the
+  // logged-in viewer. A full-width card, not a bubble+avatar row — the
+  // point is that this doesn't look like an ordinary chat message.
+  if (message.author.isAdmin) {
+    return (
+      <div className="rounded-2xl border border-violet-100 dark:border-violet-500/20 bg-violet-50 dark:bg-violet-500/10 px-4 py-3">
+        <div className="flex items-start gap-3">
+          <div className="shrink-0 w-9 h-9 rounded-full bg-violet-600 flex items-center justify-center">
+            <Megaphone size={16} className="text-white" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+              <span className="text-sm font-bold text-slate-900 dark:text-white">{message.author.name}</span>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-violet-600 text-white text-[10px] font-bold leading-none uppercase tracking-wide">
+                {t.communityChat.adminBadge}
+              </span>
+              {at && <span className="text-[10px] text-slate-400 dark:text-slate-500">{at}</span>}
+            </div>
+            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap break-words">
+              {renderMessageContent(message.content)}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isOwn) {
     return (

@@ -15,6 +15,11 @@ import DictionaryPanel from './DictionaryPanel';
 import ChatPanel from './ChatPanel';
 import { getUnreadCommunityMessageCount } from '../../../services/communityChatService';
 import { useCommunityChatSocket } from './community-chat/useCommunityChatSocket';
+import { authService } from '../../../services/authService';
+import {
+  readCommunityNotificationsMuted,
+  writeCommunityNotificationsMuted,
+} from '../../../services/communityNotificationPreference';
 
 const COMMUNITY_UNREAD_POLL_INTERVAL_MS = 60_000;
 // Same debounce window CommunityChatPanel.tsx's own live-message reaction
@@ -54,6 +59,16 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
   // same REST-poll-only precedent as NotificationBell.tsx (no WebSocket
   // involved in the count itself).
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
+  // The bell dropdown in ChatPanel.tsx's header — a per-user, local-only
+  // preference (see communityNotificationPreference.ts's own doc comment).
+  // Lazy initializer reads localStorage exactly once, on first mount.
+  const [communityNotificationsMuted, setCommunityNotificationsMutedState] = useState(() =>
+    readCommunityNotificationsMuted(authService.getUser()?.id ?? ''),
+  );
+  const setCommunityNotificationsMuted = useCallback((muted: boolean) => {
+    writeCommunityNotificationsMuted(authService.getUser()?.id ?? '', muted);
+    setCommunityNotificationsMutedState(muted);
+  }, []);
 
   const registerLock = useCallback((id: number, entry: AssistantLockEntry) => {
     setLockedIds((prev) => {
@@ -167,8 +182,13 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       pendingHandoff,
       handoffToChat,
       consumeHandoff,
-      communityUnreadCount,
+      // Masked at this single source rather than at each badge consumer —
+      // see useAssistant.ts's doc comment on communityNotificationsMuted for
+      // why AssistantLauncher/ChatToolTabBar need zero code changes for this.
+      communityUnreadCount: communityNotificationsMuted ? 0 : communityUnreadCount,
       refreshCommunityUnreadCount,
+      communityNotificationsMuted,
+      setCommunityNotificationsMuted,
     }),
     [
       activeTool,
@@ -182,6 +202,8 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       consumeHandoff,
       communityUnreadCount,
       refreshCommunityUnreadCount,
+      communityNotificationsMuted,
+      setCommunityNotificationsMuted,
     ],
   );
 

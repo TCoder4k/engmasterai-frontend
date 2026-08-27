@@ -5,6 +5,7 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import ChatToolTabBar, { ChatSubTab } from './ChatToolTabBar';
 import EngyChatView from './EngyChatView';
 import CommunityChatPanel from './community-chat/CommunityChatPanel';
+import CommunityNotificationBell from './community-chat/CommunityNotificationBell';
 
 // The shell shared by both chat surfaces (Community Chat sprint). Owns only
 // the dialog chrome — panelRef/focus-trap/outside-click/Escape/close button
@@ -111,6 +112,9 @@ const ChatPanel: React.FC = () => {
             onChange={setActiveSubTab}
             communityUnreadCount={assistant.communityUnreadCount}
           />
+          {/* Community-Chat-specific — absent entirely on the Engy tab
+              rather than disabled/hidden, so Engy's header is untouched. */}
+          {activeSubTab === 'community' && <CommunityNotificationBell />}
           <button
             type="button"
             onClick={() => {

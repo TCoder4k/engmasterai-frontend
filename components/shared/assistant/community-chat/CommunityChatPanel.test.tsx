@@ -53,7 +53,7 @@ const makeMessage = (overrides: Partial<CommunityMessage> = {}): CommunityMessag
   content: 'hello',
   clientMessageId: 'client-1',
   createdAt: new Date().toISOString(),
-  author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 },
+  author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5, isAdmin: false },
   ...overrides,
 });
 
@@ -156,7 +156,7 @@ describe('CommunityChatPanel — loading states', () => {
 describe('CommunityChatPanel — rendering', () => {
   it('renders a fetched message with author name, level, and content', async () => {
     vi.spyOn(communityChatService, 'listCommunityMessages').mockResolvedValue({
-      data: [makeMessage({ content: 'hello everyone', author: { id: 'other', name: 'Alice', avatarUrl: null, level: 7 } })],
+      data: [makeMessage({ content: 'hello everyone', author: { id: 'other', name: 'Alice', avatarUrl: null, level: 7, isAdmin: false } })],
       meta: { hasMore: false, oldestId: 'm1' },
     });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -171,8 +171,8 @@ describe('CommunityChatPanel — rendering', () => {
   it("does not show an @name/level header on the current user's own messages", async () => {
     vi.spyOn(communityChatService, 'listCommunityMessages').mockResolvedValue({
       data: [
-        makeMessage({ id: 'm1', clientMessageId: 'c1', content: 'my own message', author: { id: 'me', name: 'Me', avatarUrl: null, level: 3 } }),
-        makeMessage({ id: 'm2', clientMessageId: 'c2', content: "someone else's message", author: { id: 'bob', name: 'Bob', avatarUrl: null, level: 2 } }),
+        makeMessage({ id: 'm1', clientMessageId: 'c1', content: 'my own message', author: { id: 'me', name: 'Me', avatarUrl: null, level: 3, isAdmin: false } }),
+        makeMessage({ id: 'm2', clientMessageId: 'c2', content: "someone else's message", author: { id: 'bob', name: 'Bob', avatarUrl: null, level: 2, isAdmin: false } }),
       ],
       meta: { hasMore: false, oldestId: 'm1' },
     });
@@ -375,7 +375,7 @@ describe('CommunityChatPanel — WebSocket dedup', () => {
         id: 'other-1',
         clientMessageId: 'not-mine',
         content: 'hi from bob',
-        author: { id: 'bob', name: 'Bob', avatarUrl: null, level: 4 },
+        author: { id: 'bob', name: 'Bob', avatarUrl: null, level: 4, isAdmin: false },
       }),
     );
     await waitFor(() => expect(screen.getByText('hi from bob')).toBeInTheDocument());
@@ -499,11 +499,11 @@ describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
     await waitFor(() => expect(capturedHandlers).not.toBeNull());
     expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(1); // from activation
 
-    capturedHandlers!.onMessage(makeMessage({ id: 'live-1', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 } }));
+    capturedHandlers!.onMessage(makeMessage({ id: 'live-1', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5, isAdmin: false } }));
     await waitFor(() => expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(2));
 
     capturedHandlers!.onMessage(
-      makeMessage({ id: 'live-2', clientMessageId: 'own-echo', author: { id: 'me', name: 'Me', avatarUrl: null, level: 1 } }),
+      makeMessage({ id: 'live-2', clientMessageId: 'own-echo', author: { id: 'me', name: 'Me', avatarUrl: null, level: 1, isAdmin: false } }),
     );
     await vi.advanceTimersByTimeAsync(1000);
     expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(2);
@@ -521,7 +521,7 @@ describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
         makeMessage({
           id: `burst-${i}`,
           content: `burst ${i}`,
-          author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 },
+          author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5, isAdmin: false },
         }),
       );
     }
@@ -545,7 +545,7 @@ describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
       communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }
     ).mock.calls.length;
 
-    capturedHandlers!.onMessage(makeMessage({ id: 'while-hidden', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 } }));
+    capturedHandlers!.onMessage(makeMessage({ id: 'while-hidden', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5, isAdmin: false } }));
     await vi.advanceTimersByTimeAsync(1000);
 
     expect(communityChatService.markCommunityMessagesRead).toHaveBeenCalledTimes(markReadCallsAfterActivation);
@@ -569,7 +569,7 @@ describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
     ).mock.calls.length;
 
     capturedHandlers!.onMessage(
-      makeMessage({ id: 'own-while-hidden', clientMessageId: 'own-echo-2', author: { id: 'me', name: 'Me', avatarUrl: null, level: 1 } }),
+      makeMessage({ id: 'own-while-hidden', clientMessageId: 'own-echo-2', author: { id: 'me', name: 'Me', avatarUrl: null, level: 1, isAdmin: false } }),
     );
     await vi.advanceTimersByTimeAsync(1000);
 
@@ -595,7 +595,7 @@ describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
         makeMessage({
           id: `burst-hidden-${i}`,
           content: `burst ${i}`,
-          author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 },
+          author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5, isAdmin: false },
         }),
       );
     }
@@ -618,7 +618,7 @@ describe('CommunityChatPanel — unread badge (2026-08-26)', () => {
     ).mock.calls.length;
 
     capturedHandlers!.onMessage(
-      makeMessage({ id: 'arrives-then-switch', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 } }),
+      makeMessage({ id: 'arrives-then-switch', author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5, isAdmin: false } }),
     );
     await vi.advanceTimersByTimeAsync(200); // inside the 500ms debounce window — reaction still pending
     // Switching back to Community fires its OWN immediate mark-read (the
