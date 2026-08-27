@@ -12,6 +12,11 @@ interface SessionSummaryProps {
   // so this generic summary stays agnostic of the mode list itself.
   onNext?: () => void;
   nextModeLabel?: string;
+  // Optional override for the exit button's label — defaults to
+  // t.practice.backToDecks, which every existing curated-deck caller relies
+  // on implicitly. "Từ vựng của tôi"'s Personal*Session components pass
+  // their own ("Back to My Vocabulary") since there are no decks there.
+  exitLabel?: string;
 }
 
 // End-of-session card — this component itself is client-side-only and
@@ -19,7 +24,14 @@ interface SessionSummaryProps {
 // Again/Hard/Good/Easy ratings ARE persisted server-side (real SRS
 // progress) even though this summary card is not; only Dictation's
 // suggested-rating flow and Games' score remain purely session-local.
-const SessionSummary: React.FC<SessionSummaryProps> = ({ result, onRestart, onExit, onNext, nextModeLabel }) => {
+const SessionSummary: React.FC<SessionSummaryProps> = ({
+  result,
+  onRestart,
+  onExit,
+  onNext,
+  nextModeLabel,
+  exitLabel,
+}) => {
   const { t } = useTranslation();
   const percent = result.totalCards > 0 ? Math.round((result.correctCount / result.totalCards) * 100) : 0;
 
@@ -47,7 +59,7 @@ const SessionSummary: React.FC<SessionSummaryProps> = ({ result, onRestart, onEx
           onClick={onExit}
           className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
         >
-          {t.practice.backToDecks}
+          {exitLabel ?? t.practice.backToDecks}
         </button>
         {onNext && nextModeLabel && (
           <button

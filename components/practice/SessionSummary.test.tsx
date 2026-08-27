@@ -55,3 +55,23 @@ describe('SessionSummary — next mode shortcut', () => {
     expect(screen.getByRole('button', { name: /back to decks/i })).toBeInTheDocument();
   });
 });
+
+describe('SessionSummary — exitLabel override', () => {
+  it('defaults to "Back to decks" when no override is given', () => {
+    renderSummary();
+    expect(screen.getByRole('button', { name: /back to decks/i })).toBeInTheDocument();
+  });
+
+  it('uses the caller-supplied label instead, for callers with no decks (e.g. "Từ vựng của tôi")', () => {
+    renderSummary({ exitLabel: 'Back to My Vocabulary' });
+    expect(screen.getByRole('button', { name: 'Back to My Vocabulary' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /back to decks/i })).not.toBeInTheDocument();
+  });
+
+  it('clicking the overridden exit button still calls onExit', async () => {
+    const onExit = vi.fn();
+    renderSummary({ onExit, exitLabel: 'Back to My Vocabulary' });
+    await userEvent.click(screen.getByRole('button', { name: 'Back to My Vocabulary' }));
+    expect(onExit).toHaveBeenCalledTimes(1);
+  });
+});

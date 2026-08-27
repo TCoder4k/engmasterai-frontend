@@ -25,6 +25,7 @@ import AdminListeningCategories from './components/admin/AdminListeningCategorie
 import AdminListeningEditor from './components/admin/AdminListeningEditor';
 import AdminPlacementQuestions from './components/admin/AdminPlacementQuestions';
 import VocabLibraryPage from './components/vocab/VocabLibraryPage';
+import MyVocabularyPage from './components/vocab/MyVocabularyPage';
 import LibraryDetailPage from './components/vocab/LibraryDetailPage';
 import DeckDetailPage from './components/vocab/DeckDetailPage';
 import WordDetailPage from './components/vocab/WordDetailPage';
@@ -183,6 +184,11 @@ const App: React.FC = () => {
           <Route element={<AssistantBoundary />}>
           <Route path="/home" element={<UserHome />} />
           <Route path="/vocab" element={<VocabLibraryPage />} />
+          {/* "Từ vựng của tôi" — a student's own saved-word list, independent
+              of the admin-curated shelf above. Registered before the
+              /vocab/libraries/:id etc. routes for readability; the literal
+              /vocab/my-words segment never collides with those :id params. */}
+          <Route path="/vocab/my-words" element={<MyVocabularyPage />} />
           <Route path="/vocab/libraries/:id" element={<LibraryDetailPage />} />
           <Route path="/vocab/decks/:id" element={<DeckDetailPage />} />
           <Route path="/vocab/words/:id" element={<WordDetailPage />} />

@@ -5,7 +5,7 @@ import { getPublishedLibraries } from '../../services/vocabLibraryService';
 import { getLibrariesProgress, LibrarySummaryProgress } from '../../services/learningService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary } from '../../types';
-import { ArrowRight, Library as LibraryIcon } from 'lucide-react';
+import { ArrowRight, Library as LibraryIcon, BookMarked } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // The vocabulary shelf. Every library shown here is one the backend actually
@@ -54,11 +54,22 @@ const VocabLibraryPage: React.FC = () => {
   return (
     <StudentLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-10">
-          <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
-            {t.vocab.title}
-          </h2>
-          <div className="h-1 w-12 bg-blue-500 mt-2.5 rounded-full"></div>
+        <div className="mb-10 flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
+              {t.vocab.title}
+            </h2>
+            <div className="h-1 w-12 bg-blue-500 mt-2.5 rounded-full"></div>
+          </div>
+          {/* "Từ vựng của tôi" — a student's own saved-word list, distinct
+              from this admin-curated shelf. */}
+          <Link
+            to="/vocab/my-words"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
+          >
+            <BookMarked size={15} aria-hidden="true" />
+            {t.myVocab.navLink}
+          </Link>
         </div>
 
         {isLoading && (
