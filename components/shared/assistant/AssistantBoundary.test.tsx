@@ -11,6 +11,7 @@ import * as communityChatService from '../../../services/communityChatService';
 import type { CommunityMessage } from '../../../services/communityChatService';
 import * as communityChatSocket from '../../../services/communityChatSocket';
 import type { CommunityChatSocketHandlers } from '../../../services/communityChatSocket';
+import * as vocabPersonalService from '../../../services/vocabPersonalService';
 import { ApiError } from '../../../services/apiError';
 
 // Phase A + Phase B + Phase C — the floating shell (single-slot open/close,
@@ -96,6 +97,10 @@ beforeEach(() => {
     capturedBadgeSocketHandlers = handlers;
     return { close: vi.fn() };
   });
+  // Safe default: every rendered lookup result now mounts the universal
+  // save-star, which batch-checks its own status on mount — an unsaved
+  // result for any test that isn't specifically about the star itself.
+  vi.spyOn(vocabPersonalService, 'getPersonalVocabWordsSavedStatus').mockResolvedValue({});
 });
 
 afterEach(() => {
@@ -274,6 +279,52 @@ describe('DictionaryPanel lookup states', () => {
     expect(screen.getByText('Xin chào')).toBeInTheDocument();
     expect(screen.getByText('A greeting.')).toBeInTheDocument();
     expect(screen.getByText('hi')).toBeInTheDocument();
+  });
+
+  it('the universal save-star saves the looked-up word, then unsaves it after confirming', async () => {
+    vi.spyOn(dictionaryService, 'lookupWord').mockResolvedValue(resultFixture());
+    const createSpy = vi
+      .spyOn(vocabPersonalService, 'createPersonalVocabWord')
+      .mockResolvedValue({ id: 'w1' } as vocabPersonalService.PersonalVocabWord);
+    const deleteSpy = vi.spyOn(vocabPersonalService, 'deletePersonalVocabWord').mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
+    await user.keyboard('{Enter}');
+    await waitFor(() => expect(screen.getByText('hello')).toBeInTheDocument());
+
+    const star = await screen.findByRole('button', { name: 'Save to My Vocabulary' });
+    await user.click(star);
+
+    await waitFor(() =>
+      expect(createSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'hello', meaningVi: 'Xin chào' }),
+      ),
+    );
+    const filledStar = await screen.findByRole('button', { name: 'Remove from My Vocabulary' });
+
+    await user.click(filledStar);
+
+    await waitFor(() => expect(deleteSpy).toHaveBeenCalledWith('w1'));
+    await screen.findByRole('button', { name: 'Save to My Vocabulary' });
+  });
+
+  it('omits the save-star when the lookup has no Vietnamese meaning to save (rare)', async () => {
+    vi.spyOn(dictionaryService, 'lookupWord').mockResolvedValue(
+      resultFixture({ viTranslation: null, meanings: [{ partOfSpeech: 'noun', definitionEn: 'x', definitionVi: null, exampleEn: null }] }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() => expect(screen.getByText('hello')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: 'Save to My Vocabulary' })).not.toBeInTheDocument();
   });
 
   it('shows an honest not-found state on a 404, never a fabricated definition', async () => {

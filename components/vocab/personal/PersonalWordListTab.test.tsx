@@ -15,6 +15,12 @@ vi.mock('../../../services/vocabPersonalService', async () => {
 
 import { getPersonalVocabWords, deletePersonalVocabWord } from '../../../services/vocabPersonalService';
 
+// Every row here is already saved, so the star is always filled and reads
+// as "Remove from My Vocabulary" — unstarring it IS the delete action (see
+// PersonalWordListTab's handleUnsave, which drives the same shared
+// toggleSavedWord flow every other universal-star surface uses).
+const starButtonName = 'Remove from My Vocabulary';
+
 const wordRow = (overrides: Partial<PersonalVocabWord> = {}): PersonalVocabWord => ({
   id: 'w1',
   text: 'abandon',
@@ -86,28 +92,32 @@ describe('PersonalWordListTab', () => {
     );
   });
 
-  it('deleting a word (after confirming) calls the delete endpoint and removes it from the list', async () => {
+  it('shows every row already starred (filled), and unstarring it (after confirming) removes it from the list', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     (getPersonalVocabWords as ReturnType<typeof vi.fn>).mockResolvedValue(listResponse([wordRow()]));
     (deletePersonalVocabWord as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
     renderTab();
 
     await screen.findByText('abandon');
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    const star = screen.getByRole('button', { name: starButtonName });
+    expect(star).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(star);
 
+    expect(window.confirm).toHaveBeenCalledWith("Remove this word from your vocabulary?");
     await waitFor(() => expect(deletePersonalVocabWord).toHaveBeenCalledWith('w1'));
     await waitFor(() => expect(screen.queryByText('abandon')).not.toBeInTheDocument());
   });
 
-  it('does not delete when the confirmation is declined', async () => {
+  it('does not unstar/delete when the confirmation is declined', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     (getPersonalVocabWords as ReturnType<typeof vi.fn>).mockResolvedValue(listResponse([wordRow()]));
     renderTab();
 
     await screen.findByText('abandon');
-    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await userEvent.click(screen.getByRole('button', { name: starButtonName }));
 
     expect(deletePersonalVocabWord).not.toHaveBeenCalled();
+    expect(screen.getByText('abandon')).toBeInTheDocument();
   });
 
   it('refetches when refreshToken changes', async () => {

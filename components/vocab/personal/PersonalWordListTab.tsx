@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Volume2, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Volume2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { isTtsSupported, speakText } from '../../../services/tts';
 import { handleAuthError } from '../../../services/apiError';
 import {
   getPersonalVocabWords,
-  deletePersonalVocabWord,
   PersonalVocabWord,
   PersonalWordStatusFilter,
   PersonalWordSort,
 } from '../../../services/vocabPersonalService';
 import { useNavigate } from 'react-router-dom';
 import AddPersonalWordModal from './AddPersonalWordModal';
+import { toggleSavedWord } from './saveWordAction';
+import SaveWordStar from './SaveWordStar';
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 350;
@@ -60,6 +61,7 @@ const PersonalWordListTab: React.FC<PersonalWordListTabProps> = ({ refreshToken 
   const [page, setPage] = useState(1);
 
   const [editingWord, setEditingWord] = useState<PersonalVocabWord | null>(null);
+  const [busyWordIds, setBusyWordIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -92,14 +94,31 @@ const PersonalWordListTab: React.FC<PersonalWordListTabProps> = ({ refreshToken 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debouncedSearch, status, sort, refreshToken]);
 
-  const handleDelete = async (word: PersonalVocabWord) => {
-    if (!window.confirm(t.myVocab.confirmDelete)) return;
+  // Every row here is already saved — the star is always filled, and
+  // unstarring it IS the delete action (same universal star, same shared
+  // toggleSavedWord confirm+delete flow every other surface uses; this row
+  // already knows its own PersonalVocabWord id directly, so no batch status
+  // check is needed here at all).
+  const handleUnsave = async (word: PersonalVocabWord) => {
+    setBusyWordIds((prev) => new Set(prev).add(word.id));
     try {
-      await deletePersonalVocabWord(word.id);
-      setWords((prev) => prev.filter((w) => w.id !== word.id));
-      setMeta((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
+      const result = await toggleSavedWord(
+        { text: word.text, meaningVi: word.meaningVi },
+        word.id,
+        t.myVocab.confirmDelete,
+      );
+      if (result.action === 'unsaved') {
+        setWords((prev) => prev.filter((w) => w.id !== word.id));
+        setMeta((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
+      }
     } catch (err) {
       setError(handleAuthError(err, navigate) || t.myVocab.deleteFailed);
+    } finally {
+      setBusyWordIds((prev) => {
+        const next = new Set(prev);
+        next.delete(word.id);
+        return next;
+      });
     }
   };
 
@@ -217,14 +236,13 @@ const PersonalWordListTab: React.FC<PersonalWordListTabProps> = ({ refreshToken 
                       >
                         <Pencil size={14} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(word)}
-                        aria-label={t.myVocab.deleteWord}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 dark:hover:text-rose-400"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <SaveWordStar
+                        isSaved
+                        isBusy={busyWordIds.has(word.id)}
+                        onToggle={() => void handleUnsave(word)}
+                        size={16}
+                        className="p-1.5"
+                      />
                     </div>
                   </td>
                 </tr>

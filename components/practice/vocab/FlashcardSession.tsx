@@ -17,6 +17,30 @@ import RatingButtons from './RatingButtons';
 import { useVocabSession } from './useVocabSession';
 import { useReviewIntentKey } from '../reviewIntentKey';
 import { SessionResult } from '../types';
+import { CreatePersonalVocabWordInput } from '../../../services/vocabPersonalService';
+import { usePersonalWordSaveStatus } from '../../vocab/personal/usePersonalWordSaveStatus';
+import { toggleSavedWord } from '../../vocab/personal/saveWordAction';
+import SaveWordStar from '../../vocab/personal/SaveWordStar';
+
+// Same "omit, don't fake" guard as every other universal-star call site —
+// meaningVi is required to save, so a word with zero curated meanings gets
+// no star. `example` is the back face's already-lazily-fetched detail, kept
+// as a separate param since FlashcardSession fetches it per-card, not as
+// part of VocabWordListItem itself.
+const toPersonalWordInput = (
+  word: VocabWordListItem,
+  example: VocabWordExample | null,
+): CreatePersonalVocabWordInput | null => {
+  if (word.meanings.length === 0) return null;
+  return {
+    text: word.text,
+    ipa: word.ipa ?? undefined,
+    meaningVi: word.meanings[0].meaning,
+    audioUrl: word.audioUrl ?? undefined,
+    exampleSentence: example?.sentence,
+    exampleTranslation: example?.translation ?? undefined,
+  };
+};
 
 interface FlashcardSessionProps {
   words: VocabWordListItem[];
@@ -79,6 +103,29 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { resolve: resolveClientReviewId, clear: clearReviewIntent } = useReviewIntentKey();
+  const [isTogglingSave, setIsTogglingSave] = useState(false);
+  const personalWordInput = currentWord ? toPersonalWordInput(currentWord, example) : null;
+  const { isSaved, getSavedId, markSaved, markUnsaved } = usePersonalWordSaveStatus(
+    personalWordInput ? [personalWordInput.text] : [],
+  );
+
+  const handleToggleSave = async () => {
+    if (!personalWordInput || isTogglingSave) return;
+    setIsTogglingSave(true);
+    try {
+      const result = await toggleSavedWord(
+        personalWordInput,
+        getSavedId(personalWordInput.text) ?? null,
+        t.myVocab.confirmDelete,
+      );
+      if (result.action === 'saved') markSaved(personalWordInput.text, result.id);
+      if (result.action === 'unsaved') markUnsaved(personalWordInput.text);
+    } catch {
+      // Best-effort — see the same comment on DeckDetailPage's handler.
+    } finally {
+      setIsTogglingSave(false);
+    }
+  };
 
   useEffect(() => {
     if (isComplete) onComplete({ totalCards: total, correctCount });
@@ -247,26 +294,40 @@ const FlashcardSession: React.FC<FlashcardSessionProps> = ({ words, onComplete }
               <p className="text-sm font-mono text-slate-400 dark:text-slate-500">/{currentWord.ipa}/</p>
             )}
 
-            {(currentWord.audioUrl || isTtsSupported()) && (
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlayAudio();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.stopPropagation();
-                    e.preventDefault();
-                    handlePlayAudio();
-                  }
-                }}
-                aria-label={t.practice.playAudio}
-                className="p-2.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors cursor-pointer"
-              >
-                <Volume2 size={18} aria-hidden="true" />
-              </span>
+            {((currentWord.audioUrl || isTtsSupported()) || personalWordInput) && (
+              <div className="flex items-center gap-2">
+                {(currentWord.audioUrl || isTtsSupported()) && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePlayAudio();
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handlePlayAudio();
+                      }
+                    }}
+                    aria-label={t.practice.playAudio}
+                    className="p-2.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors cursor-pointer"
+                  >
+                    <Volume2 size={18} aria-hidden="true" />
+                  </span>
+                )}
+                {personalWordInput && (
+                  <SaveWordStar
+                    as="span"
+                    isSaved={isSaved(personalWordInput.text)}
+                    isBusy={isTogglingSave}
+                    onToggle={() => void handleToggleSave()}
+                    size={18}
+                    className="p-2.5"
+                  />
+                )}
+              </div>
             )}
 
             {primaryPartOfSpeech && (

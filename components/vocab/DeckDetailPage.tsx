@@ -6,8 +6,26 @@ import { getPublishedDeck, getPublishedDeckWords } from '../../services/vocabDec
 import { getDeckProgress, DeckProgress } from '../../services/learningService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabDeck, VocabWordListItem } from '../../types';
+import { CreatePersonalVocabWordInput } from '../../services/vocabPersonalService';
 import { Layers, Volume2 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
+import { usePersonalWordSaveStatus } from './personal/usePersonalWordSaveStatus';
+import { toggleSavedWord } from './personal/saveWordAction';
+import SaveWordStar from './personal/SaveWordStar';
+
+// A deck word row -> the universal save-star's input shape. `meaningVi` is
+// required by the backend (CreatePersonalVocabWordDto), so a word with zero
+// curated meanings simply gets no star — same "omit, don't fake" rule the
+// audio button already follows for a missing audioUrl.
+const toPersonalWordInput = (word: VocabWordListItem): CreatePersonalVocabWordInput | null => {
+  if (word.meanings.length === 0) return null;
+  return {
+    text: word.text,
+    ipa: word.ipa ?? undefined,
+    meaningVi: word.meanings[0].meaning,
+    audioUrl: word.audioUrl ?? undefined,
+  };
+};
 
 // /vocab/decks/:id — dictionary-mode browsing for a single deck.
 //
@@ -27,6 +45,30 @@ const DeckDetailPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<DeckProgress | null>(null);
+  const [busyWordIds, setBusyWordIds] = useState<Set<string>>(new Set());
+  const { isSaved, getSavedId, markSaved, markUnsaved } = usePersonalWordSaveStatus(
+    words.map((w) => w.text),
+  );
+
+  const handleToggleSave = async (word: VocabWordListItem) => {
+    const input = toPersonalWordInput(word);
+    if (!input) return;
+    setBusyWordIds((prev) => new Set(prev).add(word.id));
+    try {
+      const result = await toggleSavedWord(input, getSavedId(input.text) ?? null, t.myVocab.confirmDelete);
+      if (result.action === 'saved') markSaved(input.text, result.id);
+      if (result.action === 'unsaved') markUnsaved(input.text);
+    } catch {
+      // Best-effort — the star stays in its last known state; the student
+      // can simply click again, same as every other icon action on this row.
+    } finally {
+      setBusyWordIds((prev) => {
+        const next = new Set(prev);
+        next.delete(word.id);
+        return next;
+      });
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -209,6 +251,15 @@ const DeckDetailPage: React.FC = () => {
                     >
                       <Volume2 size={18} aria-hidden="true" />
                     </button>
+                  )}
+                  {toPersonalWordInput(word) && (
+                    <SaveWordStar
+                      isSaved={isSaved(word.text)}
+                      isBusy={busyWordIds.has(word.id)}
+                      onToggle={() => void handleToggleSave(word)}
+                      size={18}
+                      className="ml-2 w-11 h-11 flex items-center justify-center"
+                    />
                   )}
                 </div>
               ))}

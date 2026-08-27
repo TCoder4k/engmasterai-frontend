@@ -62,6 +62,7 @@ const renderPage = () =>
             <Route path="/vocab" element={<VocabLibraryPage />} />
             <Route path="/practice/review" element={<div>REVIEW_SESSION_STUB</div>} />
             <Route path="/vocab/libraries/:id" element={<div>LIBRARY_DETAIL_STUB</div>} />
+            <Route path="/vocab/my-words" element={<div>MY_WORDS_STUB</div>} />
           </Routes>
         </MemoryRouter>
       </LanguageProvider>
@@ -71,6 +72,25 @@ const renderPage = () =>
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+});
+
+describe('VocabLibraryPage — "Từ vựng của tôi" featured banner', () => {
+  it('renders as a full-width featured card, not a small header pill, and links to /vocab/my-words', async () => {
+    global.fetch = buildFetch(summary(0)) as unknown as typeof fetch;
+    renderPage();
+
+    const banner = await screen.findByRole('link', { name: /my vocabulary/i });
+    expect(banner).toHaveAttribute('href', '/vocab/my-words');
+  });
+
+  it('navigates to My Vocabulary when clicked', async () => {
+    global.fetch = buildFetch(summary(0)) as unknown as typeof fetch;
+    renderPage();
+
+    await userEvent.click(await screen.findByRole('link', { name: /my vocabulary/i }));
+
+    expect(await screen.findByText('MY_WORDS_STUB')).toBeInTheDocument();
+  });
 });
 
 describe('VocabLibraryPage — review entry point (Sprint 05)', () => {

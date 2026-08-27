@@ -32,9 +32,29 @@ vi.mock('../../../services/tts', async () => {
   return { ...actual, speakText: vi.fn(() => true), cancelSpeech: vi.fn() };
 });
 
+// The universal save-star's own network calls — mocked the same partial way
+// as learningService above, so a test not about the star gets a safe
+// "nothing saved" default (see beforeEach) without a real request.
+vi.mock('../../../services/vocabPersonalService', async () => {
+  const actual = await vi.importActual<typeof import('../../../services/vocabPersonalService')>(
+    '../../../services/vocabPersonalService',
+  );
+  return {
+    ...actual,
+    getPersonalVocabWordsSavedStatus: vi.fn(),
+    createPersonalVocabWord: vi.fn(),
+    deletePersonalVocabWord: vi.fn(),
+  };
+});
+
 import { getWord } from '../../../services/vocabWordService';
 import { getWordProgress, submitReview } from '../../../services/learningService';
 import { speakText, cancelSpeech } from '../../../services/tts';
+import {
+  getPersonalVocabWordsSavedStatus,
+  createPersonalVocabWord,
+  deletePersonalVocabWord,
+} from '../../../services/vocabPersonalService';
 
 beforeEach(() => {
   (getWord as ReturnType<typeof vi.fn>).mockResolvedValue({ examples: [] });
@@ -51,6 +71,7 @@ beforeEach(() => {
     lapses: 0,
     version: 1,
   });
+  (getPersonalVocabWordsSavedStatus as ReturnType<typeof vi.fn>).mockResolvedValue({});
 });
 
 // Sprint 03E regression tests for the flip fix: the original CSS used a
@@ -319,5 +340,51 @@ describe('FlashcardSession real content', () => {
     // text on the page (the word itself is also shown above the meaning).
     expect(document.querySelector('.underline')).toHaveTextContent('destination');
     expect(screen.getByText(/Điểm đến tiếp theo là vịnh Hạ Long/)).toBeInTheDocument();
+  });
+});
+
+describe('FlashcardSession — universal save-star', () => {
+  it('shows an unsaved star on the front face and saves the current card on click', async () => {
+    (getPersonalVocabWordsSavedStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
+      contract: { saved: false },
+    });
+    (createPersonalVocabWord as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'personal-1' });
+    renderSession([word('w1', 'contract', 'hợp đồng')]);
+
+    const star = await screen.findByRole('button', { name: 'Save to My Vocabulary' });
+    await userEvent.click(star);
+
+    await waitFor(() =>
+      expect(createPersonalVocabWord).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'contract', meaningVi: 'hợp đồng' }),
+      ),
+    );
+    await screen.findByRole('button', { name: 'Remove from My Vocabulary' });
+  });
+
+  it('unsaves an already-saved card after confirming, without flipping the card', async () => {
+    (getPersonalVocabWordsSavedStatus as ReturnType<typeof vi.fn>).mockResolvedValue({
+      contract: { saved: true, id: 'personal-1' },
+    });
+    (deletePersonalVocabWord as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderSession([word('w1', 'contract', 'hợp đồng')]);
+
+    const star = await screen.findByRole('button', { name: 'Remove from My Vocabulary' });
+    await userEvent.click(star);
+
+    await waitFor(() => expect(deletePersonalVocabWord).toHaveBeenCalledWith('personal-1'));
+    await screen.findByRole('button', { name: 'Save to My Vocabulary' });
+    // Clicking the star must not have flipped the card underneath it.
+    expect(getInner()).not.toHaveClass('practice-flip-card-flipped');
+  });
+
+  it('omits the star for a card with zero meanings', async () => {
+    renderSession([
+      { ...word('w1', 'contract', 'hợp đồng'), meanings: [] },
+    ]);
+
+    await waitFor(() => expect(getPersonalVocabWordsSavedStatus).not.toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: 'Save to My Vocabulary' })).not.toBeInTheDocument();
   });
 });

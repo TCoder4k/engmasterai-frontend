@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Search, X, Volume2, Loader2, AlertCircle, MessageCircle, Star, ChevronRight } from 'lucide-react';
+import { Search, X, Volume2, Loader2, AlertCircle, MessageCircle, ChevronRight } from 'lucide-react';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { ApiError } from '../../../services/apiError';
@@ -10,6 +10,10 @@ import {
   DictionaryMeaning,
   DictionarySuggestion,
 } from '../../../services/dictionaryService';
+import { CreatePersonalVocabWordInput } from '../../../services/vocabPersonalService';
+import { usePersonalWordSaveStatus } from '../../vocab/personal/usePersonalWordSaveStatus';
+import { toggleSavedWord } from '../../vocab/personal/saveWordAction';
+import SaveWordStar from '../../vocab/personal/SaveWordStar';
 import type { TranslationDict } from '../../../i18n/translations';
 
 const SUGGEST_DEBOUNCE_MS = 250;
@@ -570,15 +574,53 @@ const MeaningTextList: React.FC<{ items: string[]; className: string; quoted?: b
   );
 };
 
+// Maps a dictionary lookup result to the shape the universal save-star
+// needs. Returns null when neither Vietnamese source is available — rare,
+// but CreatePersonalVocabWordDto requires meaningVi, so the star is simply
+// omitted rather than saving a word with an empty meaning (same "omit, don't
+// fake" rule the audio button already follows for a missing audioUrl).
+const toPersonalWordInput = (data: DictionaryLookupResult): CreatePersonalVocabWordInput | null => {
+  const meaningVi = data.viTranslation ?? data.meanings.find((m) => m.definitionVi)?.definitionVi ?? null;
+  if (!meaningVi) return null;
+  return {
+    text: data.word,
+    ipa: data.ipa ?? undefined,
+    meaningVi,
+    meaningEn: data.meanings.find((m) => m.definitionEn)?.definitionEn ?? undefined,
+    audioUrl: data.audioUrl ?? undefined,
+    exampleSentence: data.meanings.find((m) => m.exampleEn)?.exampleEn ?? undefined,
+  };
+};
+
 const DictionaryResultView: React.FC<{ data: DictionaryLookupResult; t: TranslationDict }> = ({
   data,
   t,
 }) => {
   const assistant = useAssistant();
-  // Visual-only — no backend field/endpoint exists to persist a favorite
-  // word yet, so this resets whenever a fresh lookup remounts this
-  // component (see the `key={data.word}` above it in DictionaryPanelBody).
-  const [isFavorite, setIsFavorite] = useState(false);
+  const personalWordInput = toPersonalWordInput(data);
+  const { isSaved, getSavedId, markSaved, markUnsaved } = usePersonalWordSaveStatus(
+    personalWordInput ? [personalWordInput.text] : [],
+  );
+  const [isTogglingSave, setIsTogglingSave] = useState(false);
+  const handleToggleSave = async () => {
+    if (!personalWordInput || isTogglingSave) return;
+    setIsTogglingSave(true);
+    try {
+      const result = await toggleSavedWord(
+        personalWordInput,
+        getSavedId(personalWordInput.text) ?? null,
+        t.myVocab.confirmDelete,
+      );
+      if (result.action === 'saved') markSaved(personalWordInput.text, result.id);
+      if (result.action === 'unsaved') markUnsaved(personalWordInput.text);
+    } catch {
+      // Best-effort — the star just stays in its last known state; the
+      // student can retry the click, same as any other transient failure
+      // in this panel (no dedicated error surface for a single icon click).
+    } finally {
+      setIsTogglingSave(false);
+    }
+  };
   // A lookup that came from a real Wiktionary source, not the curated
   // VocabWord bank — that's exactly when a Wiktionary/FreeDictionaryAPI.com
   // attribution line is required. See free-dictionary-api.provider.ts's
@@ -617,19 +659,13 @@ const DictionaryResultView: React.FC<{ data: DictionaryLookupResult; t: Translat
             <p className="text-lg font-extrabold text-slate-900 dark:text-white truncate">
               {data.word}
             </p>
-            <button
-              type="button"
-              onClick={() => setIsFavorite((prev) => !prev)}
-              aria-pressed={isFavorite}
-              aria-label={isFavorite ? t.dictionary.favoriteRemove : t.dictionary.favoriteAdd}
-              className="shrink-0 text-slate-300 dark:text-slate-600 hover:text-amber-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
-            >
-              <Star
-                size={16}
-                fill={isFavorite ? 'currentColor' : 'none'}
-                className={isFavorite ? 'text-amber-400' : ''}
+            {personalWordInput && (
+              <SaveWordStar
+                isSaved={isSaved(personalWordInput.text)}
+                isBusy={isTogglingSave}
+                onToggle={handleToggleSave}
               />
-            </button>
+            )}
           </div>
           {data.ipa && <p className="text-sm text-slate-500 dark:text-slate-400">{data.ipa}</p>}
         </div>

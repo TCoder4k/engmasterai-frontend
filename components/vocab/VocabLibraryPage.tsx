@@ -54,23 +54,33 @@ const VocabLibraryPage: React.FC = () => {
   return (
     <StudentLayout>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-10 flex items-end justify-between gap-4 flex-wrap">
-          <div>
-            <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
-              {t.vocab.title}
-            </h2>
-            <div className="h-1 w-12 bg-blue-500 mt-2.5 rounded-full"></div>
-          </div>
-          {/* "Từ vựng của tôi" — a student's own saved-word list, distinct
-              from this admin-curated shelf. */}
-          <Link
-            to="/vocab/my-words"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors"
-          >
-            <BookMarked size={15} aria-hidden="true" />
-            {t.myVocab.navLink}
-          </Link>
+        <div className="mb-8">
+          <h2 className="text-[22px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tight">
+            {t.vocab.title}
+          </h2>
+          <div className="h-1 w-12 bg-blue-500 mt-2.5 rounded-full"></div>
         </div>
+
+        {/* "Từ vựng của tôi" — a student's own saved-word list, distinct from
+            the admin-curated shelf below. A featured banner, not a small
+            top-right pill (the earlier treatment read as disconnected from
+            the page): its own gradient card, first in reading order, so it
+            reads as a special pinned action rather than another library. */}
+        <Link
+          to="/vocab/my-words"
+          className="mb-8 flex items-center gap-4 sm:gap-5 rounded-[24px] bg-gradient-to-r from-blue-500 to-indigo-500 p-5 sm:p-7 text-white shadow-lg transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+        >
+          <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+            <BookMarked size={26} aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[16px] sm:text-[18px] font-extrabold leading-tight">{t.myVocab.navLink}</h3>
+            <p className="mt-1 text-[12.5px] sm:text-[14px] font-medium text-blue-50/90 leading-relaxed">
+              {t.myVocab.pageSubtitle}
+            </p>
+          </div>
+          <ArrowRight size={22} className="shrink-0 text-white/80" aria-hidden="true" />
+        </Link>
 
         {isLoading && (
           <p className="text-sm font-medium text-slate-400 dark:text-slate-500">{t.common.loading}</p>

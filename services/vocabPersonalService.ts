@@ -208,6 +208,24 @@ export const submitPersonalWordReview = async (
   return response.json();
 };
 
+export type PersonalWordSavedStatus = { saved: true; id: string } | { saved: false };
+
+// GET /vocab-personal/words/status?texts=... — batch "is this word already
+// saved" check, keyed by NORMALIZED (trim+lowercase) text, matching the
+// backend's own textNormalized. Powers the universal save-star (Dictionary
+// panel, deck/word-detail pages, Flashcard practice) — a page batch-checks
+// its own word list ONCE rather than one request per row.
+export const getPersonalVocabWordsSavedStatus = async (
+  texts: string[],
+): Promise<Record<string, PersonalWordSavedStatus>> => {
+  if (texts.length === 0) return {};
+  const qs = new URLSearchParams({ texts: texts.join(',') });
+  const response = await apiFetch(`${API_BASE_URL}/vocab-personal/words/status?${qs}`);
+
+  if (!response.ok) return throwApiError(response, 'Failed to check saved status');
+  return response.json();
+};
+
 export interface PersonalVocabStats {
   total: number;
   mastered: number;

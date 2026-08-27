@@ -5,8 +5,28 @@ import BackButton from '../shared/BackButton';
 import { getWord } from '../../services/vocabWordService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabWordDetail } from '../../types';
+import { CreatePersonalVocabWordInput } from '../../services/vocabPersonalService';
 import { Volume2 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
+import { usePersonalWordSaveStatus } from './personal/usePersonalWordSaveStatus';
+import { toggleSavedWord } from './personal/saveWordAction';
+import SaveWordStar from './personal/SaveWordStar';
+
+// Richer than DeckDetailPage's row mapping — the full word detail also
+// carries real examples, so a save from here can seed exampleSentence/
+// exampleTranslation too. Same "omit, don't fake" guard for zero meanings.
+const toPersonalWordInput = (word: VocabWordDetail): CreatePersonalVocabWordInput | null => {
+  if (word.meanings.length === 0) return null;
+  const firstExample = word.examples[0];
+  return {
+    text: word.text,
+    ipa: word.ipa ?? undefined,
+    meaningVi: word.meanings[0].meaning,
+    audioUrl: word.audioUrl ?? undefined,
+    exampleSentence: firstExample?.sentence,
+    exampleTranslation: firstExample?.translation ?? undefined,
+  };
+};
 
 const ChipGroup: React.FC<{ label: string; items: string[] }> = ({ label, items }) => {
   if (items.length === 0) return null;
@@ -37,6 +57,29 @@ const WordDetailPage: React.FC = () => {
   const [word, setWord] = useState<VocabWordDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTogglingSave, setIsTogglingSave] = useState(false);
+  const personalWordInput = word ? toPersonalWordInput(word) : null;
+  const { isSaved, getSavedId, markSaved, markUnsaved } = usePersonalWordSaveStatus(
+    personalWordInput ? [personalWordInput.text] : [],
+  );
+
+  const handleToggleSave = async () => {
+    if (!personalWordInput || isTogglingSave) return;
+    setIsTogglingSave(true);
+    try {
+      const result = await toggleSavedWord(
+        personalWordInput,
+        getSavedId(personalWordInput.text) ?? null,
+        t.myVocab.confirmDelete,
+      );
+      if (result.action === 'saved') markSaved(personalWordInput.text, result.id);
+      if (result.action === 'unsaved') markUnsaved(personalWordInput.text);
+    } catch {
+      // Best-effort — see the same comment on DeckDetailPage's handler.
+    } finally {
+      setIsTogglingSave(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -79,6 +122,14 @@ const WordDetailPage: React.FC = () => {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-2">
                   <h1 className="text-[28px] sm:text-[32px] font-black text-slate-900 dark:text-slate-100 break-words">{word.text}</h1>
+                  {personalWordInput && (
+                    <SaveWordStar
+                      isSaved={isSaved(personalWordInput.text)}
+                      isBusy={isTogglingSave}
+                      onToggle={() => void handleToggleSave()}
+                      size={22}
+                    />
+                  )}
                   {word.cefrLevel && (
                     <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-2.5 py-1 rounded-md uppercase">
                       {word.cefrLevel}

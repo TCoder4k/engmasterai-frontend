@@ -336,6 +336,12 @@ const en = {
     confirmDelete: "Remove this word from your vocabulary?",
     editWord: "Edit",
     deleteWord: "Delete",
+    // The universal save-star's aria-labels — reused verbatim by every
+    // surface it appears on (Dictionary panel, deck/word-detail pages,
+    // Flashcard practice, this list's own row), so it means one thing
+    // everywhere: "save/remove this word to/from My Vocabulary".
+    saveWord: "Save to My Vocabulary",
+    unsaveWord: "Remove from My Vocabulary",
     reviewTodayTitle: "Review today",
     reviewTodayCount: "words due",
     reviewTodayEmpty: "Nothing due right now — great job staying on top of it!",
@@ -1748,6 +1754,8 @@ const vi: TranslationDict = {
     confirmDelete: "Xoá từ này khỏi danh sách từ vựng của bạn?",
     editWord: "Sửa",
     deleteWord: "Xoá",
+    saveWord: "Lưu vào Từ vựng của tôi",
+    unsaveWord: "Bỏ khỏi Từ vựng của tôi",
     reviewTodayTitle: "Ôn tập hôm nay",
     reviewTodayCount: "từ cần ôn",
     reviewTodayEmpty: "Không có từ nào cần ôn ngay bây giờ — bạn đang làm rất tốt!",
