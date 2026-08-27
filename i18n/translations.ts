@@ -311,6 +311,10 @@ const en = {
     addWord: "+ Add new word",
     importWords: "Import vocabulary",
     statTotal: "Total saved",
+    // Compact count caption used ONLY by the library page's corner banner
+    // card (e.g. "48 words saved") — distinct from statTotal (an uppercase
+    // label paired separately with the number on the full stats page).
+    bannerSavedWords: "words saved",
     statMastered: "Mastered",
     statLearning: "Learning",
     statNew: "Not learned yet",
@@ -1734,6 +1738,7 @@ const vi: TranslationDict = {
     addWord: "+ Thêm từ mới",
     importWords: "Nhập từ vựng",
     statTotal: "Tổng số đã lưu",
+    bannerSavedWords: "từ đã lưu",
     statMastered: "Đã thuộc",
     statLearning: "Đang học",
     statNew: "Chưa thuộc",

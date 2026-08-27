@@ -6,7 +6,7 @@ import { getLibrariesProgress, LibrarySummaryProgress } from '../../services/lea
 import { getPersonalVocabStats, PersonalVocabStats } from '../../services/vocabPersonalService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary } from '../../types';
-import { ArrowRight, Library as LibraryIcon, BookMarked, Flame } from 'lucide-react';
+import { ArrowRight, Library as LibraryIcon, BookMarked } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // The vocabulary shelf. Every library shown here is one the backend actually
@@ -88,50 +88,47 @@ const VocabLibraryPage: React.FC = () => {
             screens) — a compact card pinned to the top-right corner, about
             half the row's width, in a distinct orange/amber gradient so it
             visually reads as "featured" against the library cards below.
-            Carries real numbers (total saved + due-today) rather than
-            sitting empty — a concrete reason to click, not just a label. */}
+            Single-row layout (owner feedback on the two-block version: too
+            tall/busy) — the caption line under the title IS the concrete
+            reason to click: once stats load it swaps from the generic
+            pageSubtitle description to the real total-saved (+ due-today,
+            appended only when > 0) count, rather than showing both a
+            description AND a separate stat block. */}
         <div className="mb-8 flex justify-end">
           <Link
             to="/vocab/my-words"
-            className="relative overflow-hidden flex flex-col gap-3 rounded-[24px] bg-gradient-to-r from-orange-500 to-amber-500 p-5 sm:p-6 text-white shadow-xl shadow-orange-500/20 dark:shadow-black/30 transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 w-full sm:w-1/2"
+            className="relative overflow-hidden flex items-center gap-3 rounded-[24px] bg-gradient-to-r from-orange-500 to-amber-500 p-5 sm:p-6 text-white shadow-xl shadow-orange-500/20 dark:shadow-black/30 transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 w-full sm:w-1/2"
           >
             {/* Purely decorative — never announced to AT. */}
             <BookMarked
-              size={140}
+              size={110}
               strokeWidth={1.25}
               aria-hidden="true"
-              className="pointer-events-none absolute -right-6 -bottom-10 text-white/10"
+              className="pointer-events-none absolute -right-5 -bottom-8 text-white/10"
             />
 
-            <div className="relative flex items-center gap-3">
-              <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
-                <BookMarked size={22} aria-hidden="true" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-[15px] sm:text-[16px] font-extrabold leading-tight">{t.myVocab.navLink}</h3>
-                <p className="mt-0.5 text-[12px] font-medium text-orange-50/90 leading-relaxed">
-                  {t.myVocab.pageSubtitle}
-                </p>
-              </div>
-              <ArrowRight size={20} className="shrink-0 text-white/80" aria-hidden="true" />
+            <div className="relative flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+              <BookMarked size={22} aria-hidden="true" />
             </div>
-
-            {myVocabStats && myVocabStats.total > 0 && (
-              <div className="relative flex items-center gap-3 border-t border-white/20 pt-3">
-                <div>
-                  <p className="text-xl font-black leading-none">{myVocabStats.total}</p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-orange-50/80 whitespace-nowrap">
-                    {t.myVocab.statTotal}
-                  </p>
-                </div>
-                {myVocabStats.dueTodayCount > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold whitespace-nowrap shrink-0">
-                    <Flame size={12} aria-hidden="true" />
-                    {myVocabStats.dueTodayCount} {t.myVocab.reviewTodayCount}
-                  </span>
+            <div className="relative min-w-0 flex-1">
+              <h3 className="text-[15px] sm:text-[16px] font-extrabold leading-tight">{t.myVocab.navLink}</h3>
+              <p className="mt-0.5 text-[12px] font-medium text-orange-50/90 leading-relaxed truncate">
+                {myVocabStats && myVocabStats.total > 0 ? (
+                  <>
+                    <span className="font-bold">{myVocabStats.total}</span> {t.myVocab.bannerSavedWords}
+                    {myVocabStats.dueTodayCount > 0 && (
+                      <>
+                        {' '}
+                        · {myVocabStats.dueTodayCount} {t.myVocab.reviewTodayCount}
+                      </>
+                    )}
+                  </>
+                ) : (
+                  t.myVocab.pageSubtitle
                 )}
-              </div>
-            )}
+              </p>
+            </div>
+            <ArrowRight size={20} className="relative shrink-0 text-white/80" aria-hidden="true" />
           </Link>
         </div>
 
