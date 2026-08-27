@@ -14,8 +14,13 @@ import AssistantLauncher from './AssistantLauncher';
 import DictionaryPanel from './DictionaryPanel';
 import ChatPanel from './ChatPanel';
 import { getUnreadCommunityMessageCount } from '../../../services/communityChatService';
+import { useCommunityChatSocket } from './community-chat/useCommunityChatSocket';
 
 const COMMUNITY_UNREAD_POLL_INTERVAL_MS = 60_000;
+// Same debounce window CommunityChatPanel.tsx's own live-message reaction
+// uses — a burst of several messages must produce one refetch, not one per
+// message.
+const COMMUNITY_BADGE_LIVE_DEBOUNCE_MS = 500;
 
 // Floating Dictionary + Engy shell, Phase A + Phase B + Phase C.
 //
@@ -117,6 +122,39 @@ const AssistantProvider: React.FC<{ children: React.ReactNode }> = ({ children }
     );
     return () => window.clearInterval(interval);
   }, [refreshCommunityUnreadCount]);
+
+  // 2026-08-26 follow-up — the poll above plus CommunityChatPanel's own
+  // live-reaction (once Tán gẫu has been opened at least once) still left
+  // the badge only ever moving on refresh for a student who has NEVER
+  // opened the chat panel at all — reported directly, and confirmed via
+  // AskUserQuestion to be the actual common case. Fixing that requires a
+  // live connection to exist before that first open, so this is a SECOND,
+  // independent socket, always on regardless of chat panel state — deliberately
+  // not reusing/moving CommunityChatPanel's own socket (that one still owns
+  // live message rendering + its reconnect-status banner while the tab is
+  // open; restructuring it to share a connection was assessed and rejected
+  // as more regression risk than the resource saving is worth at this app's
+  // scale). No author check needed: GET /community/messages/unread-count
+  // already excludes the viewer's own messages server-side.
+  const communityBadgeReactionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleCommunityLiveMessageForBadge = useCallback(() => {
+    if (communityBadgeReactionTimerRef.current) clearTimeout(communityBadgeReactionTimerRef.current);
+    communityBadgeReactionTimerRef.current = setTimeout(
+      refreshCommunityUnreadCount,
+      COMMUNITY_BADGE_LIVE_DEBOUNCE_MS,
+    );
+  }, [refreshCommunityUnreadCount]);
+  useEffect(
+    () => () => {
+      if (communityBadgeReactionTimerRef.current) clearTimeout(communityBadgeReactionTimerRef.current);
+    },
+    [],
+  );
+  // No connection-status UI surfaced for this one (no reconnect banner, no
+  // retry button) — a background badge-sync connection failing just leaves
+  // the 60s poll as the fallback, same as before this fix existed; not
+  // worth alarming the student the way a failed Tán gẫu-panel connection is.
+  useCommunityChatSocket(true, handleCommunityLiveMessageForBadge);
 
   const value = useMemo<AssistantContextValue>(
     () => ({

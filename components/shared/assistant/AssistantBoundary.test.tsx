@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
-import { render, screen, cleanup, act, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, act, waitFor, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
@@ -8,6 +8,9 @@ import { useAssistant, useAssistantLessonContext, useAssistantLock } from './use
 import * as dictionaryService from '../../../services/dictionaryService';
 import * as chatService from '../../../services/chatService';
 import * as communityChatService from '../../../services/communityChatService';
+import type { CommunityMessage } from '../../../services/communityChatService';
+import * as communityChatSocket from '../../../services/communityChatSocket';
+import type { CommunityChatSocketHandlers } from '../../../services/communityChatSocket';
 import { ApiError } from '../../../services/apiError';
 
 // Phase A + Phase B + Phase C — the floating shell (single-slot open/close,
@@ -65,6 +68,12 @@ const dictionaryLauncher = () => screen.queryByRole('button', { name: /dictionar
 const chatLauncher = () => screen.queryByRole('button', { name: /engy/i });
 const panel = () => screen.queryByRole('dialog');
 
+// AssistantProvider now holds an always-on badge socket connection
+// regardless of chat-panel state (2026-08-26 follow-up) — captured here so
+// the tests below can drive it directly, same pattern
+// CommunityChatPanel.test.tsx's own capturedHandlers uses for its socket.
+let capturedBadgeSocketHandlers: CommunityChatSocketHandlers | null = null;
+
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   // Safe default for every test in this file: autocomplete must never hit a
@@ -78,12 +87,22 @@ beforeEach(() => {
   // badge, 2026-08-26) regardless of which tool/tab a test cares about —
   // same "safe default" reasoning as the two mocks above.
   vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount').mockResolvedValue(0);
+  // AssistantProvider's badge socket (2026-08-26 follow-up) connects on
+  // EVERY mount now, regardless of whether a test ever opens the chat panel
+  // — a safe default so that connection attempt never hits a real ticket
+  // endpoint/WebSocket just because a test isn't about the badge.
+  vi.spyOn(communityChatService, 'issueCommunityLiveTicket').mockResolvedValue({ ticket: 'test-ticket' });
+  vi.spyOn(communityChatSocket, 'connectCommunityLive').mockImplementation((_ticket, handlers) => {
+    capturedBadgeSocketHandlers = handlers;
+    return { close: vi.fn() };
+  });
 });
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
   vi.restoreAllMocks();
+  capturedBadgeSocketHandlers = null;
 });
 
 describe('AssistantBoundary shell', () => {
@@ -1017,6 +1036,64 @@ describe('Phase C — lesson context and Dictionary->Engy hand-off', () => {
 
     expect(screen.queryByRole('dialog', { name: /dictionary/i })).not.toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Engy' })).toBeInTheDocument();
+  });
+});
+
+const badgeMessage = (overrides: Partial<CommunityMessage> = {}): CommunityMessage => ({
+  id: 'm1',
+  content: 'hello',
+  clientMessageId: 'client-1',
+  createdAt: new Date().toISOString(),
+  author: { id: 'other-user', name: 'Alice', avatarUrl: null, level: 5 },
+  ...overrides,
+});
+
+// 2026-08-26 follow-up — the badge itself must be live even when the chat
+// panel has NEVER been opened, which is what the earlier same-day fix
+// (CommunityChatPanel.test.tsx's own "unread badge" describe block) did not
+// cover: that socket only exists once Tán gẫu has been activated at least
+// once. This describe block proves the SEPARATE, always-on socket
+// AssistantProvider now holds instead.
+describe('AssistantBoundary — always-on Community Chat badge socket (2026-08-26 follow-up)', () => {
+  it('connects the badge socket on mount without the chat panel ever being opened', async () => {
+    renderBoundary();
+
+    await waitFor(() => expect(communityChatService.issueCommunityLiveTicket).toHaveBeenCalled());
+    expect(communityChatSocket.connectCommunityLive).toHaveBeenCalled();
+    expect(panel()).not.toBeInTheDocument();
+  });
+
+  it('a live message refreshes the badge count with the panel still fully closed', async () => {
+    vi.spyOn(communityChatService, 'getUnreadCommunityMessageCount')
+      .mockResolvedValueOnce(0) // initial poll on mount
+      .mockResolvedValue(1); // the refresh triggered by the live message
+    renderBoundary();
+    await waitFor(() => expect(capturedBadgeSocketHandlers).not.toBeNull());
+    expect(within(chatLauncher()!).queryByText(/\d/)).not.toBeInTheDocument();
+
+    capturedBadgeSocketHandlers!.onMessage(badgeMessage());
+    await vi.advanceTimersByTimeAsync(1000);
+
+    await waitFor(() => expect(within(chatLauncher()!).getByText('1')).toBeInTheDocument());
+    expect(panel()).not.toBeInTheDocument();
+  });
+
+  it('a burst of several live messages produces exactly one extra refresh call, not one per message', async () => {
+    renderBoundary();
+    await waitFor(() => expect(capturedBadgeSocketHandlers).not.toBeNull());
+    const callsBefore = (
+      communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }
+    ).mock.calls.length;
+
+    for (let i = 0; i < 5; i += 1) {
+      capturedBadgeSocketHandlers!.onMessage(badgeMessage({ id: `burst-${i}` }));
+    }
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(
+      (communityChatService.getUnreadCommunityMessageCount as unknown as { mock: { calls: unknown[] } }).mock.calls
+        .length,
+    ).toBe(callsBefore + 1);
   });
 });
 
