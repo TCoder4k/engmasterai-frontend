@@ -81,58 +81,59 @@ const VocabLibraryPage: React.FC = () => {
         </div>
 
         {/* "Từ vựng của tôi" — a student's own saved-word list, distinct from
-            the admin-curated shelf below. A featured banner, not a small
+            the admin-curated shelf below. A featured card, not a small
             top-right pill (the earlier treatment read as disconnected from
-            the page): its own gradient card, first in reading order, so it
-            reads as a special pinned action rather than another library.
-            The right half carries real numbers (total saved + due-today,
-            same amber due-pill language the library cards below already
-            use) rather than sitting empty — a concrete reason to click, not
-            just a label. */}
-        <Link
-          to="/vocab/my-words"
-          className="mb-8 relative overflow-hidden flex flex-col sm:flex-row sm:items-center gap-5 rounded-[24px] bg-gradient-to-r from-blue-500 to-indigo-600 p-6 sm:p-7 text-white shadow-xl shadow-blue-500/20 dark:shadow-black/30 transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
-        >
-          {/* Purely decorative — fills the wide empty stretch a plain
-              gradient bar left on large screens; never announced to AT. */}
-          <BookMarked
-            size={200}
-            strokeWidth={1.25}
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-8 -bottom-14 text-white/10 hidden sm:block"
-          />
+            the page) and not a full-width bar either (owner feedback: a
+            full-width blue banner left the whole right half empty on wide
+            screens) — a compact card pinned to the top-right corner, about
+            half the row's width, in a distinct orange/amber gradient so it
+            visually reads as "featured" against the library cards below.
+            Carries real numbers (total saved + due-today) rather than
+            sitting empty — a concrete reason to click, not just a label. */}
+        <div className="mb-8 flex justify-end">
+          <Link
+            to="/vocab/my-words"
+            className="relative overflow-hidden flex flex-col gap-3 rounded-[24px] bg-gradient-to-r from-orange-500 to-amber-500 p-5 sm:p-6 text-white shadow-xl shadow-orange-500/20 dark:shadow-black/30 transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 w-full sm:w-1/2"
+          >
+            {/* Purely decorative — never announced to AT. */}
+            <BookMarked
+              size={140}
+              strokeWidth={1.25}
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-6 -bottom-10 text-white/10"
+            />
 
-          <div className="relative flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
-            <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15">
-              <BookMarked size={26} aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-[16px] sm:text-[18px] font-extrabold leading-tight">{t.myVocab.navLink}</h3>
-              <p className="mt-1 text-[12.5px] sm:text-[14px] font-medium text-blue-50/90 leading-relaxed">
-                {t.myVocab.pageSubtitle}
-              </p>
-            </div>
-          </div>
-
-          {myVocabStats && myVocabStats.total > 0 && (
-            <div className="relative flex items-center gap-4 sm:gap-5 sm:border-l sm:border-white/20 sm:pl-6 shrink-0">
-              <div className="text-left sm:text-center">
-                <p className="text-2xl sm:text-3xl font-black leading-none">{myVocabStats.total}</p>
-                <p className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-blue-50/80 whitespace-nowrap">
-                  {t.myVocab.statTotal}
+            <div className="relative flex items-center gap-3">
+              <div className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+                <BookMarked size={22} aria-hidden="true" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[15px] sm:text-[16px] font-extrabold leading-tight">{t.myVocab.navLink}</h3>
+                <p className="mt-0.5 text-[12px] font-medium text-orange-50/90 leading-relaxed">
+                  {t.myVocab.pageSubtitle}
                 </p>
               </div>
-              {myVocabStats.dueTodayCount > 0 && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400 text-amber-950 text-xs font-bold whitespace-nowrap shrink-0">
-                  <Flame size={13} aria-hidden="true" />
-                  {myVocabStats.dueTodayCount} {t.myVocab.reviewTodayCount}
-                </span>
-              )}
+              <ArrowRight size={20} className="shrink-0 text-white/80" aria-hidden="true" />
             </div>
-          )}
 
-          <ArrowRight size={22} className="relative shrink-0 text-white/80 self-center hidden sm:block" aria-hidden="true" />
-        </Link>
+            {myVocabStats && myVocabStats.total > 0 && (
+              <div className="relative flex items-center gap-3 border-t border-white/20 pt-3">
+                <div>
+                  <p className="text-xl font-black leading-none">{myVocabStats.total}</p>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-orange-50/80 whitespace-nowrap">
+                    {t.myVocab.statTotal}
+                  </p>
+                </div>
+                {myVocabStats.dueTodayCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold whitespace-nowrap shrink-0">
+                    <Flame size={12} aria-hidden="true" />
+                    {myVocabStats.dueTodayCount} {t.myVocab.reviewTodayCount}
+                  </span>
+                )}
+              </div>
+            )}
+          </Link>
+        </div>
 
         {isLoading && (
           <p className="text-sm font-medium text-slate-400 dark:text-slate-500">{t.common.loading}</p>
