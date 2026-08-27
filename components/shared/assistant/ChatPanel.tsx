@@ -112,20 +112,26 @@ const ChatPanel: React.FC = () => {
             onChange={setActiveSubTab}
             communityUnreadCount={assistant.communityUnreadCount}
           />
-          {/* Community-Chat-specific — absent entirely on the Engy tab
-              rather than disabled/hidden, so Engy's header is untouched. */}
-          {activeSubTab === 'community' && <CommunityNotificationBell />}
-          <button
-            type="button"
-            onClick={() => {
-              assistant.closeTool();
-              assistant.launcherRefs.chat.current?.focus();
-            }}
-            aria-label={t.common.close}
-            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-          >
-            <X size={18} />
-          </button>
+          {/* Bell + close grouped in one flex box so `justify-between` on the
+              row above treats them as a single unit — otherwise a 3-item
+              justify-between spreads the bell away from the X toward the
+              middle of the header instead of sitting next to it. */}
+          <div className="flex items-center gap-0.5 shrink-0">
+            {/* Community-Chat-specific — absent entirely on the Engy tab
+                rather than disabled/hidden, so Engy's header is untouched. */}
+            {activeSubTab === 'community' && <CommunityNotificationBell />}
+            <button
+              type="button"
+              onClick={() => {
+                assistant.closeTool();
+                assistant.launcherRefs.chat.current?.focus();
+              }}
+              aria-label={t.common.close}
+              className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/*
