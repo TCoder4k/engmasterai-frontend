@@ -42,11 +42,26 @@ const summary = (dueWords: number) => ({
   masteredPercent: 0,
 });
 
-const buildFetch = (progress: unknown | null) =>
+const myVocabStats = (total: number, dueTodayCount: number) => ({
+  total,
+  mastered: 0,
+  learning: 0,
+  new: total,
+  dueTodayCount,
+  struggledCount: 0,
+  reviewsLast7Days: [],
+});
+
+const buildFetch = (progress: unknown | null, stats: unknown | null = null) =>
   vi.fn((url: string) => {
     if (url.includes('/learning/libraries/progress')) {
       return Promise.resolve(
         progress === null ? jsonResponse(500, { message: 'boom' }) : jsonResponse(200, { data: [progress] }),
+      );
+    }
+    if (url.includes('/vocab-personal/stats')) {
+      return Promise.resolve(
+        stats === null ? jsonResponse(500, { message: 'boom' }) : jsonResponse(200, stats),
       );
     }
     if (url.includes('/vocab/libraries')) return Promise.resolve(jsonResponse(200, { data: [LIBRARY] }));
@@ -90,6 +105,30 @@ describe('VocabLibraryPage — "Từ vựng của tôi" featured banner', () => 
     await userEvent.click(await screen.findByRole('link', { name: /my vocabulary/i }));
 
     expect(await screen.findByText('MY_WORDS_STUB')).toBeInTheDocument();
+  });
+
+  it('shows the real total-saved and due-today counts once stats load, instead of empty space', async () => {
+    global.fetch = buildFetch(summary(0), myVocabStats(48, 12)) as unknown as typeof fetch;
+    renderPage();
+
+    expect(await screen.findByText('48')).toBeInTheDocument();
+    expect(screen.getByText(/12 từ cần ôn|12 words due/)).toBeInTheDocument();
+  });
+
+  it('omits the due-today pill when nothing is due, but still shows the total', async () => {
+    global.fetch = buildFetch(summary(0), myVocabStats(48, 0)) as unknown as typeof fetch;
+    renderPage();
+
+    expect(await screen.findByText('48')).toBeInTheDocument();
+    expect(screen.queryByText(/từ cần ôn|words due/)).not.toBeInTheDocument();
+  });
+
+  it('shows no stat cluster at all when the stats fetch fails or the student has nothing saved yet', async () => {
+    global.fetch = buildFetch(summary(0), null) as unknown as typeof fetch;
+    renderPage();
+
+    await screen.findByText('TOEIC 600 Essential Words');
+    expect(screen.queryByText(/từ cần ôn|words due/)).not.toBeInTheDocument();
   });
 });
 

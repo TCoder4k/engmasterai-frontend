@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import { getPublishedLibraries } from '../../services/vocabLibraryService';
 import { getLibrariesProgress, LibrarySummaryProgress } from '../../services/learningService';
+import { getPersonalVocabStats, PersonalVocabStats } from '../../services/vocabPersonalService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary } from '../../types';
-import { ArrowRight, Library as LibraryIcon, BookMarked } from 'lucide-react';
+import { ArrowRight, Library as LibraryIcon, BookMarked, Flame } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // The vocabulary shelf. Every library shown here is one the backend actually
@@ -26,6 +27,7 @@ const VocabLibraryPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progressById, setProgressById] = useState<Map<string, LibrarySummaryProgress>>(new Map());
+  const [myVocabStats, setMyVocabStats] = useState<PersonalVocabStats | null>(null);
 
   useEffect(() => {
     getPublishedLibraries()
@@ -51,6 +53,23 @@ const VocabLibraryPage: React.FC = () => {
     };
   }, []);
 
+  // Same failure-tolerant, supplementary-only pattern as the progress fetch
+  // above — powers the featured banner's stat cluster below. A failure just
+  // means the banner shows no numbers, never a placeholder/fabricated one.
+  useEffect(() => {
+    let cancelled = false;
+    getPersonalVocabStats()
+      .then((res) => {
+        if (!cancelled) setMyVocabStats(res);
+      })
+      .catch(() => {
+        // Intentionally silent — see the comment above.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <StudentLayout>
       <div className="max-w-7xl mx-auto">
@@ -65,21 +84,54 @@ const VocabLibraryPage: React.FC = () => {
             the admin-curated shelf below. A featured banner, not a small
             top-right pill (the earlier treatment read as disconnected from
             the page): its own gradient card, first in reading order, so it
-            reads as a special pinned action rather than another library. */}
+            reads as a special pinned action rather than another library.
+            The right half carries real numbers (total saved + due-today,
+            same amber due-pill language the library cards below already
+            use) rather than sitting empty — a concrete reason to click, not
+            just a label. */}
         <Link
           to="/vocab/my-words"
-          className="mb-8 flex items-center gap-4 sm:gap-5 rounded-[24px] bg-gradient-to-r from-blue-500 to-indigo-500 p-5 sm:p-7 text-white shadow-lg transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+          className="mb-8 relative overflow-hidden flex flex-col sm:flex-row sm:items-center gap-5 rounded-[24px] bg-gradient-to-r from-blue-500 to-indigo-600 p-6 sm:p-7 text-white shadow-xl shadow-blue-500/20 dark:shadow-black/30 transition-transform duration-300 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
         >
-          <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15">
-            <BookMarked size={26} aria-hidden="true" />
+          {/* Purely decorative — fills the wide empty stretch a plain
+              gradient bar left on large screens; never announced to AT. */}
+          <BookMarked
+            size={200}
+            strokeWidth={1.25}
+            aria-hidden="true"
+            className="pointer-events-none absolute -right-8 -bottom-14 text-white/10 hidden sm:block"
+          />
+
+          <div className="relative flex items-center gap-4 sm:gap-5 flex-1 min-w-0">
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+              <BookMarked size={26} aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-[16px] sm:text-[18px] font-extrabold leading-tight">{t.myVocab.navLink}</h3>
+              <p className="mt-1 text-[12.5px] sm:text-[14px] font-medium text-blue-50/90 leading-relaxed">
+                {t.myVocab.pageSubtitle}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-[16px] sm:text-[18px] font-extrabold leading-tight">{t.myVocab.navLink}</h3>
-            <p className="mt-1 text-[12.5px] sm:text-[14px] font-medium text-blue-50/90 leading-relaxed">
-              {t.myVocab.pageSubtitle}
-            </p>
-          </div>
-          <ArrowRight size={22} className="shrink-0 text-white/80" aria-hidden="true" />
+
+          {myVocabStats && myVocabStats.total > 0 && (
+            <div className="relative flex items-center gap-4 sm:gap-5 sm:border-l sm:border-white/20 sm:pl-6 shrink-0">
+              <div className="text-left sm:text-center">
+                <p className="text-2xl sm:text-3xl font-black leading-none">{myVocabStats.total}</p>
+                <p className="mt-1 text-[10.5px] font-bold uppercase tracking-wide text-blue-50/80 whitespace-nowrap">
+                  {t.myVocab.statTotal}
+                </p>
+              </div>
+              {myVocabStats.dueTodayCount > 0 && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400 text-amber-950 text-xs font-bold whitespace-nowrap shrink-0">
+                  <Flame size={13} aria-hidden="true" />
+                  {myVocabStats.dueTodayCount} {t.myVocab.reviewTodayCount}
+                </span>
+              )}
+            </div>
+          )}
+
+          <ArrowRight size={22} className="relative shrink-0 text-white/80 self-center hidden sm:block" aria-hidden="true" />
         </Link>
 
         {isLoading && (
