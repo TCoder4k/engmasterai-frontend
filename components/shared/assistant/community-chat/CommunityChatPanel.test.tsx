@@ -301,6 +301,33 @@ describe('CommunityChatPanel — composer', () => {
     expect(sendSpy.mock.calls[1][0]).toBe(firstClientId);
   });
 
+  it('refocuses the composer once a send resolves, so the next message can be typed right away', async () => {
+    let resolveSend: (value: CommunityMessage) => void = () => {};
+    const sendSpy = vi
+      .spyOn(communityChatService, 'sendCommunityMessage')
+      .mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveSend = resolve;
+          }),
+      );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openCommunity(user);
+    await waitFor(() => expect(screen.getByText(/no messages yet/i)).toBeInTheDocument());
+
+    await user.type(communityComposer(), 'first{Enter}');
+    // The disabled composer is blurred by the browser the instant it
+    // disables — re-enabling it later does not restore focus on its own.
+    expect(communityComposer()).toBeDisabled();
+
+    resolveSend(makeMessage({ clientMessageId: sendSpy.mock.calls[0][0] as string, content: 'first' }));
+    await waitFor(() => expect(screen.getByText('first')).toBeInTheDocument());
+
+    expect(communityComposer()).not.toBeDisabled();
+    expect(communityComposer()).toHaveFocus();
+  });
+
   it('maps a 429 response to the rate-limited message', async () => {
     vi.spyOn(communityChatService, 'sendCommunityMessage').mockRejectedValueOnce(
       new ApiError('Too many requests', 429),

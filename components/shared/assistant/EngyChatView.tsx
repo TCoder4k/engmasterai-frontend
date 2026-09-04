@@ -154,6 +154,10 @@ const EngyChatView: React.FC = () => {
   // it must survive between the hand-off effect and handleSend without
   // itself triggering a render, and gets cleared the instant it's used.
   const nextSendContextOverride = useRef<ChatContextInput | null>(null);
+  // Tracks the PREVIOUS pending state across renders — see the refocus
+  // effect below. Not state: reading/writing it must never itself trigger
+  // a render.
+  const wasSendingRef = useRef(false);
 
   // Focus goes into the surface on open, same expectation as DictionaryPanel.
   useEffect(() => {
@@ -172,6 +176,23 @@ const EngyChatView: React.FC = () => {
     assistant.consumeHandoff();
     textareaRef.current?.focus();
   }, [assistant?.pendingHandoff, assistant]);
+
+  // Refocus once a send resolves (success — or Clear — sets pending back to
+  // null) so sending several messages in a row doesn't need a re-click.
+  // The composer is `disabled` while pending is non-null, and a disabled
+  // form control is auto-blurred by the browser the instant it disables —
+  // re-enabling it does NOT restore focus on its own, so without this the
+  // input silently drops focus after every single message. Deliberately a
+  // TRANSITION check (was sending, now isn't) via a ref, not "focus
+  // whenever pending is null" — that would also fire on first mount,
+  // fighting the mount-focus effect above AND (worse) firing even while
+  // this whole panel sits behind `hidden` on the inactive tab, which can
+  // steal focus from the other tab's composer in the same render pass.
+  useEffect(() => {
+    const isSending = pending !== null;
+    if (wasSendingRef.current && !isSending) textareaRef.current?.focus();
+    wasSendingRef.current = isSending;
+  }, [pending]);
 
   // GET /chat/session exactly once per open — the panel unmounts on close
   // (AssistantBoundary only renders it while activeTool === 'chat'), so

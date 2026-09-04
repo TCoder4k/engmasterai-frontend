@@ -862,6 +862,10 @@ describe('ChatPanel', () => {
 
     await waitFor(() => expect(screen.getByText('Hi!')).toBeInTheDocument());
     expect(composer()).not.toBeDisabled();
+    // Re-enabling a disabled form control does not restore focus on its
+    // own (the browser blurred it the instant it disabled) — this proves
+    // the explicit refocus-on-resolve effect, not just the disabled flag.
+    expect(composer()).toHaveFocus();
   });
 
   it('a rapid second Enter while sending does not fire a second request', async () => {

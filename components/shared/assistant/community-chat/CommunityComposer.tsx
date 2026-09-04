@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/useTranslation';
 
@@ -27,6 +27,26 @@ const CommunityComposer: React.FC<CommunityComposerProps> = ({
 }) => {
   const { t } = useTranslation();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Tracks the PREVIOUS `disabled` value across renders — see the refocus
+  // effect below. Not state: reading/writing it must never itself trigger
+  // a render.
+  const wasDisabledRef = useRef(disabled);
+
+  // Refocus once a send resolves and `disabled` clears — mirrors
+  // EngyChatView's identical fix. The textarea is `disabled` while a send
+  // is in flight, and a disabled form control is auto-blurred by the
+  // browser the instant it disables; re-enabling it does NOT restore focus
+  // on its own, so without this the input silently drops focus after every
+  // single message, forcing a re-click before typing the next one.
+  // Deliberately a TRANSITION check (was disabled, now isn't), not "focus
+  // whenever not disabled" — this composer stays mounted (just visually
+  // `hidden`) even while the Engy tab is the active one (see ChatPanel.tsx),
+  // so firing on first mount could steal focus from Engy's own composer in
+  // the same render pass the panel opens in.
+  useEffect(() => {
+    if (wasDisabledRef.current && !disabled) textareaRef.current?.focus();
+    wasDisabledRef.current = disabled;
+  }, [disabled]);
 
   // Same guard as EngyChatView.handleComposerKeyDown: plain Enter sends,
   // Shift+Enter falls through to the textarea's native newline, and a
