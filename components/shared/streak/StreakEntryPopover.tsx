@@ -64,6 +64,13 @@ const StreakEntryPopover: React.FC<StreakEntryPopoverProps> = ({ userId, name, a
   const mapError = (error: unknown): string => {
     if (error instanceof ApiError && error.status === 429) return t.streak.rateLimited;
     if (error instanceof ApiError && error.status === 409) return t.streak.conflict;
+    // The invitation was still PENDING in status but past its expiresAt —
+    // acceptInvitation/declineInvitation correctly 410 it server-side (see
+    // streak.service.ts). getPairStatus itself is now fixed to stop
+    // reporting a stale invitation as pending in the first place, but this
+    // stays as a defensive message for the moment right before `load()`
+    // below refreshes the view out from under these now-dead buttons.
+    if (error instanceof ApiError && error.status === 410) return t.streak.expired;
     return t.streak.actionFailed;
   };
 
@@ -91,6 +98,13 @@ const StreakEntryPopover: React.FC<StreakEntryPopoverProps> = ({ userId, name, a
     } catch (error) {
       setActionError(mapError(error));
       setBusy(false);
+      // Re-fetch rather than leaving the same (possibly now-dead) buttons
+      // showing — mirrors handleDecline's own success-path reload below.
+      // Matters most for a 410: the invitation just turned out to be stale,
+      // and a fresh getPairStatus() correctly reports 'none' for that now
+      // (see streak.service.ts), swapping these Accept/Decline buttons for
+      // an "invite again" action instead of leaving a dead-end loop.
+      load();
     }
   };
 

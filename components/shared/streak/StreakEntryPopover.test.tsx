@@ -6,6 +6,7 @@ import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import StreakEntryPopover from './StreakEntryPopover';
 import * as streakService from '../../../services/streakService';
 import type { PairRelationshipResult } from '../../../services/streakService';
+import { ApiError } from '../../../services/apiError';
 
 const renderPopover = (onClose = vi.fn()) =>
   render(
@@ -87,6 +88,43 @@ describe('StreakEntryPopover', () => {
 
     expect(await screen.findByRole('button', { name: /^accept$/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^decline$/i })).toBeInTheDocument();
+  });
+
+  // Regression test for the confirmed 2026-09-09 production bug: the
+  // invitation was PENDING-in-status-but-actually-expired, so accepting
+  // 410'd. Coverage here is for the CLIENT'S recovery from that — the
+  // backend fix itself (getPairStatus no longer reporting a stale
+  // invitation as pending_received in the first place) is covered by
+  // streak.service.spec.ts, not reachable from this mocked-service test.
+  it('shows a clear "expired" message and refreshes the relationship after Accept 410s on a stale invitation', async () => {
+    const pendingReceived: PairRelationshipResult = {
+      relationship: 'pending_received',
+      invitation: {
+        id: 'inv-1',
+        direction: 'received',
+        counterpart: { id: 'other-1', name: 'Anna', avatarUrl: null, level: 5 },
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date().toISOString(),
+      },
+    };
+    const statusSpy = vi
+      .spyOn(streakService, 'getStreakPairStatus')
+      .mockResolvedValueOnce(pendingReceived)
+      // The re-fetch after the 410 — now-fixed getPairStatus correctly
+      // reports 'none' for the same, now-recognized-as-stale invitation.
+      .mockResolvedValueOnce({ relationship: 'none' });
+    vi.spyOn(streakService, 'acceptStreakInvitation').mockRejectedValue(
+      new ApiError('Invitation has expired', 410),
+    );
+    const user = userEvent.setup();
+    renderPopover();
+
+    await user.click(await screen.findByRole('button', { name: /^accept$/i }));
+
+    expect(await screen.findByText(/this invitation has expired/i)).toBeInTheDocument();
+    await waitFor(() => expect(statusSpy).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole('button', { name: /keep a streak together/i })).toBeInTheDocument();
   });
 
   it('shows the day count for an active streak and navigates on click', async () => {
