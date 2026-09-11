@@ -26,6 +26,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const OUTPUT_SAMPLE_RATE = 24000;
 
+// 2026-09-12 fix: the first chunk of every AI turn jumps straight from true
+// silence to whatever raw PCM sample the stream happens to start on — if
+// that sample isn't near a zero-crossing (the common case), Web Audio
+// produces an audible click that reads as a short "beep" right as the AI
+// starts speaking. Mid-turn chunk boundaries need no fix (they're
+// back-to-back voiced audio, already gapless via nextStartTimeRef), so this
+// ramp is applied ONLY to a turn's first chunk, not every chunk — a ramp on
+// every boundary would risk audible flutter on short streamed chunks instead.
+const FADE_IN_SECONDS = 0.008;
+
 export interface SpeakingLivePlaybackApi {
   isSpeaking: boolean;
   /** One base64 PCM16 chunk arrived — schedule it for immediate/gapless playback and buffer it for this turn's cache. */
@@ -99,11 +109,17 @@ export const useSpeakingLivePlayback = (): SpeakingLivePlaybackApi => {
   }, []);
 
   const playBuffer = useCallback(
-    (context: AudioContext, buffer: AudioBuffer) => {
+    (context: AudioContext, buffer: AudioBuffer, fadeIn: boolean) => {
       const source = context.createBufferSource();
       source.buffer = buffer;
-      source.connect(context.destination);
+      const gain = context.createGain();
+      source.connect(gain);
+      gain.connect(context.destination);
       const startAt = Math.max(context.currentTime, nextStartTimeRef.current);
+      if (fadeIn) {
+        gain.gain.setValueAtTime(0, startAt);
+        gain.gain.linearRampToValueAtTime(1, startAt + FADE_IN_SECONDS);
+      }
       pendingSourcesRef.current += 1;
       setIsSpeaking(true);
       source.onended = () => {
@@ -131,12 +147,13 @@ export const useSpeakingLivePlayback = (): SpeakingLivePlaybackApi => {
       } catch {
         return; // malformed chunk — never worth breaking playback over
       }
+      const isFirstChunkOfTurn = currentTurnChunksRef.current.length === 0;
       currentTurnChunksRef.current.push(samples);
 
       const context = ensureContext();
       if (!context) return; // no WebAudio — text/subtitle still works, just no live audio
       try {
-        playBuffer(context, int16ToAudioBuffer(context, samples));
+        playBuffer(context, int16ToAudioBuffer(context, samples), isFirstChunkOfTurn);
       } catch {
         // Best-effort — see playBuffer's own comment.
       }
@@ -164,8 +181,13 @@ export const useSpeakingLivePlayback = (): SpeakingLivePlaybackApi => {
       try {
         const source = context.createBufferSource();
         source.buffer = int16ToAudioBuffer(context, cached);
-        source.connect(context.destination);
-        source.start();
+        const gain = context.createGain();
+        source.connect(gain);
+        gain.connect(context.destination);
+        const startAt = context.currentTime;
+        gain.gain.setValueAtTime(0, startAt);
+        gain.gain.linearRampToValueAtTime(1, startAt + FADE_IN_SECONDS);
+        source.start(startAt);
       } catch {
         // Best-effort — replay failing silently is better than throwing.
       }

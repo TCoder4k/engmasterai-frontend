@@ -130,9 +130,24 @@ export class FakeScriptProcessorNode {
   }
 }
 
-/** Enough of a GainNode for the silent monitoring tap useSpeakingLiveCapture routes its processor through. */
+/**
+ * Enough of a GainNode for the silent monitoring tap useSpeakingLiveCapture
+ * routes its processor through, AND useSpeakingLivePlayback's per-chunk
+ * fade-in (2026-09-12, the anti-click fix) — `.gain` needs the two AudioParam
+ * automation methods a real GainNode has, not just a settable `.value`, or a
+ * call to either throws (jsdom has no real audio timeline, so both just set
+ * `.value` directly rather than actually ramping).
+ */
 export class FakeGainNode {
-  gain = { value: 1 };
+  gain = {
+    value: 1,
+    setValueAtTime(this: { value: number }, value: number): void {
+      this.value = value;
+    },
+    linearRampToValueAtTime(this: { value: number }, value: number): void {
+      this.value = value;
+    },
+  };
   connect(): void {}
   disconnect(): void {}
 }
