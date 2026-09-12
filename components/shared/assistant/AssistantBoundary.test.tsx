@@ -670,6 +670,38 @@ describe('DictionaryPanel autocomplete', () => {
   });
 });
 
+// 2026-09-12 streaming rewrite — sendChatMessageStream delivers its result
+// via callbacks (onDelta/onDone) instead of a resolved value, so tests that
+// only care about the FINAL reply (not the incremental deltas) use this to
+// mirror the old sendChatMessage mock's ergonomics: one call, one done event,
+// immediately. `overrides` lets a test vary clientMessageId/repliedAt.
+const mockEngyStreamReply = (
+  reply: string,
+  overrides: Partial<chatService.SendChatMessageResult> = {},
+) =>
+  vi
+    .spyOn(chatService, 'sendChatMessageStream')
+    .mockImplementation(async (clientMessageId, _message, _context, handlers) => {
+      handlers.onDone({ clientMessageId, reply, repliedAt: 't', ...overrides });
+    });
+
+/** One-shot implementation for `.mockImplementationOnce(...)` chains — same shape as mockEngyStreamReply, but for a single call in a sequence. */
+const streamOnceWithReply =
+  (reply: string) =>
+  async (
+    clientMessageId: string,
+    _message: string,
+    _context: chatService.ChatContextInput,
+    handlers: chatService.SendChatMessageStreamHandlers,
+  ) => {
+    handlers.onDone({ clientMessageId, reply, repliedAt: 't' });
+  };
+
+/** One-shot implementation that fails outright, for `.mockImplementationOnce(...)` chains simulating a rejected send. */
+const streamOnceWithError = (error: unknown) => async (): Promise<void> => {
+  throw error;
+};
+
 describe('ChatPanel', () => {
   const openChat = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.click(chatLauncher()!);
@@ -706,9 +738,7 @@ describe('ChatPanel', () => {
   });
 
   it('sends a message via the send button and renders both bubbles', async () => {
-    const sendSpy = vi
-      .spyOn(chatService, 'sendChatMessage')
-      .mockResolvedValue({ clientMessageId: 'x', reply: 'Sure, happy to help!', repliedAt: 't' });
+    const sendSpy = mockEngyStreamReply('Sure, happy to help!');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -725,10 +755,41 @@ describe('ChatPanel', () => {
     expect(composer()).toHaveValue(''); // composer clears after sending
   });
 
+  it('renders the assistant bubble progressively as onDelta fragments arrive, before the done event', async () => {
+    let capturedHandlers: chatService.SendChatMessageStreamHandlers | undefined;
+    const pending = new Promise<void>(() => {}); // never settles for this test
+    vi.spyOn(chatService, 'sendChatMessageStream').mockImplementation(
+      async (_id, _message, _context, handlers) => {
+        capturedHandlers = handlers;
+        return pending;
+      },
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openChat(user);
+
+    await user.type(composer(), 'hello{Enter}');
+    expect(screen.getByText(/engy is thinking/i)).toBeInTheDocument();
+
+    await act(async () => {
+      capturedHandlers!.onDelta('Sure, ');
+    });
+    // The spinner is replaced by the growing bubble as soon as the first
+    // fragment arrives — the student never sees both at once. Matched with a
+    // regex (not the literal string): testing-library's text normalizer
+    // collapses/trims whitespace, so the trailing space in 'Sure, ' itself
+    // never survives an exact-string match.
+    expect(screen.queryByText(/engy is thinking/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Sure,$/)).toBeInTheDocument();
+
+    await act(async () => {
+      capturedHandlers!.onDelta('happy to help!');
+    });
+    expect(screen.getByText('Sure, happy to help!')).toBeInTheDocument();
+  });
+
   it('Enter sends the message', async () => {
-    const sendSpy = vi
-      .spyOn(chatService, 'sendChatMessage')
-      .mockResolvedValue({ clientMessageId: 'x', reply: 'ok', repliedAt: 't' });
+    const sendSpy = mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -740,7 +801,7 @@ describe('ChatPanel', () => {
   });
 
   it('Shift+Enter inserts a newline instead of sending', async () => {
-    const sendSpy = vi.spyOn(chatService, 'sendChatMessage');
+    const sendSpy = vi.spyOn(chatService, 'sendChatMessageStream');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -754,7 +815,7 @@ describe('ChatPanel', () => {
   });
 
   it('does not send whitespace-only input', async () => {
-    const sendSpy = vi.spyOn(chatService, 'sendChatMessage');
+    const sendSpy = vi.spyOn(chatService, 'sendChatMessageStream');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -768,7 +829,7 @@ describe('ChatPanel', () => {
   });
 
   it('an Enter that confirms IME composition does not send', async () => {
-    const sendSpy = vi.spyOn(chatService, 'sendChatMessage');
+    const sendSpy = vi.spyOn(chatService, 'sendChatMessageStream');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -786,11 +847,7 @@ describe('ChatPanel', () => {
   });
 
   it('renders assistant Markdown as formatted text, not visible markup', async () => {
-    vi.spyOn(chatService, 'sendChatMessage').mockResolvedValue({
-      clientMessageId: 'x',
-      reply: '### Công thức\n**S + have/has + V3/ed**',
-      repliedAt: '2026-01-01T00:00:00.000Z',
-    });
+    mockEngyStreamReply('### Công thức\n**S + have/has + V3/ed**');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -806,11 +863,7 @@ describe('ChatPanel', () => {
   });
 
   it('renders assistant lists as real list markup', async () => {
-    vi.spyOn(chatService, 'sendChatMessage').mockResolvedValue({
-      clientMessageId: 'x',
-      reply: '* first tip\n* second tip',
-      repliedAt: '2026-01-01T00:00:00.000Z',
-    });
+    mockEngyStreamReply('* first tip\n* second tip');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -825,11 +878,7 @@ describe('ChatPanel', () => {
   });
 
   it('never interprets the user\'s own message as Markdown', async () => {
-    vi.spyOn(chatService, 'sendChatMessage').mockResolvedValue({
-      clientMessageId: 'x',
-      reply: 'ok',
-      repliedAt: '2026-01-01T00:00:00.000Z',
-    });
+    mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -842,11 +891,17 @@ describe('ChatPanel', () => {
   });
 
   it('shows a thinking indicator while the reply is in flight, and disables the composer', async () => {
-    let resolveSend: (value: chatService.SendChatMessageResult) => void;
-    const pending = new Promise<chatService.SendChatMessageResult>((resolve) => {
+    let capturedHandlers: chatService.SendChatMessageStreamHandlers | undefined;
+    let resolveSend: () => void;
+    const pending = new Promise<void>((resolve) => {
       resolveSend = resolve;
     });
-    vi.spyOn(chatService, 'sendChatMessage').mockReturnValue(pending);
+    vi.spyOn(chatService, 'sendChatMessageStream').mockImplementation(
+      async (_id, _message, _context, handlers) => {
+        capturedHandlers = handlers;
+        await pending;
+      },
+    );
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -857,7 +912,8 @@ describe('ChatPanel', () => {
     expect(composer()).toBeDisabled();
 
     await act(async () => {
-      resolveSend({ clientMessageId: 'x', reply: 'Hi!', repliedAt: 't' });
+      capturedHandlers!.onDone({ clientMessageId: 'x', reply: 'Hi!', repliedAt: 't' });
+      resolveSend();
     });
 
     await waitFor(() => expect(screen.getByText('Hi!')).toBeInTheDocument());
@@ -869,11 +925,17 @@ describe('ChatPanel', () => {
   });
 
   it('a rapid second Enter while sending does not fire a second request', async () => {
-    let resolveSend: (value: chatService.SendChatMessageResult) => void;
-    const pending = new Promise<chatService.SendChatMessageResult>((resolve) => {
+    let capturedHandlers: chatService.SendChatMessageStreamHandlers | undefined;
+    let resolveSend: () => void;
+    const pending = new Promise<void>((resolve) => {
       resolveSend = resolve;
     });
-    const sendSpy = vi.spyOn(chatService, 'sendChatMessage').mockReturnValue(pending);
+    const sendSpy = vi.spyOn(chatService, 'sendChatMessageStream').mockImplementation(
+      async (_id, _message, _context, handlers) => {
+        capturedHandlers = handlers;
+        await pending;
+      },
+    );
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -886,15 +948,16 @@ describe('ChatPanel', () => {
     expect(sendSpy).toHaveBeenCalledTimes(1);
 
     await act(async () => {
-      resolveSend({ clientMessageId: 'x', reply: 'ok', repliedAt: 't' });
+      capturedHandlers!.onDone({ clientMessageId: 'x', reply: 'ok', repliedAt: 't' });
+      resolveSend();
     });
   });
 
   it('a failed send shows an error and a Retry that reuses the SAME clientMessageId', async () => {
     const sendSpy = vi
-      .spyOn(chatService, 'sendChatMessage')
-      .mockRejectedValueOnce(new ApiError('down', 503))
-      .mockResolvedValueOnce({ clientMessageId: 'x', reply: 'Recovered answer', repliedAt: 't' });
+      .spyOn(chatService, 'sendChatMessageStream')
+      .mockImplementationOnce(streamOnceWithError(new ApiError('down', 503)))
+      .mockImplementationOnce(streamOnceWithReply('Recovered answer'));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -915,8 +978,31 @@ describe('ChatPanel', () => {
     expect(secondId).toBe(firstId); // the retry reused the same clientMessageId
   });
 
+  // A partial reply that streamed in before a mid-stream failure must never
+  // linger — the failed state replaces it entirely, same as a full-failure.
+  it('discards any partially-streamed text on a mid-stream error, showing only the failed/retry state', async () => {
+    vi.spyOn(chatService, 'sendChatMessageStream').mockImplementation(
+      async (_id, _message, _context, handlers) => {
+        handlers.onDelta('This will never be seen complete...');
+        throw new ApiError('down', 503);
+      },
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openChat(user);
+
+    await user.type(composer(), 'hello{Enter}');
+
+    await waitFor(() =>
+      expect(screen.getByText(/couldn't send this message/i)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/This will never be seen complete/)).not.toBeInTheDocument();
+  });
+
   it('shows a rate-limit-specific message on a 429', async () => {
-    vi.spyOn(chatService, 'sendChatMessage').mockRejectedValue(new ApiError('slow down', 429));
+    vi.spyOn(chatService, 'sendChatMessageStream').mockImplementation(
+      streamOnceWithError(new ApiError('slow down', 429)),
+    );
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -969,11 +1055,7 @@ describe('ChatPanel', () => {
     const scrollIntoViewSpy = vi.fn();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window.HTMLElement.prototype as any).scrollIntoView = scrollIntoViewSpy;
-    vi.spyOn(chatService, 'sendChatMessage').mockResolvedValue({
-      clientMessageId: 'x',
-      reply: 'ok',
-      repliedAt: 't',
-    });
+    mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
@@ -993,39 +1075,39 @@ describe('Phase C — lesson context and Dictionary->Engy hand-off', () => {
   const composer = () => screen.getByRole('textbox', { name: /message engy/i });
 
   it('a message sent while LessonPage-equivalent context is registered attaches LESSON context automatically', async () => {
-    const sendSpy = vi
-      .spyOn(chatService, 'sendChatMessage')
-      .mockResolvedValue({ clientMessageId: 'x', reply: 'ok', repliedAt: 't' });
+    const sendSpy = mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary(<LessonContextProbe lessonId="lesson-1" stage="theory" />);
     await openChat(user);
 
     await user.type(composer(), 'Explain this{Enter}');
 
-    expect(sendSpy).toHaveBeenCalledWith(expect.any(String), 'Explain this', {
-      type: 'LESSON',
-      resourceId: 'lesson-1',
-      stage: 'theory',
-    });
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      'Explain this',
+      { type: 'LESSON', resourceId: 'lesson-1', stage: 'theory' },
+      expect.anything(),
+    );
   });
 
   it('without a registered lesson context, a message defaults to GENERAL', async () => {
-    const sendSpy = vi
-      .spyOn(chatService, 'sendChatMessage')
-      .mockResolvedValue({ clientMessageId: 'x', reply: 'ok', repliedAt: 't' });
+    const sendSpy = mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary();
     await openChat(user);
 
     await user.type(composer(), 'hello{Enter}');
 
-    expect(sendSpy).toHaveBeenCalledWith(expect.any(String), 'hello', { type: 'GENERAL' });
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      'hello',
+      { type: 'GENERAL' },
+      expect.anything(),
+    );
   });
 
   it('a Dictionary hand-off opens Chat, pre-fills the composer, and the NEXT send carries the handed-off VOCAB_WORD context', async () => {
-    const sendSpy = vi
-      .spyOn(chatService, 'sendChatMessage')
-      .mockResolvedValue({ clientMessageId: 'x', reply: 'ok', repliedAt: 't' });
+    const sendSpy = mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary(
       <HandoffButton
@@ -1041,16 +1123,16 @@ describe('Phase C — lesson context and Dictionary->Engy hand-off', () => {
 
     await user.keyboard('{Enter}');
 
-    expect(sendSpy).toHaveBeenCalledWith(expect.any(String), 'Explain "resign"', {
-      type: 'VOCAB_WORD',
-      resourceId: 'word-1',
-    });
+    expect(sendSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      'Explain "resign"',
+      { type: 'VOCAB_WORD', resourceId: 'word-1' },
+      expect.anything(),
+    );
   });
 
   it('the hand-off context applies to only ONE message — the next send reverts to ambient/GENERAL', async () => {
-    const sendSpy = vi
-      .spyOn(chatService, 'sendChatMessage')
-      .mockResolvedValue({ clientMessageId: 'x', reply: 'ok', repliedAt: 't' });
+    const sendSpy = mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary(
       <HandoffButton
@@ -1065,17 +1147,17 @@ describe('Phase C — lesson context and Dictionary->Engy hand-off', () => {
 
     await user.type(composer(), 'A follow-up question{Enter}');
 
-    expect(sendSpy).toHaveBeenNthCalledWith(2, expect.any(String), 'A follow-up question', {
-      type: 'GENERAL',
-    });
+    expect(sendSpy).toHaveBeenNthCalledWith(
+      2,
+      expect.any(String),
+      'A follow-up question',
+      { type: 'GENERAL' },
+      expect.anything(),
+    );
   });
 
   it('clicking a Dictionary hand-off while Dictionary is open switches to Chat (single slot still holds)', async () => {
-    vi.spyOn(chatService, 'sendChatMessage').mockResolvedValue({
-      clientMessageId: 'x',
-      reply: 'ok',
-      repliedAt: 't',
-    });
+    mockEngyStreamReply('ok');
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderBoundary(
       <HandoffButton

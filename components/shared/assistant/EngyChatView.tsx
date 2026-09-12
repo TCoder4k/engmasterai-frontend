@@ -6,7 +6,7 @@ import { useTranslation } from '../../../i18n/useTranslation';
 import { ApiError } from '../../../services/apiError';
 import { newUuidV4 } from '../../../services/clientSessionId';
 import {
-  sendChatMessage,
+  sendChatMessageStream,
   getChatSession,
   clearChatSession,
   ChatContextInput,
@@ -34,6 +34,14 @@ type PendingMessage = {
   error?: string;
   /** Reused verbatim on retry — never re-derived from the (possibly since-changed) ambient lesson context. */
   context: ChatContextInput;
+  /**
+   * The assistant's reply, growing as `onDelta` fragments arrive
+   * (2026-09-12 streaming rewrite) — empty/absent until the first fragment
+   * lands, at which point it replaces the "Engy đang suy nghĩ..." spinner.
+   * Discarded (never carried into `history`) on a mid-stream failure — a
+   * partial answer must never linger as if it were the whole one.
+   */
+  assistantText?: string;
 };
 
 type SessionLoad = 'loading' | 'ready' | 'error';
@@ -236,20 +244,33 @@ const EngyChatView: React.FC = () => {
   ) => {
     setPending({ clientMessageId, text, status: 'sending', context });
     try {
-      const result = await sendChatMessage(clientMessageId, text, context);
-      const repliedAt = Date.parse(result.repliedAt);
-      setHistory((prev) => [
-        ...prev,
-        { id: clientMessageId, role: 'user', text, at: Date.now() },
-        {
-          id: `${clientMessageId}-assistant`,
-          role: 'assistant',
-          text: result.reply,
-          at: Number.isFinite(repliedAt) ? repliedAt : Date.now(),
+      await sendChatMessageStream(clientMessageId, text, context, {
+        onDelta: (delta) => {
+          setPending((prev) =>
+            prev && prev.clientMessageId === clientMessageId
+              ? { ...prev, assistantText: (prev.assistantText ?? '') + delta }
+              : prev,
+          );
         },
-      ]);
-      setPending(null);
+        onDone: (result) => {
+          const repliedAt = Date.parse(result.repliedAt);
+          setHistory((prev) => [
+            ...prev,
+            { id: clientMessageId, role: 'user', text, at: Date.now() },
+            {
+              id: `${clientMessageId}-assistant`,
+              role: 'assistant',
+              text: result.reply,
+              at: Number.isFinite(repliedAt) ? repliedAt : Date.now(),
+            },
+          ]);
+          setPending(null);
+        },
+      });
     } catch (error) {
+      // Any text already streamed in (`assistantText`) is intentionally
+      // dropped here — a mid-stream failure must never leave a partial
+      // answer looking complete, matching the retry-visible failed state.
       setPending({
         clientMessageId,
         text,
@@ -384,12 +405,18 @@ const EngyChatView: React.FC = () => {
               at={safeTimestamp(Date.now())}
               muted={pending.status === 'sending'}
             />
-            {pending.status === 'sending' && (
-              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-                {t.chat.thinking}
-              </div>
-            )}
+            {pending.status === 'sending' &&
+              (pending.assistantText ? (
+                // The first delta fragment has arrived — replace the spinner
+                // with the growing reply itself, rendered through the same
+                // Markdown pipeline as a finished assistant bubble.
+                <ChatBubble role="assistant" text={pending.assistantText} at={safeTimestamp(Date.now())} />
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                  <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                  {t.chat.thinking}
+                </div>
+              ))}
             {pending.status === 'failed' && (
               <div className="flex items-start gap-2 text-sm text-rose-600 dark:text-rose-400">
                 <AlertCircle size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
