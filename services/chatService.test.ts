@@ -122,6 +122,32 @@ describe('sendChatMessageStream', () => {
     ).rejects.toThrow('Engy is temporarily unavailable');
   });
 
+  // 2026-09-13 real production report: a user watched Engy's reply grow for
+  // a while then just stop — no error shown, no retry button, stuck
+  // forever. Root cause: the read loop used to treat `reader.read()`
+  // reporting `done: true` as always a normal, successful end of stream,
+  // even though our own backend never closes the connection without first
+  // writing a `done` or `error` frame — so a connection cut from outside
+  // (proxy/CDN timeout, network drop) looked identical to a clean finish.
+  it('throws if the connection closes before a `done` or `error` frame ever arrives, never silently resolving', async () => {
+    vi.spyOn(authService, 'getToken').mockReturnValue('token');
+    vi.spyOn(global, 'fetch').mockResolvedValue(streamResponse([sseFrame('delta', { text: 'partial reply' })]));
+    const deltas: string[] = [];
+    let done: unknown;
+
+    await expect(
+      sendChatMessageStream('x', 'hi', { type: 'GENERAL' }, {
+        onDelta: (text) => deltas.push(text),
+        onDone: (result) => {
+          done = result;
+        },
+      }),
+    ).rejects.toThrow('Engy chat stream ended unexpectedly before finishing');
+
+    expect(deltas).toEqual(['partial reply']);
+    expect(done).toBeUndefined();
+  });
+
   it('a pre-stream HTTP error (e.g. 403 assessment lock) still throws a normal ApiError, never attempting to read a stream', async () => {
     vi.spyOn(authService, 'getToken').mockReturnValue('token');
     vi.spyOn(global, 'fetch').mockResolvedValue({

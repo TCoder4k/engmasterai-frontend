@@ -120,18 +120,43 @@ export const sendChatMessageStream = async (
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   const sse = new SseFrameBuffer();
+  // 2026-09-13 real production report: a user watched Engy's reply grow for
+  // a while, then just stop mid-sentence — no error, no retry button, stuck
+  // forever. Root cause: this loop used to `return` as soon as
+  // `reader.read()` reported `done: true`, treating that as a normal end of
+  // stream unconditionally. But OUR OWN backend always closes the
+  // connection with a `done` or `error` SSE frame already written first
+  // (chat.controller.ts) — the only way `reader.read()` can report `done`
+  // BEFORE either of those frames arrived is the connection being cut from
+  // outside our own code (a reverse proxy/CDN idle-timeout in production,
+  // a network drop, the backend process restarting mid-reply). Silently
+  // returning left `pending` stuck in 'sending' forever with a half-grown
+  // reply, since neither `onDone` nor a thrown error ever followed. Now any
+  // stream end that never saw a terminal event throws, which routes through
+  // the exact same catch-and-show-retry path EngyChatView.tsx already has
+  // for every other failure — mirrors the identical fix just made on the
+  // backend's own Gemini-stream reader (gemini-engy-chat.provider.ts's
+  // `finishReason !== 'STOP'` check) for the same class of silent cutoff.
+  let sawTerminalEvent = false;
 
   for (;;) {
     const { done, value } = await reader.read();
-    if (done) return;
+    if (done) {
+      if (!sawTerminalEvent) {
+        throw new Error('Engy chat stream ended unexpectedly before finishing');
+      }
+      return;
+    }
     for (const frame of sse.push(decoder.decode(value, { stream: true }))) {
       if (frame.event === 'delta') {
         handlers.onDelta((JSON.parse(frame.data) as { text: string }).text);
       } else if (frame.event === 'done') {
+        sawTerminalEvent = true;
         handlers.onDone(JSON.parse(frame.data) as SendChatMessageResult);
         await reader.cancel();
         return;
       } else if (frame.event === 'error') {
+        sawTerminalEvent = true;
         await reader.cancel();
         throw new Error((JSON.parse(frame.data) as { message?: string }).message ?? 'Engy is unavailable');
       }
