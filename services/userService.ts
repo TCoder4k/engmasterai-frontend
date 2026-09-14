@@ -112,10 +112,12 @@ export const changePassword = async (
 
 // List all users, paginated (GET /users). Unlike getPublishedCourses, this
 // requires auth + ADMIN — no public equivalent exists.
-export const getUsers = async (page?: number, limit?: number): Promise<UserListResponse> => {
+// `search` matches against name, email or exact id — see UserService.findAll.
+export const getUsers = async (page?: number, limit?: number, search?: string): Promise<UserListResponse> => {
   const params = new URLSearchParams();
   if (page) params.set('page', String(page));
   if (limit) params.set('limit', String(limit));
+  if (search) params.set('search', search);
 
   const query = params.toString();
   const response = await apiFetch(`${API_BASE_URL}/users${query ? `?${query}` : ''}`);

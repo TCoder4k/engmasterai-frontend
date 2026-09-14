@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 import Modal from '../shared/Modal';
@@ -13,6 +13,14 @@ const PAGE_SIZE = 10;
 const AdminUsers: React.FC = () => {
   const navigate = useNavigate();
   const currentUserId = authService.getUser()?.id;
+
+  // `q` in the URL is the only search box for this page — AdminHeader's
+  // Topbar search (the single, global one) writes it via navigate; there is
+  // deliberately no second search input here (see 2026-09-14 feedback: a
+  // local box duplicating the Topbar one just left people unsure which to
+  // type in).
+  const [searchParams] = useSearchParams();
+  const urlSearch = searchParams.get('q') ?? '';
 
   const [users, setUsers] = useState<User[]>([]);
   const [page, setPage] = useState(1);
@@ -29,10 +37,10 @@ const AdminUsers: React.FC = () => {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingRoleChangeId, setPendingRoleChangeId] = useState<string | null>(null);
 
-  const loadUsers = (targetPage: number) => {
+  const loadUsers = (targetPage: number, search: string) => {
     setIsLoading(true);
     setError(null);
-    getUsers(targetPage, PAGE_SIZE)
+    getUsers(targetPage, PAGE_SIZE, search || undefined)
       .then((res) => {
         setUsers(res.data);
         setTotalPages(res.meta.totalPages || 1);
@@ -43,10 +51,13 @@ const AdminUsers: React.FC = () => {
       .finally(() => setIsLoading(false));
   };
 
+  // The URL search term (written by AdminHeader's Topbar search) is what
+  // drives the fetch — always reset to page 1 when it changes, since a page
+  // 3 of an old query is meaningless for a new one.
   useEffect(() => {
-    loadUsers(1);
+    loadUsers(1, urlSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [urlSearch]);
 
   const openEdit = (user: User) => {
     setEditingUser(user);
@@ -62,7 +73,7 @@ const AdminUsers: React.FC = () => {
     try {
       await updateUserAsAdmin(editingUser.id, { name: editForm.name, email: editForm.email });
       setEditingUser(null);
-      loadUsers(page);
+      loadUsers(page, urlSearch);
     } catch (err) {
       setFormError(handleAuthError(err, navigate));
     } finally {
@@ -76,7 +87,7 @@ const AdminUsers: React.FC = () => {
     const nextRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
     try {
       await updateUserAsAdmin(user.id, { role: nextRole });
-      loadUsers(page);
+      loadUsers(page, urlSearch);
     } catch (err) {
       setError(handleAuthError(err, navigate));
     } finally {
@@ -92,7 +103,7 @@ const AdminUsers: React.FC = () => {
       await deleteUser(id);
       // If we just deleted the last row on a page beyond 1, step back a page.
       const nextPage = users.length === 1 && page > 1 ? page - 1 : page;
-      loadUsers(nextPage);
+      loadUsers(nextPage, urlSearch);
     } catch (err) {
       setError(handleAuthError(err, navigate));
     } finally {
@@ -145,7 +156,9 @@ const AdminUsers: React.FC = () => {
                   {!isLoading && users.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
-                        Chưa có người dùng nào.
+                        {urlSearch
+                          ? `Không tìm thấy học viên nào khớp với "${urlSearch}".`
+                          : 'Chưa có người dùng nào.'}
                       </td>
                     </tr>
                   )}
@@ -227,14 +240,14 @@ const AdminUsers: React.FC = () => {
                 </span>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => loadUsers(page - 1)}
+                    onClick={() => loadUsers(page - 1, urlSearch)}
                     disabled={page <= 1}
                     className="p-2 rounded-lg border border-slate-100 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
-                    onClick={() => loadUsers(page + 1)}
+                    onClick={() => loadUsers(page + 1, urlSearch)}
                     disabled={page >= totalPages}
                     className="p-2 rounded-lg border border-slate-100 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
                   >
