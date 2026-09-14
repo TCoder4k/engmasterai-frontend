@@ -432,9 +432,21 @@ export const requestShadowingFeedback = async (
   form.append('clientAttemptId', body.clientAttemptId);
   form.append('audio', body.audio, 'attempt');
 
+  // 2026-09-14 real production report — a real (not simulated) feedback
+  // request failed with the generic "check your connection" copy while the
+  // backend was still working: the server budgets up to
+  // SHADOWING_FEEDBACK_TIMEOUT_MS (25s, see gemini-pronunciation-feedback.
+  // provider.ts) PER MODEL in its fallback chain, so a single overloaded/
+  // slow model already eats most of apiFetch's 15s default before the
+  // request even reaches a second attempt — the frontend was aborting a
+  // call the backend hadn't actually given up on yet. Same fix, same
+  // reasoning as speakingService.ts's own turn-submission call: bound this
+  // one call generously instead of raising the shared 15s default for every
+  // other endpoint.
   const response = await apiFetch(
     `${API_BASE_URL}/listening/segments/${segmentId}/shadowing/feedback`,
     { method: 'POST', body: form },
+    { timeoutMs: 45000 },
   );
   if (!response.ok) {
     return throwApiError(response, 'Không lấy được nhận xét của AI');
