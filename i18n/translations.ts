@@ -212,7 +212,8 @@ const en = {
     topStudentsTitle: "Top Diligent Students",
     topStudentsSubtitle: "Ranked by total study time",
     topStudentsEmpty: "No study data yet.",
-    topStudentsTasksCount: (count: number) => `${count} task${count === 1 ? '' : 's'}`,
+    topStudentsTasksCount: (count: number) =>
+      `${count} task${count === 1 ? "" : "s"}`,
     // Sprint 10 — the level widget. `{level}` and `{xp}` are substituted at
     // render time; the achievement NAMES moved to their own `achievements`
     // block below, keyed by the server's AchievementKey.
@@ -251,9 +252,20 @@ const en = {
   },
   checkout: {
     title: "EngMasterAI PRO Checkout",
+    subtitle: "Complete your payment to activate EngMasterAI PRO.",
+    secureTransfer: "Secure bank transfer",
+    renewalNotice: (date: string) =>
+      `You're already PRO until ${date}. This payment adds 30 more days.`,
+    activationBanner:
+      "Your PRO account activates automatically after payment is confirmed.",
+    transferTitle: "Transfer information",
+    transferSubtitle:
+      "Scan the QR code with your banking app or use the bank details below.",
     autoActivate: "Auto-activated",
+    qrLabel: "Scan with your banking app (VietQR/NAPAS)",
     planLabel: "Plan",
     planName: "EngMasterAI PRO",
+    monthBadge: "1 month",
     amountLabel: "Total amount due",
     bankLabel: "Bank",
     accountNumberLabel: "Account number",
@@ -261,18 +273,46 @@ const en = {
     contentLabel: "Transfer content",
     copy: "Copy",
     copied: "Copied",
-    doNotEditWarning: "Do NOT edit the transfer content — it's how we match your payment automatically.",
+    doNotEditWarning:
+      "Do NOT edit the transfer content — it's how we match your payment automatically.",
+    warningTitle: "Keep the transfer content unchanged",
+    warningDetail:
+      "Changing it may prevent the system from confirming your payment automatically.",
+    orderSummaryTitle: "Your order",
+    benefitsTitle: "What's included",
+    benefits: [
+      "Access PRO features",
+      "Advanced practice",
+      "Personalized learning path",
+    ],
+    importantNotesTitle: "Important payment notes",
+    noteKeepContent: "Keep the transfer content unchanged",
+    noteKeepContentDetail: "Do not add, remove, or edit the payment code.",
+    noteExactAmount: "Transfer the exact amount",
+    noteExactAmountDetail:
+      "Automatic confirmation requires the correct amount.",
+    noteTimeLimit: "Pay within the time limit",
+    noteTimeLimitDetail: "When the QR expires, create a new payment order.",
+    noteIssue: "Having trouble?",
+    noteIssueDetail: "Please try creating a new payment order.",
     expiresInLabel: "QR expires in",
+    timeRemaining: "Time remaining",
     statusPending: "Waiting for payment...",
+    statusPendingDetail:
+      "Transfer within the time limit. The system confirms your payment automatically after it is received.",
     statusPaid: "Payment successful!",
     statusPaidDetail: "Your PRO subscription is now active.",
+    statusPaidExpiry: (date: string) => `Active until ${date}.`,
     statusExpired: "This order has expired.",
     createNewOrder: "Create a new order",
     goToDashboard: "Go to dashboard",
+    stepTransfer: "Transfer payment",
+    stepTransferDetail: "Scan the QR code or transfer manually",
+    stepConfirm: "System confirmation",
+    stepConfirmDetail: "Automatically confirmed",
+    stepActivate: "Activate PRO",
+    stepActivateDetail: "Start learning right away",
     loadError: "Couldn't create the payment order. Please try again.",
-    // Sprint 14 — shown instead of the first-time pitch when the visitor is
-    // already PRO; renewal is never blocked, just honestly labeled.
-    renewalNotice: (date: string) => `You're already PRO until ${date}. Paying again extends it by 30 more days.`,
   },
   vocab: {
     title: "Vocabulary library",
@@ -336,7 +376,8 @@ const en = {
   myVocab: {
     navLink: "My Vocabulary",
     pageTitle: "My Vocabulary",
-    pageSubtitle: "Save words you get wrong on practice tests, and review them on your own schedule.",
+    pageSubtitle:
+      "Save words you get wrong on practice tests, and review them on your own schedule.",
     addWord: "+ Add new word",
     importWords: "Import vocabulary",
     statTotal: "Total saved",
@@ -383,7 +424,8 @@ const en = {
     statsChartSubtitle: "Last 7 days",
     suggestionsTitle: "Suggested for you",
     suggestionDue: "You have words waiting to be reviewed today.",
-    suggestionStruggled: "Some words keep tripping you up — a quick review can help them stick.",
+    suggestionStruggled:
+      "Some words keep tripping you up — a quick review can help them stick.",
     suggestionAllGood: "You're all caught up — nice work!",
     wordAlreadyExists: "This word is already in your personal vocabulary list.",
     saveFailed: "Failed to save this word",
@@ -400,14 +442,17 @@ const en = {
     tagsLabel: "Tags",
     tagsPlaceholder: "e.g. TOEIC, CET 6 (comma-separated)",
     lookingUp: "Looking up...",
-    lookupFailed: "Couldn't find this word automatically — you can still fill it in yourself.",
+    lookupFailed:
+      "Couldn't find this word automatically — you can still fill it in yourself.",
     save: "Save",
     saving: "Saving...",
     importModalTitle: "Import vocabulary",
-    importInstructions: "Paste a list of words, one per line. Each one will be looked up automatically.",
+    importInstructions:
+      "Paste a list of words, one per line. Each one will be looked up automatically.",
     importTextareaPlaceholder: "abandon\nresilient\nprocrastinate\n...",
     importLookingUp: "Looking up your words...",
-    importRateLimited: "Looking up a lot of words — pausing briefly before continuing...",
+    importRateLimited:
+      "Looking up a lot of words — pausing briefly before continuing...",
     importReviewTitle: "Review before saving",
     importUnresolved: "Not found — you can still edit and save it",
     importSubmit: "Save these words",
@@ -790,7 +835,8 @@ const en = {
     // matches the compact reference layout (2026-08-20 redesign).
     modeListeningTagline: "Listen • Shadow • Dictate",
     /** A REAL count (fetched from GET /listening/catalog?mode=SHADOWING, meta.total) — never a placeholder number. */
-    modeListeningLessonCount: (count: number) => `${count} lesson${count === 1 ? '' : 's'}`,
+    modeListeningLessonCount: (count: number) =>
+      `${count} lesson${count === 1 ? "" : "s"}`,
     // Full descriptive text, used as the CTA button's aria-label — the
     // visible label is the short, shared `startCta` below; two identically-
     // worded buttons on this page still need distinct accessible names.
@@ -802,7 +848,8 @@ const en = {
     modeSpeakingCardCta: "Start speaking with AI →",
     startCta: "Start",
     hubTipTitle: "Effective learning tip",
-    hubTipBody: "Combine both modes every day to build well-rounded listening comprehension and speaking fluency.",
+    hubTipBody:
+      "Combine both modes every day to build well-rounded listening comprehension and speaking fluency.",
     // Reused by SpeakingCatalogPage (top of the Speaking tree) and
     // SpeakingSessionPage (both the in-session and summary screens) — the
     // one, obvious way back to the shared mode-selection hub.
@@ -814,14 +861,18 @@ const en = {
     // SpeakingCatalogPage's two sections: scenario-based practice vs. the
     // one open-topic Free Talk entry.
     speakingContextSectionTitle: "Practice by context",
-    speakingContextSectionDesc: "Choose a real-life situation to practice speaking in a specific context.",
+    speakingContextSectionDesc:
+      "Choose a real-life situation to practice speaking in a specific context.",
     speakingFreeTalkSectionTitle: "Free Talk",
-    speakingFreeTalkSectionDesc: "Chat naturally with the AI about any topic you like.",
+    speakingFreeTalkSectionDesc:
+      "Chat naturally with the AI about any topic you like.",
     speakingFreeTalkCardTitle: "Free conversation",
     speakingFreeTalkBadge: "No topic limit",
-    speakingFreeTalkCardDesc: "Speak freely to build your reflexes and confidence in conversation.",
+    speakingFreeTalkCardDesc:
+      "Speak freely to build your reflexes and confidence in conversation.",
     speakingFreeTalkCta: "Start chatting",
-    speakingCatalogFooterHint: "You can pick a specific situation or chat freely to practice your speaking reflexes.",
+    speakingCatalogFooterHint:
+      "You can pick a specific situation or chat freely to practice your speaking reflexes.",
     // SpeakingCatalogPage's hero card (2026-08-20 redesign) — Free Talk is
     // the strongest entry point, so it leads the page instead of sitting in
     // its own section below the scenario grid.
@@ -834,7 +885,8 @@ const en = {
     speakingHeroCtaSubtitle: "Start right away — no scenario needed",
     speakingHeroTrustSafe: "Safe & private",
     speakingHeroTrustOptimized: "AI optimized for learners",
-    speakingScenarioCount: (count: number) => `${count} scenario${count === 1 ? '' : 's'}`,
+    speakingScenarioCount: (count: number) =>
+      `${count} scenario${count === 1 ? "" : "s"}`,
     speakingStartAction: "Start",
     // Free Talk auto-starts the moment its page loads (no "Start" tap needed
     // — the catalog's own CTA is already the one gesture) — shown briefly
@@ -863,7 +915,8 @@ const en = {
     speakingSubtitlesOff: "Subtitles off",
     speakingSubtitleError: "Couldn't translate",
     speakingSubtitleRetry: "Retry",
-    speakingPrivacyFooter: "This practice session is private and only used to improve your skills.",
+    speakingPrivacyFooter:
+      "This practice session is private and only used to improve your skills.",
     speakingStateRecording: "AI is listening to you...",
     speakingStateProcessing: "Engy is thinking...",
     speakingStateSpeaking: "Engy is speaking...",
@@ -873,12 +926,14 @@ const en = {
     // The WHOLE Live connection ended (not just one turn) — this build is a
     // Live MVP, not a resumable session (see docs/CLAUDE.md), so the mic is
     // disabled for the rest of this conversation; "End session" still works.
-    speakingLiveSessionEnded: "This conversation has ended. Tap \"End session\" to see your summary, then start a new one.",
+    speakingLiveSessionEnded:
+      'This conversation has ended. Tap "End session" to see your summary, then start a new one.',
     speakingYouLabel: "You",
     speakingAiLabel: "Engy",
     speakingTurnCountLabel: "Turns",
     speakingSummaryTitle: "Conversation complete!",
-    speakingSummaryTurns: (count: number) => `You completed ${count} turn${count === 1 ? '' : 's'}.`,
+    speakingSummaryTurns: (count: number) =>
+      `You completed ${count} turn${count === 1 ? "" : "s"}.`,
     chooseDeck: "Choose a deck to practice",
     noPublishedDecks: "No published decks available yet.",
     startSession: "Start",
@@ -1344,7 +1399,8 @@ const en = {
   chat: {
     title: "Engy",
     subtitle: "Your English-learning assistant",
-    greeting: "Hi! I'm Engy. Ask me about grammar, vocabulary, or anything English-related.",
+    greeting:
+      "Hi! I'm Engy. Ask me about grammar, vocabulary, or anything English-related.",
     composerLabel: "Message Engy",
     composerPlaceholder: "Message Engy…",
     send: "Send",
@@ -1352,13 +1408,16 @@ const en = {
     retry: "Retry",
     failedGeneric: "Couldn't send this message. Please try again.",
     rateLimited: "You're sending messages too quickly. Try again in a moment.",
-    assessmentInProgress: "Engy is unavailable while you're taking the Placement Test.",
-    replyInProgress: "Still working on your last message — try again in a moment.",
+    assessmentInProgress:
+      "Engy is unavailable while you're taking the Placement Test.",
+    replyInProgress:
+      "Still working on your last message — try again in a moment.",
     clearConversation: "New conversation",
     sessionLoadError: "Couldn't restore your previous conversation.",
     quickListeningLabel: "Listening",
     quickListeningSub: "Practice & tips",
-    quickListeningPrompt: "Can you give me some tips to improve my English listening skills?",
+    quickListeningPrompt:
+      "Can you give me some tips to improve my English listening skills?",
     quickToeicLabel: "TOEIC Tips",
     quickToeicSub: "Score higher",
     quickToeicPrompt: "What are some tips to score higher on the TOEIC test?",
@@ -1396,8 +1455,10 @@ const en = {
     you: "You",
     inviteAction: "🔥 Keep a streak together",
     inviteConfirmTitle: "Invite to keep a streak",
-    inviteConfirmQuestion: (name: string) => `Keep a daily streak with ${name}?`,
-    inviteConfirmDescription: "Study together every day to keep your 🔥 Learning Streak alive.",
+    inviteConfirmQuestion: (name: string) =>
+      `Keep a daily streak with ${name}?`,
+    inviteConfirmDescription:
+      "Study together every day to keep your 🔥 Learning Streak alive.",
     sendInvite: "Send invite",
     inviteSent: "Invite sent!",
     pendingSent: "⏳ Waiting for a response",
@@ -1405,7 +1466,8 @@ const en = {
     decline: "Decline",
     brokenLabel: "🔥 This streak has ended",
     startNewStreak: "Start a new streak",
-    chipDaysWith: (days: number, name: string) => `🔥 ${days} day${days === 1 ? "" : "s"} with ${name}`,
+    chipDaysWith: (days: number, name: string) =>
+      `🔥 ${days} day${days === 1 ? "" : "s"} with ${name}`,
     loadError: "Couldn't load streak status.",
     rateLimited: "You're doing that too quickly. Try again in a moment.",
     conflict: "That's already been handled — try refreshing.",
@@ -1440,7 +1502,8 @@ const en = {
     myStreaksListTitle: "Your streaks",
     pendingInvitationsTitle: "Pending invitations",
     invitationFrom: (name: string) => `${name} wants to keep a streak with you`,
-    noStreaksYet: "No streaks yet — invite someone from Community Chat to get started!",
+    noStreaksYet:
+      "No streaks yet — invite someone from Community Chat to get started!",
     publicLoading: "Loading…",
     publicNotFound: "This streak couldn't be found.",
     publicDaysUnit: "days",
@@ -1453,7 +1516,8 @@ const en = {
     milestoneModalContinue: "Continue",
     leaderboardNavLink: "Leaderboard",
     leaderboardTitle: "🔥 Streak Together",
-    leaderboardSubtitle: "Study with friends, keep your streak every day, and climb the hall of fame!",
+    leaderboardSubtitle:
+      "Study with friends, keep your streak every day, and climb the hall of fame!",
     leaderboardChampionBadge: "👑 Legendary Champion",
     leaderboardYourPair: "Your pair",
     leaderboardEmpty: "No streaks have made the leaderboard yet.",
@@ -1462,16 +1526,20 @@ const en = {
     flameTier30: "Blazing Phoenix",
     flameTier100: "Eternal Flame Dragon",
     createLinkCardTitle: "Create a streak with a friend",
-    createLinkCardDescription: "Send an invite link to build a study streak together and keep the flame alive every day!",
-    createLinkCardCaption: "Invite a friend and keep your study streak going together!",
+    createLinkCardDescription:
+      "Send an invite link to build a study streak together and keep the flame alive every day!",
+    createLinkCardCaption:
+      "Invite a friend and keep your study streak going together!",
     createLinkCardLoadError: "Couldn't load your invite link.",
     createLinkShareTitle: "Keep a streak together",
-    createLinkShareCaption: "🔥 Keep a daily English-learning streak with me on EngMasterAI!",
+    createLinkShareCaption:
+      "🔥 Keep a daily English-learning streak with me on EngMasterAI!",
     inviteLinkCopy: "Copy link",
     shareVia: "Share via",
     activeStatusShort: "Streak is active",
     viewDetails: "View details →",
-    inviteLinkFrom: (name: string) => `${name} invites you to keep a study streak together!`,
+    inviteLinkFrom: (name: string) =>
+      `${name} invites you to keep a study streak together!`,
     inviteLinkNotFound: "This invite link is invalid or has expired.",
     inviteLinkPrompt: "Log in or sign up to join this streak.",
     inviteLinkLogin: "Log in",
@@ -1485,11 +1553,15 @@ const en = {
     title: "Notifications",
     markAllRead: "Mark all as read",
     empty: "No notifications yet.",
-    invitationReceived: (name: string) => `🔥 ${name} wants to keep a streak with you`,
-    invitationAccepted: (name: string) => `❤️ ${name} accepted your invite — your streak has started!`,
-    milestone: (name: string, days: number) => `🎉 You and ${name} reached ${days} days together!`,
+    invitationReceived: (name: string) =>
+      `🔥 ${name} wants to keep a streak with you`,
+    invitationAccepted: (name: string) =>
+      `❤️ ${name} accepted your invite — your streak has started!`,
+    milestone: (name: string, days: number) =>
+      `🎉 You and ${name} reached ${days} days together!`,
     broken: (name: string) => `Your streak with ${name} has ended.`,
-    partnerActive: (name: string) => `🔥 ${name} studied today! Don't lose your streak.`,
+    partnerActive: (name: string) =>
+      `🔥 ${name} studied today! Don't lose your streak.`,
   },
   dictionary: {
     title: "Dictionary",
@@ -1500,7 +1572,8 @@ const en = {
     notFound: "No dictionary entry found.",
     errorGeneric: "Could not look up this word right now. Please try again.",
     rateLimited: "You're looking up words too quickly. Try again in a moment.",
-    invalidQuery: "Please enter a word using English letters only (max 3 words).",
+    invalidQuery:
+      "Please enter a word using English letters only (max 3 words).",
     synonyms: "Synonyms",
     vietnameseMeaning: "Vietnamese meaning",
     englishDefinitionLabel: "Definition",
@@ -1512,7 +1585,8 @@ const en = {
     searchFallbackAction: 'Search "{{word}}"',
     searchFallbackHint: "Press Enter to search the dictionary",
     askEngy: "Ask Engy about this word",
-    askEngyPrefill: 'Can you explain the word "{{word}}" and give me an example?',
+    askEngyPrefill:
+      'Can you explain the word "{{word}}" and give me an example?',
     favoriteAdd: "Add to favorites",
     favoriteRemove: "Remove from favorites",
   },
@@ -1717,9 +1791,20 @@ const vi: TranslationDict = {
   },
   checkout: {
     title: "Thanh toán EngMasterAI PRO",
+    subtitle: "",
+    secureTransfer: "Chuyển khoản ngân hàng an toàn",
+    renewalNotice: (date: string) =>
+      `Bạn đang là PRO đến ${date}. Thanh toán lần này sẽ cộng thêm 30 ngày.`,
+    activationBanner:
+      "Sau khi thanh toán thành công, tài khoản PRO sẽ được kích hoạt tự động.",
+    transferTitle: "Thông tin chuyển khoản",
+    transferSubtitle:
+      "Quét mã QR bằng ứng dụng ngân hàng hoặc chuyển khoản theo thông tin bên dưới.",
     autoActivate: "Tự động kích hoạt",
+    qrLabel: "Quét bằng ứng dụng ngân hàng (VietQR/NAPAS)",
     planLabel: "Gói",
     planName: "EngMasterAI PRO",
+    monthBadge: "1 tháng",
     amountLabel: "Tổng tiền cần thanh toán",
     bankLabel: "Ngân hàng",
     accountNumberLabel: "Số tài khoản",
@@ -1727,16 +1812,45 @@ const vi: TranslationDict = {
     contentLabel: "Nội dung chuyển khoản",
     copy: "Sao chép",
     copied: "Đã sao chép",
-    doNotEditWarning: "Vui lòng KHÔNG chỉnh sửa nội dung chuyển khoản — đây là cách hệ thống đối soát thanh toán tự động.",
+    doNotEditWarning:
+      "Vui lòng KHÔNG chỉnh sửa nội dung chuyển khoản — đây là cách hệ thống đối soát thanh toán tự động.",
+    warningTitle: "Vui lòng giữ nguyên nội dung chuyển khoản",
+    warningDetail:
+      "Thay đổi nội dung có thể khiến hệ thống không tự động xác nhận thanh toán.",
+    orderSummaryTitle: "Đơn hàng của bạn",
+    benefitsTitle: "Quyền lợi trong gói",
+    benefits: [
+      "Truy cập các tính năng PRO",
+      "Luyện tập nâng cao",
+      "Lộ trình học cá nhân hóa",
+    ],
+    importantNotesTitle: "Lưu ý quan trọng",
+    noteKeepContent: "Giữ nguyên nội dung chuyển khoản",
+    noteKeepContentDetail: "Không thêm, bớt hoặc chỉnh sửa nội dung.",
+    noteExactAmount: "Chuyển đúng số tiền",
+    noteExactAmountDetail: "Hệ thống chỉ tự động xác nhận khi đúng số tiền.",
+    noteTimeLimit: "Thanh toán trong thời gian quy định",
+    noteTimeLimitDetail: "Khi QR hết hạn, hãy tạo đơn thanh toán mới.",
+    noteIssue: "Nếu gặp sự cố",
+    noteIssueDetail: "Vui lòng thử tạo một đơn thanh toán mới.",
     expiresInLabel: "Mã QR hết hạn sau",
+    timeRemaining: "Thời gian còn lại",
     statusPending: "Đang chờ thanh toán...",
+    statusPendingDetail:
+      "Vui lòng chuyển khoản trong thời gian quy định. Hệ thống sẽ tự động xác nhận sau khi ghi nhận thanh toán.",
     statusPaid: "Thanh toán thành công!",
     statusPaidDetail: "Gói PRO của bạn đã được kích hoạt.",
+    statusPaidExpiry: (date: string) => `Có hiệu lực đến ${date}.`,
     statusExpired: "Đơn hàng đã hết hạn.",
     createNewOrder: "Tạo đơn mới",
     goToDashboard: "Về trang chủ",
     loadError: "Không thể tạo đơn thanh toán. Vui lòng thử lại.",
-    renewalNotice: (date: string) => `Bạn đang là PRO đến ${date}. Thanh toán lần này sẽ cộng thêm 30 ngày.`,
+    stepTransfer: "Chuyển khoản",
+    stepTransferDetail: "Quét QR hoặc chuyển khoản",
+    stepConfirm: "Hệ thống xác nhận",
+    stepConfirmDetail: "Tự động xác nhận",
+    stepActivate: "Kích hoạt PRO",
+    stepActivateDetail: "Bắt đầu học ngay",
   },
   vocab: {
     title: "Thư viện từ vựng",
@@ -1789,7 +1903,8 @@ const vi: TranslationDict = {
   myVocab: {
     navLink: "Từ vựng của tôi",
     pageTitle: "Từ vựng của tôi",
-    pageSubtitle: "Lưu lại những từ hay sai khi làm đề để ôn tập riêng theo lịch của bạn.",
+    pageSubtitle:
+      "Lưu lại những từ hay sai khi làm đề để ôn tập riêng theo lịch của bạn.",
     addWord: "+ Thêm từ mới",
     importWords: "Nhập từ vựng",
     statTotal: "Tổng số đã lưu",
@@ -1814,7 +1929,8 @@ const vi: TranslationDict = {
     columnStatus: "Trạng thái",
     columnActions: "Thao tác",
     emptyList: "Bạn chưa lưu từ nào.",
-    emptyListCta: "Thêm từ đầu tiên để bắt đầu xây dựng danh sách ôn tập của riêng bạn.",
+    emptyListCta:
+      "Thêm từ đầu tiên để bắt đầu xây dựng danh sách ôn tập của riêng bạn.",
     noResultsFound: "Không tìm thấy từ nào phù hợp.",
     confirmDelete: "Xoá từ này khỏi danh sách từ vựng của bạn?",
     editWord: "Sửa",
@@ -1823,13 +1939,15 @@ const vi: TranslationDict = {
     unsaveWord: "Bỏ khỏi Từ vựng của tôi",
     reviewTodayTitle: "Ôn tập hôm nay",
     reviewTodayCount: "từ cần ôn",
-    reviewTodayEmpty: "Không có từ nào cần ôn ngay bây giờ — bạn đang làm rất tốt!",
+    reviewTodayEmpty:
+      "Không có từ nào cần ôn ngay bây giờ — bạn đang làm rất tốt!",
     startReview: "Bắt đầu ôn tập",
     statsChartTitle: "Thống kê ôn tập",
     statsChartSubtitle: "7 ngày gần đây",
     suggestionsTitle: "Gợi ý cho bạn",
     suggestionDue: "Bạn có từ đang chờ ôn tập hôm nay.",
-    suggestionStruggled: "Một số từ bạn hay sai — ôn tập nhanh sẽ giúp bạn nhớ lâu hơn.",
+    suggestionStruggled:
+      "Một số từ bạn hay sai — ôn tập nhanh sẽ giúp bạn nhớ lâu hơn.",
     suggestionAllGood: "Bạn đã hoàn thành hết rồi — làm tốt lắm!",
     wordAlreadyExists: "Từ này đã có trong danh sách từ vựng cá nhân của bạn.",
     saveFailed: "Không thể lưu từ này",
@@ -1850,10 +1968,12 @@ const vi: TranslationDict = {
     save: "Lưu",
     saving: "Đang lưu...",
     importModalTitle: "Nhập từ vựng",
-    importInstructions: "Dán danh sách từ, mỗi dòng một từ. Mỗi từ sẽ được tự động tra cứu.",
+    importInstructions:
+      "Dán danh sách từ, mỗi dòng một từ. Mỗi từ sẽ được tự động tra cứu.",
     importTextareaPlaceholder: "abandon\nresilient\nprocrastinate\n...",
     importLookingUp: "Đang tra cứu các từ của bạn...",
-    importRateLimited: "Đang tra cứu khá nhiều từ — tạm dừng một chút trước khi tiếp tục...",
+    importRateLimited:
+      "Đang tra cứu khá nhiều từ — tạm dừng một chút trước khi tiếp tục...",
     importReviewTitle: "Xem lại trước khi lưu",
     importUnresolved: "Không tìm thấy — bạn vẫn có thể sửa và lưu",
     importSubmit: "Lưu các từ này",
@@ -2186,12 +2306,15 @@ const vi: TranslationDict = {
     speakingBackToCatalog: "Quay lại danh sách chủ đề",
     speakingBackToScenario: "Quay lại",
     speakingContextSectionTitle: "Luyện theo bối cảnh",
-    speakingContextSectionDesc: "Chọn một tình huống thực tế để luyện nói theo ngữ cảnh cụ thể.",
+    speakingContextSectionDesc:
+      "Chọn một tình huống thực tế để luyện nói theo ngữ cảnh cụ thể.",
     speakingFreeTalkSectionTitle: "Nói chuyện tự do",
-    speakingFreeTalkSectionDesc: "Trò chuyện tự nhiên với AI về bất kỳ chủ đề nào bạn muốn.",
+    speakingFreeTalkSectionDesc:
+      "Trò chuyện tự nhiên với AI về bất kỳ chủ đề nào bạn muốn.",
     speakingFreeTalkCardTitle: "Trò chuyện tự do",
     speakingFreeTalkBadge: "Không giới hạn chủ đề",
-    speakingFreeTalkCardDesc: "Tự do nói để cải thiện phản xạ và sự tự tin trong giao tiếp.",
+    speakingFreeTalkCardDesc:
+      "Tự do nói để cải thiện phản xạ và sự tự tin trong giao tiếp.",
     speakingFreeTalkCta: "Bắt đầu trò chuyện",
     speakingCatalogFooterHint:
       "Bạn có thể chọn một tình huống cụ thể hoặc nói chuyện tự do để luyện phản xạ giao tiếp.",
@@ -2208,7 +2331,8 @@ const vi: TranslationDict = {
     speakingStartAction: "Bắt đầu",
     speakingConnecting: "Đang kết nối...",
     speakingCompleteAction: "Kết thúc buổi học",
-    speakingLeaveConfirm: "Rời khỏi lúc này sẽ hủy lượt nói hiện tại. Tiếp tục?",
+    speakingLeaveConfirm:
+      "Rời khỏi lúc này sẽ hủy lượt nói hiện tại. Tiếp tục?",
     speakingTapToTalk: "Nhấn để nói",
     speakingTapToStop: "Nhấn để dừng và gửi",
     speakingRecorderHint: "Hãy nói tự nhiên, AI sẽ lắng nghe và phản hồi.",
@@ -2218,17 +2342,20 @@ const vi: TranslationDict = {
     speakingSubtitlesOff: "Đã tắt phụ đề",
     speakingSubtitleError: "Không dịch được",
     speakingSubtitleRetry: "Thử lại",
-    speakingPrivacyFooter: "Buổi luyện tập được bảo mật và chỉ dùng để cải thiện kỹ năng của bạn.",
+    speakingPrivacyFooter:
+      "Buổi luyện tập được bảo mật và chỉ dùng để cải thiện kỹ năng của bạn.",
     speakingStateRecording: "AI đang lắng nghe bạn nói...",
     speakingStateProcessing: "Engy đang xử lý...",
     speakingStateSpeaking: "Engy đang nói...",
     speakingLiveTurnError: "Lượt nói này chưa gửi được. Nhấn micro để thử lại.",
-    speakingLiveSessionEnded: "Cuộc trò chuyện đã kết thúc. Nhấn \"Kết thúc buổi học\" để xem tổng kết, sau đó bắt đầu buổi mới.",
+    speakingLiveSessionEnded:
+      'Cuộc trò chuyện đã kết thúc. Nhấn "Kết thúc buổi học" để xem tổng kết, sau đó bắt đầu buổi mới.',
     speakingYouLabel: "Bạn",
     speakingAiLabel: "Engy",
     speakingTurnCountLabel: "Số lượt nói",
     speakingSummaryTitle: "Hoàn thành hội thoại!",
-    speakingSummaryTurns: (count: number) => `Bạn đã hoàn thành ${count} lượt nói.`,
+    speakingSummaryTurns: (count: number) =>
+      `Bạn đã hoàn thành ${count} lượt nói.`,
     chooseDeck: "Chọn một bộ từ để luyện tập",
     noPublishedDecks: "Chưa có bộ từ nào được công khai.",
     startSession: "Bắt đầu",
@@ -2648,7 +2775,8 @@ const vi: TranslationDict = {
   chat: {
     title: "Engy",
     subtitle: "Trợ lý học tiếng Anh của bạn",
-    greeting: "Chào bạn! Mình là Engy. Hỏi mình về ngữ pháp, từ vựng, hoặc bất cứ điều gì về tiếng Anh nhé.",
+    greeting:
+      "Chào bạn! Mình là Engy. Hỏi mình về ngữ pháp, từ vựng, hoặc bất cứ điều gì về tiếng Anh nhé.",
     composerLabel: "Nhắn tin cho Engy",
     composerPlaceholder: "Nhắn tin cho Engy…",
     send: "Gửi",
@@ -2656,19 +2784,23 @@ const vi: TranslationDict = {
     retry: "Thử lại",
     failedGeneric: "Không thể gửi tin nhắn này. Vui lòng thử lại.",
     rateLimited: "Bạn đang gửi tin nhắn quá nhanh. Vui lòng thử lại sau.",
-    assessmentInProgress: "Engy không khả dụng khi bạn đang làm bài Kiểm tra đầu vào.",
-    replyInProgress: "Vẫn đang xử lý tin nhắn trước của bạn — thử lại sau một chút.",
+    assessmentInProgress:
+      "Engy không khả dụng khi bạn đang làm bài Kiểm tra đầu vào.",
+    replyInProgress:
+      "Vẫn đang xử lý tin nhắn trước của bạn — thử lại sau một chút.",
     clearConversation: "Cuộc trò chuyện mới",
     sessionLoadError: "Không thể khôi phục cuộc trò chuyện trước đó.",
     quickListeningLabel: "Listening",
     quickListeningSub: "Luyện tập & mẹo",
-    quickListeningPrompt: "Bạn cho mình vài mẹo để cải thiện kỹ năng nghe tiếng Anh được không?",
+    quickListeningPrompt:
+      "Bạn cho mình vài mẹo để cải thiện kỹ năng nghe tiếng Anh được không?",
     quickToeicLabel: "Mẹo TOEIC",
     quickToeicSub: "Tăng điểm số",
     quickToeicPrompt: "Có mẹo nào giúp mình đạt điểm TOEIC cao hơn không?",
     quickStudyPlanLabel: "Lộ trình học",
     quickStudyPlanSub: "Cá nhân hoá",
-    quickStudyPlanPrompt: "Bạn giúp mình xây dựng một lộ trình học cá nhân hoá được không?",
+    quickStudyPlanPrompt:
+      "Bạn giúp mình xây dựng một lộ trình học cá nhân hoá được không?",
   },
   communityChat: {
     title: "Tán gẫu cộng đồng",
@@ -2684,7 +2816,8 @@ const vi: TranslationDict = {
     rateLimited: "Bạn đang gửi tin nhắn quá nhanh. Vui lòng thử lại sau.",
     loadError: "Không thể tải tin nhắn cộng đồng.",
     loadingOlder: "Đang tải tin nhắn cũ hơn…",
-    emptyMessage: "Chưa có tin nhắn nào. Hãy là người đầu tiên bắt đầu cuộc trò chuyện!",
+    emptyMessage:
+      "Chưa có tin nhắn nào. Hãy là người đầu tiên bắt đầu cuộc trò chuyện!",
     reconnecting: "Mất kết nối. Đang thử kết nối lại…",
     disconnected: "Không thể kết nối lại.",
     retryConnection: "Kết nối lại",
@@ -2700,8 +2833,10 @@ const vi: TranslationDict = {
     you: "Bạn",
     inviteAction: "🔥 Giữ chuỗi cùng nhau",
     inviteConfirmTitle: "Mời giữ chuỗi cùng nhau",
-    inviteConfirmQuestion: (name: string) => `Bạn muốn cùng ${name} giữ chuỗi học mỗi ngày chứ?`,
-    inviteConfirmDescription: "Cùng nhau học mỗi ngày để giữ 🔥 Learning Streak.",
+    inviteConfirmQuestion: (name: string) =>
+      `Bạn muốn cùng ${name} giữ chuỗi học mỗi ngày chứ?`,
+    inviteConfirmDescription:
+      "Cùng nhau học mỗi ngày để giữ 🔥 Learning Streak.",
     sendInvite: "Gửi lời mời",
     inviteSent: "Đã gửi lời mời!",
     pendingSent: "⏳ Đang chờ phản hồi",
@@ -2709,7 +2844,8 @@ const vi: TranslationDict = {
     decline: "Từ chối",
     brokenLabel: "🔥 Chuỗi đã kết thúc",
     startNewStreak: "Bắt đầu chuỗi mới",
-    chipDaysWith: (days: number, name: string) => `🔥 ${days} ngày cùng ${name}`,
+    chipDaysWith: (days: number, name: string) =>
+      `🔥 ${days} ngày cùng ${name}`,
     loadError: "Không thể tải trạng thái chuỗi.",
     rateLimited: "Bạn đang thao tác quá nhanh. Vui lòng thử lại sau.",
     conflict: "Việc này đã được xử lý — hãy thử tải lại.",
@@ -2744,7 +2880,8 @@ const vi: TranslationDict = {
     myStreaksListTitle: "Danh sách chuỗi của bạn",
     pendingInvitationsTitle: "Lời mời đang chờ",
     invitationFrom: (name: string) => `${name} muốn giữ chuỗi học cùng bạn`,
-    noStreaksYet: "Chưa có chuỗi nào — mời ai đó từ Tán gẫu cộng đồng để bắt đầu!",
+    noStreaksYet:
+      "Chưa có chuỗi nào — mời ai đó từ Tán gẫu cộng đồng để bắt đầu!",
     publicLoading: "Đang tải…",
     publicNotFound: "Không tìm thấy chuỗi này.",
     publicDaysUnit: "ngày",
@@ -2757,7 +2894,8 @@ const vi: TranslationDict = {
     milestoneModalContinue: "Tiếp tục",
     leaderboardNavLink: "Bảng xếp hạng",
     leaderboardTitle: "🔥 Chuỗi cùng nhau",
-    leaderboardSubtitle: "Học cùng bạn bè, giữ chuỗi mỗi ngày và chinh phục bảng vàng!",
+    leaderboardSubtitle:
+      "Học cùng bạn bè, giữ chuỗi mỗi ngày và chinh phục bảng vàng!",
     leaderboardChampionBadge: "👑 Quán quân huyền thoại",
     leaderboardYourPair: "Cặp của bạn",
     leaderboardEmpty: "Chưa có chuỗi nào lọt bảng xếp hạng.",
@@ -2766,34 +2904,43 @@ const vi: TranslationDict = {
     flameTier30: "Phượng Hoàng Lửa",
     flameTier100: "Rồng Lửa Bất Diệt",
     createLinkCardTitle: "Tạo chuỗi cùng bạn bè",
-    createLinkCardDescription: "Gửi link mời để cùng nhau tạo chuỗi học tập và giữ lửa mỗi ngày!",
-    createLinkCardCaption: "Mời bạn bè và cùng nhau duy trì chuỗi học tập mỗi ngày!",
+    createLinkCardDescription:
+      "Gửi link mời để cùng nhau tạo chuỗi học tập và giữ lửa mỗi ngày!",
+    createLinkCardCaption:
+      "Mời bạn bè và cùng nhau duy trì chuỗi học tập mỗi ngày!",
     createLinkCardLoadError: "Không thể tải link mời của bạn.",
     createLinkShareTitle: "Giữ chuỗi cùng nhau",
-    createLinkShareCaption: "🔥 Cùng tôi giữ chuỗi học tiếng Anh mỗi ngày trên EngMasterAI nhé!",
+    createLinkShareCaption:
+      "🔥 Cùng tôi giữ chuỗi học tiếng Anh mỗi ngày trên EngMasterAI nhé!",
     inviteLinkCopy: "Sao chép link",
     shareVia: "Chia sẻ qua",
     activeStatusShort: "Chuỗi đang hoạt động",
     viewDetails: "Xem chi tiết →",
-    inviteLinkFrom: (name: string) => `${name} mời bạn giữ chuỗi học tập cùng nhau!`,
+    inviteLinkFrom: (name: string) =>
+      `${name} mời bạn giữ chuỗi học tập cùng nhau!`,
     inviteLinkNotFound: "Link mời không hợp lệ hoặc đã hết hạn.",
     inviteLinkPrompt: "Đăng nhập hoặc đăng ký để tham gia chuỗi này.",
     inviteLinkLogin: "Đăng nhập",
     inviteLinkRegister: "Đăng ký",
     inviteLinkJoin: "Tham gia chuỗi",
     inviteLinkJoining: "Đang tham gia…",
-    inviteLinkOwnLink: "Đây là link mời của chính bạn — hãy gửi cho bạn bè nhé!",
+    inviteLinkOwnLink:
+      "Đây là link mời của chính bạn — hãy gửi cho bạn bè nhé!",
     inviteLinkJoinError: "Không thể tham gia chuỗi. Vui lòng thử lại.",
   },
   notifications: {
     title: "Thông báo",
     markAllRead: "Đánh dấu tất cả đã đọc",
     empty: "Chưa có thông báo nào.",
-    invitationReceived: (name: string) => `🔥 ${name} muốn giữ chuỗi học cùng bạn`,
-    invitationAccepted: (name: string) => `❤️ ${name} đã chấp nhận lời mời — chuỗi của hai bạn đã bắt đầu!`,
-    milestone: (name: string, days: number) => `🎉 Bạn và ${name} đã đạt ${days} ngày cùng nhau!`,
+    invitationReceived: (name: string) =>
+      `🔥 ${name} muốn giữ chuỗi học cùng bạn`,
+    invitationAccepted: (name: string) =>
+      `❤️ ${name} đã chấp nhận lời mời — chuỗi của hai bạn đã bắt đầu!`,
+    milestone: (name: string, days: number) =>
+      `🎉 Bạn và ${name} đã đạt ${days} ngày cùng nhau!`,
     broken: (name: string) => `Chuỗi của bạn với ${name} đã kết thúc.`,
-    partnerActive: (name: string) => `🔥 ${name} đã học hôm nay! Đừng bỏ lỡ chuỗi của hai bạn nhé.`,
+    partnerActive: (name: string) =>
+      `🔥 ${name} đã học hôm nay! Đừng bỏ lỡ chuỗi của hai bạn nhé.`,
   },
   dictionary: {
     title: "Từ điển",
@@ -2816,7 +2963,8 @@ const vi: TranslationDict = {
     searchFallbackAction: 'Tra "{{word}}"',
     searchFallbackHint: "Nhấn Enter để tra từ điển",
     askEngy: "Hỏi Engy về từ này",
-    askEngyPrefill: 'Bạn giải thích giúp mình từ "{{word}}" và cho ví dụ được không?',
+    askEngyPrefill:
+      'Bạn giải thích giúp mình từ "{{word}}" và cho ví dụ được không?',
     favoriteAdd: "Thêm vào mục yêu thích",
     favoriteRemove: "Bỏ khỏi mục yêu thích",
   },

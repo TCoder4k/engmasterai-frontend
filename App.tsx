@@ -12,6 +12,7 @@ import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import UserHome from './components/user/UserHome';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminUsers from './components/admin/AdminUsers';
+import AdminStudentDetail from './components/admin/student/AdminStudentDetail';
 import AdminCourses from './components/admin/AdminCourses';
 import AdminLessons from './components/admin/AdminLessons';
 import AdminLessonQuiz from './components/admin/AdminLessonQuiz';
@@ -294,6 +295,7 @@ const App: React.FC = () => {
         <Route element={<ProtectedRoute role="ADMIN" />}>
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/users/:id" element={<AdminStudentDetail />} />
           <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/courses/:courseId/lessons" element={<AdminLessons />} />
           <Route path="/admin/lessons/:lessonId/quiz" element={<AdminLessonQuiz />} />
