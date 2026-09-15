@@ -72,6 +72,11 @@ export interface AuthResponse {
     // wrong guess in that direction but a wrong guess the other way would
     // silently skip onboarding for a genuinely new user.
     onboarded?: boolean;
+    // Sprint 14 (Payment/Subscription) — same "not on the initial
+    // register()/login() response, arrives moments later via the awaited
+    // getProfile() -> updateStoredUser() call" gap as `onboarded` above.
+    isPro?: boolean;
+    proExpiresAt?: string | null;
   };
   accessToken: string;
   // Only ever present on register()'s response — omitted (undefined) for

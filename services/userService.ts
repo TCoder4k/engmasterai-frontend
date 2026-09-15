@@ -23,6 +23,13 @@ export interface User {
   // authService's enterSession -> getProfile -> updateStoredUser chain.
   onboarded: boolean;
   learningGoal: LearningGoal | null;
+  // Sprint 14 (Payment/Subscription) — derived server-side the same way as
+  // emailVerified/onboarded above: `isPro` is a pure function of whether a
+  // Subscription row exists with expiresAt in the future, never a persisted
+  // flag that could go stale once a subscription lapses. `proExpiresAt` is
+  // null for a user who has never subscribed.
+  isPro: boolean;
+  proExpiresAt: string | null;
 }
 
 export interface UserListResponse {

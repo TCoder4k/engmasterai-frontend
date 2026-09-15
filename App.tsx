@@ -46,6 +46,7 @@ import SpeakingScenarioPage from './components/practice/speaking/SpeakingScenari
 import SpeakingSessionPage from './components/practice/speaking/SpeakingSessionPage';
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
+import CheckoutPage from './components/payment/CheckoutPage';
 import MyStreaksPage from './components/shared/streak/MyStreaksPage';
 import StreakLeaderboardPage from './components/shared/streak/StreakLeaderboardPage';
 import StreakDetailPage from './components/shared/streak/StreakDetailPage';
@@ -263,6 +264,13 @@ const App: React.FC = () => {
           />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/security" element={<SecurityPage />} />
+          {/* Sprint 14 — Payment/Subscription. Same tier as /profile,
+              /security: any authenticated user, inside every boundary above
+              (onboarding gate, gamification, study time, assistant) since
+              none of them need to special-case it — a not-yet-onboarded user
+              is redirected to /onboarding before reaching this route, same
+              as every other student page. */}
+          <Route path="/checkout" element={<CheckoutPage />} />
           {/* Streak Together — authenticated pages, inside the same
               boundary group as every other student route (earns study time,
               has the gamification profile/dictionary/Engy chrome available).

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
   BookOpen,
@@ -12,6 +12,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
+import { authService } from '../../services/authService';
 import { Logo } from '../shared/Logo';
 import LevelWidget from './LevelWidget';
 
@@ -27,8 +28,11 @@ const navLinkClass = (isActive: boolean) =>
 // Desktop-only left sidebar (hidden below lg — phones/tablets use
 // StudentMobileHeader + StudentBottomNavigation instead).
 const StudentDesktopSidebar: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = authService.getUser();
+  const dateLocale = language === 'vi' ? 'vi-VN' : 'en-US';
 
   // /practice is now this item's own target (the shared Nghe-nói hub), so
   // NavLink's own `to`-based matching would need to cover /practice AND every
@@ -146,16 +150,24 @@ const StudentDesktopSidebar: React.FC = () => {
             <Crown size={18} className="text-amber-400 fill-amber-400" aria-hidden="true" />
             <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{t.premium.goPremium}</p>
           </div>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-            {t.premium.pitch}
-          </p>
-          {/* Visual CTA only — no payment/subscription flow exists yet. */}
+          {/* Sprint 14 — real now. Renewal is never blocked: an already-PRO
+              user sees their current expiry instead of the first-time pitch,
+              and the button is framed as a renewal, not hidden. */}
+          {user?.isPro && user.proExpiresAt ? (
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              {t.premium.activeUntil(new Date(user.proExpiresAt).toLocaleDateString(dateLocale))}
+            </p>
+          ) : (
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+              {t.premium.pitch}
+            </p>
+          )}
           <button
             type="button"
-            title={t.common.comingSoon}
+            onClick={() => navigate('/checkout')}
             className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
           >
-            {t.premium.upgradeNow}
+            {user?.isPro ? t.premium.renewNow : t.premium.upgradeNow}
           </button>
         </div>
       </div>
