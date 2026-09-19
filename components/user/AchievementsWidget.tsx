@@ -47,7 +47,7 @@ const BADGE_STYLES: Record<AchievementKey, { glyph: string; tile: string }> = {
   },
 };
 
-const AchievementsWidget: React.FC = () => {
+const AchievementsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { t } = useTranslation();
   const gamification = useGamification();
 
@@ -58,14 +58,14 @@ const AchievementsWidget: React.FC = () => {
   return (
     <section
       aria-label={t.widgets.achievements}
-      className="p-6 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-3xl shadow-sm dark:shadow-xl space-y-4"
+      className={`${compact ? 'p-3 sm:p-4 space-y-2.5' : 'p-4 sm:p-5 space-y-3'} bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-2xl shadow-sm dark:shadow-xl`}
     >
       <div className="flex items-center gap-2">
         <div
-          className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center flex-shrink-0"
+          className={`${compact ? 'w-7 h-7' : 'w-8 h-8'} rounded-lg bg-amber-100 dark:bg-amber-500/15 flex items-center justify-center flex-shrink-0`}
           aria-hidden="true"
         >
-          <Trophy className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <Trophy className={`${compact ? 'w-3.5 h-3.5' : 'w-4 h-4'} text-amber-600 dark:text-amber-400`} />
         </div>
         <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
           {t.widgets.achievements}
@@ -73,11 +73,11 @@ const AchievementsWidget: React.FC = () => {
       </div>
 
       {isLoading && (
-        <div className="space-y-3" aria-hidden="true">
+        <div className={`${compact ? 'space-y-2' : 'space-y-3'}`} aria-hidden="true">
           {[0, 1, 2].map((row) => (
             <div
               key={row}
-              className="h-14 rounded-2xl bg-slate-100 dark:bg-ink-950 animate-pulse"
+              className={`${compact ? 'h-12 rounded-xl' : 'h-14 rounded-2xl'} bg-slate-100 dark:bg-ink-950 animate-pulse`}
             />
           ))}
         </div>
@@ -103,14 +103,14 @@ const AchievementsWidget: React.FC = () => {
       )}
 
       {profile && (
-        <ul className="space-y-3">
+        <ul className={`${compact ? 'space-y-2' : 'space-y-3'}`}>
           {profile.achievements.map((achievement) => {
             const style = BADGE_STYLES[achievement.key];
             const unlocked = achievement.unlockedAt !== null;
             return (
               <li
                 key={achievement.key}
-                className={`flex items-center gap-3 p-3 border rounded-2xl transition-opacity ${
+                className={`flex items-center gap-3 ${compact ? 'p-2.5 rounded-xl' : 'p-3 rounded-2xl'} border transition-opacity ${
                   unlocked
                     ? 'bg-slate-50 dark:bg-ink-950 border-slate-200 dark:border-ink-700'
                     : 'bg-transparent border-dashed border-slate-200 dark:border-ink-700 opacity-60'
@@ -127,7 +127,7 @@ const AchievementsWidget: React.FC = () => {
                   {style.glyph}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-xs font-bold text-slate-900 dark:text-white">
+                  <span className={`${compact ? 'text-[11px]' : 'text-xs'} block font-bold text-slate-900 dark:text-white truncate`}>
                     {t.achievements[achievement.key]}
                     {/* Locked/unlocked is carried by TEXT, never by opacity
                         and colour alone. */}
@@ -138,7 +138,7 @@ const AchievementsWidget: React.FC = () => {
                         : t.widgets.achievementLocked}
                     </span>
                   </span>
-                  <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                  <span className="block text-[10px] text-slate-500 dark:text-slate-400 truncate">
                     {t.achievements[`${achievement.key}_HINT` as const]}
                     {achievement.progress &&
                       ` · ${achievement.progress.current}/${achievement.progress.target}`}

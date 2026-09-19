@@ -12,6 +12,7 @@ const paymentOf = (overrides: Partial<PaymentPresentation> = {}): PaymentPresent
   paymentId: 'payment-1',
   plan: 'PRO_MONTHLY',
   amount: 199000,
+  compareAtAmount: null,
   currency: 'VND',
   paymentCode: 'ENG7X9K2A4',
   status: 'PENDING',
@@ -51,6 +52,15 @@ describe('createPayment', () => {
       .mockResolvedValue(jsonResponse(429, { message: 'Too many requests' })) as unknown as typeof fetch;
 
     await expect(createPayment('PRO_MONTHLY')).rejects.toThrow('Too many requests');
+  });
+
+  it('passes compareAtAmount straight through when the server includes one', async () => {
+    const payment = paymentOf({ amount: 19000, compareAtAmount: 59000 });
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(201, payment)) as unknown as typeof fetch;
+
+    const result = await createPayment('PRO_MONTHLY');
+
+    expect(result.compareAtAmount).toBe(59000);
   });
 });
 

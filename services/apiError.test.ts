@@ -18,6 +18,32 @@ describe('throwApiError — Sprint 04: carries an optional body-level `code`', (
       code: undefined,
     });
   });
+
+  it('captures extra body fields (e.g. USAGE_QUOTA_EXCEEDED\'s kind/used/limit) as `details`', async () => {
+    await expect(
+      throwApiError(
+        fakeResponse(403, {
+          statusCode: 403,
+          code: 'USAGE_QUOTA_EXCEEDED',
+          message: 'limit reached',
+          kind: 'speaking',
+          used: 3,
+          limit: 3,
+        }),
+        'fallback',
+      ),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: 'USAGE_QUOTA_EXCEEDED',
+      details: { kind: 'speaking', used: 3, limit: 3 },
+    });
+  });
+
+  it('leaves details undefined when the body has nothing beyond statusCode/message/code', async () => {
+    await expect(
+      throwApiError(fakeResponse(409, { message: 'reused', code: 'IDEMPOTENCY_KEY_REUSED' }), 'fallback'),
+    ).rejects.toMatchObject({ details: undefined });
+  });
 });
 
 describe('handleAuthError — the global 401 handler', () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import AddPersonalWordModal from './AddPersonalWordModal';
 import { PersonalVocabWord } from '../../../services/vocabPersonalService';
@@ -50,9 +51,11 @@ const renderModal = (props: { editingWord?: PersonalVocabWord } = {}) => {
   const onClose = vi.fn();
   const onCreated = vi.fn();
   render(
-    <LanguageProvider>
-      <AddPersonalWordModal onClose={onClose} onCreated={onCreated} editingWord={props.editingWord} />
-    </LanguageProvider>,
+    <MemoryRouter>
+      <LanguageProvider>
+        <AddPersonalWordModal onClose={onClose} onCreated={onCreated} editingWord={props.editingWord} />
+      </LanguageProvider>
+    </MemoryRouter>,
   );
   return { onClose, onCreated };
 };
@@ -131,6 +134,20 @@ describe('AddPersonalWordModal — add mode', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     expect(await screen.findByText(/already in your personal vocabulary list/i)).toBeInTheDocument();
+  });
+
+  it('a VOCAB_WORD_LIMIT_REACHED 403 shows an upgrade nudge instead of a generic failure', async () => {
+    (createPersonalVocabWord as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new ApiError('Free accounts can save up to 50 words.', 403, 'VOCAB_WORD_LIMIT_REACHED'),
+    );
+    renderModal();
+
+    await userEvent.type(screen.getByPlaceholderText('e.g. abandon'), 'newword');
+    await userEvent.type(screen.getByLabelText('Meaning (Vietnamese)'), 'nghĩa');
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText(/free accounts can save up to 50 words/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /upgrade to pro/i })).toBeInTheDocument();
   });
 });
 

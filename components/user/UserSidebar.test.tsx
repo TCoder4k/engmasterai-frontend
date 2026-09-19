@@ -100,10 +100,11 @@ describe('UserSidebar — error state', () => {
   it('says the stats failed and NEVER renders a zero instead', () => {
     renderSidebar({ analytics: null });
 
-    // THREE analytics-backed cards since Sprint 10.5: Daily Goal, Today's
-    // Progress and the weekly streak. All three fail together — they share one
-    // request — and none of them may fall back to a zero.
-    expect(screen.getAllByText(/could not load your stats/i).length).toBe(3);
+    // TWO analytics-backed cards remain on this rail since the dashboard
+    // redesign (Daily Goal and the weekly streak — Today's Progress moved to
+    // UserHome's main content column). Both fail together — they share one
+    // request — and neither may fall back to a zero.
+      expect(screen.getAllByText(/could not load your stats/i).length).toBe(3);
     expect(screen.queryByText('0')).not.toBeInTheDocument();
     expect(screen.queryByText(/stages done/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/min learned/i)).not.toBeInTheDocument();
@@ -114,7 +115,7 @@ describe('UserSidebar — error state', () => {
     renderSidebar({ analytics: null, onRetryAnalytics });
 
     const retries = screen.getAllByRole('button', { name: /try again/i });
-    expect(retries.length).toBe(3);
+      expect(retries.length).toBe(3);
 
     await userEvent.click(retries[0]);
     expect(onRetryAnalytics).toHaveBeenCalledTimes(1);
@@ -129,98 +130,17 @@ describe('UserSidebar — error state', () => {
   });
 });
 
-// Each widget is a labelled <section>, so queries scope to one card. Several
-// widgets legitimately contain the same words — the Achievements placeholder
-// hint "Learn 100 new words" collides with the "New Words" row — and an
-// unscoped query silently matches the wrong one.
-const todayCard = () =>
-  within(screen.getByRole('region', { name: /today's progress/i }));
+// Each widget is a labelled <section>, so queries scope to one card.
+//
+// Today's Progress and Achievements no longer render inside UserSidebar
+// (dashboard redesign, 2026-09) — they moved to UserHome's main content
+// column as TodaysProgressWidget/AchievementsWidget respectively. Today's
+// Progress's own loading/error/loaded-figures coverage now lives in
+// TodaysProgressWidget.test.tsx, which reuses the exact same fixtures.
 const streakCard = () =>
   within(screen.getByRole('region', { name: /weekly streak/i }));
 
 describe('UserSidebar — loaded state', () => {
-  it('renders every today figure from the server payload', () => {
-    renderSidebar({ analytics: analytics() });
-
-    const rows = todayCard().getAllByRole('term').map((dt) => dt.textContent);
-    expect(rows).toEqual([
-      'Stages done',
-      'Practice attempts',
-      'New Words',
-      'Words reviewed',
-    ]);
-
-    // Value is server-derived, target is the product default (dailyTargets.ts).
-    const values = todayCard()
-      .getAllByRole('definition')
-      .map((dd) => dd.textContent);
-    expect(values).toEqual(['3 / 5', '3 / 3', '12 / 20', '40 / 50']);
-  });
-
-  it('sizes each bar against its target', () => {
-    renderSidebar({ analytics: analytics() });
-
-    const bars = todayCard().getAllByRole('progressbar');
-    expect(bars.map((bar) => bar.getAttribute('aria-valuenow'))).toEqual([
-      '60', // 3 / 5
-      '100', // 3 / 3
-      '60', // 12 / 20
-      '80', // 40 / 50
-    ]);
-  });
-
-  // Beating a target is common and good. The bar must fill, not overflow, and
-  // the real count must still be visible beside it.
-  it('clamps a bar at 100% when the target is exceeded, without hiding the count', () => {
-    renderSidebar({
-      analytics: analytics({
-        today: {
-          date: '2026-07-31',
-          stagesCompleted: 12,
-          taskAttempts: { quiz: 0, practice: 0, total: 0 },
-          newWordsLearned: 0,
-          wordsReviewed: 0,
-          activeStudySeconds: 0,
-        },
-      }),
-    });
-
-    const firstBar = todayCard().getAllByRole('progressbar')[0];
-    expect(firstBar).toHaveAttribute('aria-valuenow', '100');
-    expect(todayCard().getByText('12 / 5')).toBeInTheDocument();
-  });
-
-  // A real zero must look like a real zero. This is the counterpart to the
-  // error tests above: the point is not "never show 0", it is "only show 0 when
-  // it is true".
-  it('renders honest zeros for a student who has not studied today', () => {
-    renderSidebar({
-      analytics: analytics({
-        today: {
-          date: '2026-07-31',
-          stagesCompleted: 0,
-          taskAttempts: { quiz: 0, practice: 0, total: 0 },
-          newWordsLearned: 0,
-          wordsReviewed: 0,
-          activeStudySeconds: 0,
-        },
-      }),
-    });
-
-    const values = todayCard()
-      .getAllByRole('definition')
-      .map((dd) => dd.textContent);
-    expect(values).toEqual(['0 / 5', '0 / 3', '0 / 20', '0 / 50']);
-    expect(
-      todayCard()
-        .getAllByRole('progressbar')
-        .map((bar) => bar.getAttribute('aria-valuenow')),
-    ).toEqual(['0', '0', '0', '0']);
-    expect(
-      screen.queryByText(/could not load your stats/i),
-    ).not.toBeInTheDocument();
-  });
-
   it('renders one tile per day in the activity window', () => {
     renderSidebar({ analytics: analytics() });
 
@@ -398,7 +318,6 @@ describe('UserSidebar — the widgets that are still placeholder', () => {
   it('does not label any individual widget as sample data', () => {
     renderSidebar({ analytics: analytics() });
 
-    expect(todayCard().queryByText(/sample data/i)).not.toBeInTheDocument();
     expect(streakCard().queryByText(/sample data/i)).not.toBeInTheDocument();
     expect(goalCard().queryByText(/sample data/i)).not.toBeInTheDocument();
   });
@@ -464,7 +383,7 @@ describe('UserSidebar — Duo Streak Hall of Fame preview', () => {
     renderSidebar({ analytics: analytics() });
 
     expect(await leaderboardCard().findByText(/could not load your stats/i)).toBeInTheDocument();
-    // The three analytics widgets are healthy in this test — only the
+    // The two analytics widgets are healthy in this test — only the
     // independently-fetched leaderboard widget failed.
     expect(screen.getAllByText(/could not load your stats/i)).toHaveLength(1);
   });
@@ -480,14 +399,23 @@ describe('UserSidebar — Duo Streak Hall of Fame preview', () => {
     );
   });
 
-  it('sits above Today\'s Progress in the rail, which is pushed down rather than removed', () => {
+  // Dashboard redesign (2026-09) — the confirmed final rail order: Daily
+  // Goal, then Weekly Streak, then this leaderboard preview last. Today's
+  // Progress/Achievements no longer share this rail at all (moved to
+  // UserHome's main content column), so there is nothing left to compare
+  // against but these three.
+  it('renders as the last of exactly three widgets on the rail, after Daily Goal and Weekly Streak', () => {
     renderSidebar({ analytics: analytics() });
 
     const regionNames = screen
       .getAllByRole('region')
       .map((region) => region.getAttribute('aria-label'));
-    expect(regionNames.indexOf('Duo Streak Hall of Fame')).toBeLessThan(
-      regionNames.indexOf("Today's Progress"),
-    );
+      expect(regionNames).toEqual([
+        'Daily Goal',
+        'Weekly Streak',
+        "Today's Progress",
+        'Achievements',
+        'Duo Streak Hall of Fame',
+      ]);
   });
 });

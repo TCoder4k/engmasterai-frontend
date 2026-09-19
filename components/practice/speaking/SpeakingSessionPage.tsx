@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, Volume2, Captions, RotateCcw, Square } from 'lucide-react';
 import StudentLayout from '../../user/StudentLayout';
 import BackButton from '../../shared/BackButton';
 import ErrorState from '../../shared/ErrorState';
 import Skeleton from '../../shared/Skeleton';
+import UsageQuotaExceededCard from '../../shared/UsageQuotaExceededCard';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { ApiError } from '../../../services/apiError';
 import {
   completeSpeakingAttempt,
   getSpeakingScenario,
@@ -43,6 +45,7 @@ const MAX_RECORDING_MS = 60_000;
 
 const SpeakingSessionPage: React.FC = () => {
   const { t, language } = useTranslation();
+  const navigate = useNavigate();
   const { scenarioId, exerciseId } = useParams<{ scenarioId: string; exerciseId: string }>();
 
   // Passive reuse of Shadowing's own device resolution (Sprint 11 Phase
@@ -63,6 +66,10 @@ const SpeakingSessionPage: React.FC = () => {
   const [exercise, setExercise] = useState<SpeakingExerciseStudentView | null>(null);
   const [isFreeTalk, setIsFreeTalk] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // 2026-09-16 pricing relaunch — the "speaking" (daily) usage quota is
+  // exhausted. A distinct state from `loadError`: this isn't a load
+  // failure, it's an honest denial with its own upgrade-nudge screen.
+  const [quotaExceeded, setQuotaExceeded] = useState<{ used: number; limit: number } | null>(null);
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [turns, setTurns] = useState<ConversationTurn[]>([]);
@@ -207,6 +214,12 @@ const SpeakingSessionPage: React.FC = () => {
         onConnectionLost: () => setLiveEnded(true),
       });
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'USAGE_QUOTA_EXCEEDED') {
+        const used = typeof err.details?.used === 'number' ? err.details.used : 0;
+        const limit = typeof err.details?.limit === 'number' ? err.details.limit : 0;
+        setQuotaExceeded({ used, limit });
+        return;
+      }
       setLoadError((err as Error).message);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- playback's functions are themselves stable (useCallback); t is stable enough for this one-shot start
@@ -302,6 +315,22 @@ const SpeakingSessionPage: React.FC = () => {
         <div className="max-w-2xl mx-auto space-y-4">
           <Skeleton className="h-8 w-1/2" />
           <Skeleton className="h-32" />
+        </div>
+      </StudentLayout>
+    );
+  }
+
+  if (quotaExceeded) {
+    return (
+      <StudentLayout>
+        <div className="max-w-2xl mx-auto">
+          <UsageQuotaExceededCard
+            kind="speaking"
+            used={quotaExceeded.used}
+            limit={quotaExceeded.limit}
+            onUpgrade={() => navigate('/checkout')}
+            onBack={{ label: t.practice.backToModeHub, onClick: () => navigate('/practice') }}
+          />
         </div>
       </StudentLayout>
     );

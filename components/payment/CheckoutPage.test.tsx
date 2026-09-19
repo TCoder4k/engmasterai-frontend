@@ -27,6 +27,7 @@ const paymentOf = (overrides: Partial<PaymentPresentation> = {}): PaymentPresent
   paymentId: 'payment-1',
   plan: 'PRO_MONTHLY',
   amount: 199000,
+  compareAtAmount: null,
   currency: 'VND',
   paymentCode: 'ENG7X9K2A4',
   status: 'PENDING',
@@ -90,7 +91,11 @@ describe('CheckoutPage', () => {
     vi.spyOn(paymentService, 'createPayment').mockResolvedValue(paymentOf({ amount: 199000 }));
     renderPage();
 
-    expect(await screen.findByText(/199\.000/)).toBeInTheDocument();
+    // The price now legitimately appears twice: the "Early Member" hero
+    // headline ("Upgrade to PRO for just 199.000 ₫") AND the order-summary
+    // amount row — both built from the same real payment.amount.
+    const matches = await screen.findAllByText(/199\.000/);
+    expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows a pending state with an aria-live status region', async () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../../../i18n/LanguageProvider';
 import ImportPersonalWordsModal from './ImportPersonalWordsModal';
 import { ApiError } from '../../../services/apiError';
@@ -36,9 +37,11 @@ const renderModal = () => {
   const onClose = vi.fn();
   const onImported = vi.fn();
   render(
-    <LanguageProvider>
-      <ImportPersonalWordsModal onClose={onClose} onImported={onImported} />
-    </LanguageProvider>,
+    <MemoryRouter>
+      <LanguageProvider>
+        <ImportPersonalWordsModal onClose={onClose} onImported={onImported} />
+      </LanguageProvider>
+    </MemoryRouter>,
   );
   return { onClose, onImported };
 };
@@ -185,5 +188,36 @@ describe('ImportPersonalWordsModal', () => {
     );
     expect(await screen.findByText(/1 words added/)).toBeInTheDocument();
     expect(onImported).toHaveBeenCalled();
+  });
+
+  it('a VOCAB_WORD_LIMIT_REACHED 403 on submit shows an upgrade nudge, staying on the review step', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    (lookupWord as ReturnType<typeof vi.fn>).mockImplementation((word: string) =>
+      Promise.resolve(lookupResult(word, `nghĩa của ${word}`)),
+    );
+    (bulkCreatePersonalVocabWords as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new ApiError('Free accounts can save up to 50 words.', 403, 'VOCAB_WORD_LIMIT_REACHED'),
+    );
+    renderModal();
+
+    await act(async () => {
+      await userEvent.type(screen.getByPlaceholderText(/abandon/), 'apple', { delay: null });
+    });
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'Save these words' }));
+    });
+    await waitFor(() => expect(lookupWord).toHaveBeenCalledWith('apple'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    await screen.findByText('Review before saving');
+
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'Save these words' }));
+    });
+
+    expect(await screen.findByText(/free accounts can save up to 50 words/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /upgrade to pro/i })).toBeInTheDocument();
+    expect(screen.getByText('Review before saving')).toBeInTheDocument();
   });
 });

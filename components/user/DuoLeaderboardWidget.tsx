@@ -33,7 +33,7 @@ const DuoLeaderboardWidget: React.FC = () => {
   return (
     <section
       aria-label={t.widgets.duoLeaderboardTitle}
-      className="p-6 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-3xl shadow-sm dark:shadow-xl space-y-4"
+      className="p-4 sm:p-5 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-2xl shadow-sm dark:shadow-xl space-y-3"
     >
       <div className="flex items-center gap-2">
         <div

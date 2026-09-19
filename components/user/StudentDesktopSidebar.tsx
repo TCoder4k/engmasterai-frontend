@@ -14,7 +14,7 @@ import {
 import { useTranslation } from '../../i18n/useTranslation';
 import { authService } from '../../services/authService';
 import { Logo } from '../shared/Logo';
-import LevelWidget from './LevelWidget';
+import UsageQuotaWidget from './UsageQuotaWidget';
 
 const HEXAGON_CLIP = 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)';
 
@@ -33,6 +33,14 @@ const StudentDesktopSidebar: React.FC = () => {
   const navigate = useNavigate();
   const user = authService.getUser();
   const dateLocale = language === 'vi' ? 'vi-VN' : 'en-US';
+
+  // 2026-09-16 pricing relaunch — renewal-urgency state, computed entirely
+  // client-side from data GET /users/me already returns (isPro/proExpiresAt)
+  // — no new backend call. "Soon" = within 3 days of expiry (inclusive).
+  const daysUntilExpiry = user?.proExpiresAt
+    ? Math.ceil((new Date(user.proExpiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+    : null;
+  const isExpiringSoon = Boolean(user?.isPro) && daysUntilExpiry !== null && daysUntilExpiry <= 3;
 
   // /practice is now this item's own target (the shared Nghe-nói hub), so
   // NavLink's own `to`-based matching would need to cover /practice AND every
@@ -138,24 +146,54 @@ const StudentDesktopSidebar: React.FC = () => {
       </nav>
 
       <div className="p-4 space-y-4">
-        {/* Sprint 10 — REAL. This was a "Coming soon" placeholder whose comment
-            claimed no API returned totalPoints/level; that was wrong (GET
-            /users/me always has), and the real gap was that nothing awarded
-            them. The XP ledger closes it. Data comes from GamificationProvider,
-            mounted once per session as a layout route — see App.tsx. */}
-        <LevelWidget />
+        {/* Dashboard redesign (2026-09) — the standalone Level/XP card moved
+            out of the sidebar into the desktop topbar, next to the avatar
+            (StudentLayout.tsx), so this rail carries one fewer competing
+            card. Level/XP data itself is unchanged — same GamificationProvider
+            source, just a different, more compact presentation. */}
 
-        <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-5">
+        {/* 2026-09-16 pricing relaunch — "AI 17/20" style quota display,
+            fetched independently on mount; renders nothing on failure. */}
+        <UsageQuotaWidget />
+
+        <div
+          className={`rounded-2xl p-5 ${
+            isExpiringSoon
+              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/25'
+              : 'bg-slate-50 dark:bg-slate-800/60'
+          }`}
+        >
           <div className="flex items-center space-x-2 mb-1.5">
-            <Crown size={18} className="text-amber-400 fill-amber-400" aria-hidden="true" />
-            <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{t.premium.goPremium}</p>
+            <Crown
+              size={18}
+              className={isExpiringSoon ? 'text-amber-500 fill-amber-500' : 'text-amber-400 fill-amber-400'}
+              aria-hidden="true"
+            />
+            <p
+              className={`text-sm font-extrabold ${
+                isExpiringSoon ? 'text-amber-900 dark:text-amber-200' : 'text-slate-900 dark:text-slate-100'
+              }`}
+            >
+              {isExpiringSoon ? t.premium.renewalUrgentTitle : t.premium.goPremium}
+            </p>
           </div>
           {/* Sprint 14 — real now. Renewal is never blocked: an already-PRO
               user sees their current expiry instead of the first-time pitch,
-              and the button is framed as a renewal, not hidden. */}
+              and the button is framed as a renewal, not hidden.
+              2026-09-16 — within 3 days of expiry, swap in an urgency
+              message (still framed as informational, never blocking). */}
           {user?.isPro && user.proExpiresAt ? (
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-              {t.premium.activeUntil(new Date(user.proExpiresAt).toLocaleDateString(dateLocale))}
+            <p
+              className={`text-xs font-medium mb-4 leading-relaxed ${
+                isExpiringSoon ? 'text-amber-800 dark:text-amber-200/80' : 'text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {isExpiringSoon
+                ? t.premium.expiringSoon(
+                    Math.max(0, daysUntilExpiry ?? 0),
+                    new Date(user.proExpiresAt).toLocaleDateString(dateLocale),
+                  )
+                : t.premium.activeUntil(new Date(user.proExpiresAt).toLocaleDateString(dateLocale))}
             </p>
           ) : (
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
@@ -165,7 +203,11 @@ const StudentDesktopSidebar: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/checkout')}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            className={`w-full py-2.5 text-white rounded-xl text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 inline-flex items-center justify-center gap-1.5 ${
+              isExpiringSoon
+                ? 'bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-400'
+                : 'bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-400'
+            }`}
           >
             {user?.isPro ? t.premium.renewNow : t.premium.upgradeNow}
           </button>

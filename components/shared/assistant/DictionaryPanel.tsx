@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, X, Volume2, Loader2, AlertCircle, MessageCircle, ChevronRight } from 'lucide-react';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { ApiError } from '../../../services/apiError';
+import UsageQuotaExceededCard from '../UsageQuotaExceededCard';
 import {
   lookupWord,
   suggestWords,
@@ -36,6 +38,10 @@ type PanelState =
   | { status: 'loading' }
   | { status: 'notFound' }
   | { status: 'error'; message: string }
+  // 2026-09-16 pricing relaunch — the "aiQuery" usage quota is exhausted
+  // for this period. A distinct state from 'error' so the panel can show
+  // an upgrade nudge instead of a generic failure message.
+  | { status: 'quotaExceeded'; used: number; limit: number }
   | { status: 'result'; data: DictionaryLookupResult };
 
 type SuggestState =
@@ -56,6 +62,7 @@ type SuggestState =
 // automatically while typing — see runExactLookup).
 const DictionaryPanel: React.FC = () => {
   const assistant = useAssistant();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [resultState, setResultState] = useState<PanelState>({ status: 'empty' });
@@ -144,6 +151,12 @@ const DictionaryPanel: React.FC = () => {
         if (requestTicket.current !== ticket) return;
         if (error instanceof ApiError && error.status === 404) {
           setResultState({ status: 'notFound' });
+          return;
+        }
+        if (error instanceof ApiError && error.code === 'USAGE_QUOTA_EXCEEDED') {
+          const used = typeof error.details?.used === 'number' ? error.details.used : 0;
+          const limit = typeof error.details?.limit === 'number' ? error.details.limit : 0;
+          setResultState({ status: 'quotaExceeded', used, limit });
           return;
         }
         if (error instanceof ApiError && error.status === 429) {
@@ -327,7 +340,7 @@ const DictionaryPanel: React.FC = () => {
             t={t}
           />
         ) : (
-          <DictionaryPanelBody state={resultState} t={t} />
+          <DictionaryPanelBody state={resultState} t={t} onUpgrade={() => navigate('/checkout')} />
         )}
       </div>
     </div>
@@ -418,9 +431,10 @@ const DictionarySuggestionsList: React.FC<{
   }
 };
 
-const DictionaryPanelBody: React.FC<{ state: PanelState; t: TranslationDict }> = ({
+const DictionaryPanelBody: React.FC<{ state: PanelState; t: TranslationDict; onUpgrade: () => void }> = ({
   state,
   t,
+  onUpgrade,
 }) => {
   switch (state.status) {
     case 'empty':
@@ -445,6 +459,17 @@ const DictionaryPanelBody: React.FC<{ state: PanelState; t: TranslationDict }> =
         <div className="flex items-start gap-2 py-6 text-sm text-rose-600 dark:text-rose-400">
           <AlertCircle size={16} className="shrink-0 mt-0.5" aria-hidden="true" />
           <span>{state.message}</span>
+        </div>
+      );
+    case 'quotaExceeded':
+      return (
+        <div className="py-4">
+          <UsageQuotaExceededCard
+            kind="aiQuery"
+            used={state.used}
+            limit={state.limit}
+            onUpgrade={onUpgrade}
+          />
         </div>
       );
     case 'result':

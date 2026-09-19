@@ -14,12 +14,19 @@ export class ApiError extends Error {
   // undefined for them. Lets a caller distinguish two different 409s (or
   // any other status) without inventing a second exception type per case.
   code?: string;
+  // The rest of the error body verbatim (e.g. UsageQuotaExceededException's
+  // `{kind, used, limit}`) — most endpoints don't send extra fields, so this
+  // stays undefined for them. Lets a caller read structured detail (like
+  // the exact used/limit to render in a progress bar) without a second
+  // round trip, instead of inventing a bespoke exception type per case.
+  details?: Record<string, unknown>;
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, code?: string, details?: Record<string, unknown>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -41,14 +48,22 @@ export class AuthExpiredError extends ApiError {
 export const throwApiError = async (response: Response, fallback: string): Promise<never> => {
   let message = fallback;
   let code: string | undefined;
+  let details: Record<string, unknown> | undefined;
   try {
     const body = await response.json();
     if (body?.message) message = body.message;
     if (typeof body?.code === 'string') code = body.code;
+    if (body && typeof body === 'object') {
+      const rest: Record<string, unknown> = { ...body };
+      delete rest.statusCode;
+      delete rest.message;
+      delete rest.code;
+      if (Object.keys(rest).length > 0) details = rest;
+    }
   } catch {
     // Empty/non-JSON error body — keep the fallback message.
   }
-  throw new ApiError(message, response.status, code);
+  throw new ApiError(message, response.status, code, details);
 };
 
 // The one place the app decides what an auth-adjacent failure means for the

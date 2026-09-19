@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Send, Loader2, AlertCircle, Plus, Headphones, Target, Lightbulb } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { ApiError } from '../../../services/apiError';
 import { newUuidV4 } from '../../../services/clientSessionId';
+import UsageQuotaExceededCard from '../UsageQuotaExceededCard';
 import {
   sendChatMessageStream,
   getChatSession,
@@ -151,10 +153,17 @@ const AssistantMarkdown: React.FC<{ text: string }> = ({ text }) => (
 const EngyChatView: React.FC = () => {
   const assistant = useAssistant();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [composerText, setComposerText] = useState('');
   const [history, setHistory] = useState<Bubble[]>([]);
   const [pending, setPending] = useState<PendingMessage | null>(null);
   const [sessionLoad, setSessionLoad] = useState<SessionLoad>('loading');
+  // 2026-09-16 pricing relaunch — the "aiQuery" usage quota (shared with
+  // Dictionary) is exhausted for this period. A dedicated state, not a
+  // 'failed' pending message: retrying the identical request cannot
+  // succeed until the next period, so this blocks the composer entirely
+  // instead of offering a "retry" that would just fail again.
+  const [quotaExceeded, setQuotaExceeded] = useState<{ used: number; limit: number } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   // Phase C — a ONE-SHOT override consumed by the very next send only (see
@@ -268,6 +277,13 @@ const EngyChatView: React.FC = () => {
         },
       });
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'USAGE_QUOTA_EXCEEDED') {
+        const used = typeof error.details?.used === 'number' ? error.details.used : 0;
+        const limit = typeof error.details?.limit === 'number' ? error.details.limit : 0;
+        setPending(null);
+        setQuotaExceeded({ used, limit });
+        return;
+      }
       // Any text already streamed in (`assistantText`) is intentionally
       // dropped here — a mid-stream failure must never leave a partial
       // answer looking complete, matching the retry-visible failed state.
@@ -283,7 +299,7 @@ const EngyChatView: React.FC = () => {
 
   const handleSend = () => {
     const trimmed = composerText.trim();
-    if (!trimmed || pending !== null) return;
+    if (!trimmed || pending !== null || quotaExceeded !== null) return;
     // A hand-off override applies to only THIS send; everything after
     // falls back to the ambient lesson context (if any) or GENERAL — see
     // useAssistant.ts's ChatHandoffPayload doc comment.
@@ -337,7 +353,7 @@ const EngyChatView: React.FC = () => {
     textareaRef.current?.focus();
   };
 
-  const composerDisabled = pending !== null;
+  const composerDisabled = pending !== null || quotaExceeded !== null;
   const quickActions = [
     { Icon: Headphones, label: t.chat.quickListeningLabel, sub: t.chat.quickListeningSub, prompt: t.chat.quickListeningPrompt },
     { Icon: Target, label: t.chat.quickToeicLabel, sub: t.chat.quickToeicSub, prompt: t.chat.quickToeicPrompt },
@@ -433,6 +449,16 @@ const EngyChatView: React.FC = () => {
               </div>
             )}
           </>
+        )}
+        {quotaExceeded && (
+          <div className="py-2">
+            <UsageQuotaExceededCard
+              kind="aiQuery"
+              used={quotaExceeded.used}
+              limit={quotaExceeded.limit}
+              onUpgrade={() => navigate('/checkout')}
+            />
+          </div>
         )}
         <div ref={bottomRef} />
       </div>

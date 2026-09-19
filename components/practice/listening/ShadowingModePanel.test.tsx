@@ -1454,6 +1454,21 @@ describe('ShadowingModePanel — AI pronunciation feedback', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/session expired/i);
   });
 
+  it('shows the upgrade nudge, not a generic error, when the aiGrading quota is exceeded', async () => {
+    (requestShadowingFeedback as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new ApiError('quota exceeded', 403, 'USAGE_QUOTA_EXCEEDED', { kind: 'aiGrading', used: 2, limit: 2 }),
+    );
+    renderPanel();
+    await recordAndStop();
+
+    await clickAndFlush(/ask ai about my pronunciation/i);
+
+    expect(screen.getByText(/dùng hết lượt chấm bài ai/i)).toBeInTheDocument();
+    expect(screen.getByText('2/2')).toBeInTheDocument();
+    expect(screen.getByTestId('shadowing-result')).toBeInTheDocument();
+    expect(screen.getByText('Passed')).toBeInTheDocument();
+  });
+
   // Coaching belongs to the take it was written about. Leaving it on screen
   // after a new recording would attribute advice to audio that no longer exists.
   it('drops the advice when the student records again', async () => {

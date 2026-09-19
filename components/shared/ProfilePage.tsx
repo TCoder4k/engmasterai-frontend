@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, User, Mail, Save, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Camera, User, Mail, Save, Check, AlertCircle, Crown, Gem } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { getProfile, updateProfile, uploadAvatar } from '../../services/userService';
 import { handleAuthError } from '../../services/apiError';
 import { useTranslation } from '../../i18n/useTranslation';
+import ReferralCard from '../user/ReferralCard';
+import UsageQuotaWidget from '../user/UsageQuotaWidget';
+import { useGamification } from './GamificationProvider';
 
 interface UserProfile {
   id: string;
@@ -12,6 +15,8 @@ interface UserProfile {
   email: string;
   avatarUrl?: string;
   role: string;
+  isPro: boolean;
+  proExpiresAt: string | null;
 }
 
 // Serves both roles (the back link is role-aware), so it deliberately keeps
@@ -28,6 +33,8 @@ const ProfilePage: React.FC = () => {
     email: user?.email || '',
     avatarUrl: '',
     role: user?.role || 'USER',
+    isPro: user?.isPro ?? false,
+    proExpiresAt: user?.proExpiresAt ?? null,
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +58,8 @@ const ProfilePage: React.FC = () => {
         email: userData.email,
         avatarUrl: userData.avatarUrl || '',
         role: userData.role,
+        isPro: userData.isPro,
+        proExpiresAt: userData.proExpiresAt,
       });
     } catch (err) {
       console.error('Failed to load profile:', err);
@@ -182,6 +191,11 @@ const ProfilePage: React.FC = () => {
     return profile.role === 'ADMIN' ? '/admin' : '/home';
   };
 
+  const gamification = useGamification();
+  const levelProfile = gamification?.profile;
+  const isStudent = profile.role !== 'ADMIN';
+  const dateLocale = t.profile.title === 'Hồ sơ' ? 'vi-VN' : 'en-US';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
       {/* Header */}
@@ -271,6 +285,65 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {isStudent && levelProfile && (
+            <div className="space-y-4 border-b border-slate-100 p-4 sm:p-6 dark:border-slate-800 lg:hidden">
+              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+                    <Gem size={20} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {t.widgets.levelNumber.replace('{level}', String(levelProfile.xp.level))}
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-500 dark:text-slate-400">
+                        {levelProfile.xp.totalXp} / {levelProfile.xp.totalXp + levelProfile.xp.toNextLevel} XP
+                      </span>
+                    </div>
+                    <div
+                      className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+                      role="progressbar"
+                      aria-valuenow={levelProfile.xp.percent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={t.widgets.xpToNextLevel.replace('{xp}', String(levelProfile.xp.toNextLevel))}
+                    >
+                      <div className="h-full rounded-full bg-blue-600" style={{ width: `${levelProfile.xp.percent}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-violet-100 bg-gradient-to-br from-amber-50 via-white to-violet-50 p-4 dark:border-violet-500/20 dark:from-amber-500/10 dark:via-slate-900 dark:to-violet-500/10">
+                <div className="flex gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-500 dark:bg-amber-500/15">
+                    <Crown size={20} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-900 dark:text-white">
+                      {profile.isPro ? 'EngMasterAI PRO' : t.premium.goPremium}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      {profile.isPro && profile.proExpiresAt
+                        ? `${t.premium.activeUntil(new Date(profile.proExpiresAt).toLocaleDateString(dateLocale))}`
+                        : t.premium.pitch}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/checkout')}
+                  className="mt-4 w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  {profile.isPro ? t.premium.renewNow : t.premium.upgradeNow}
+                </button>
+              </section>
+
+              <UsageQuotaWidget variant="profile" />
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 sm:p-8">
@@ -366,6 +439,9 @@ const ProfilePage: React.FC = () => {
             </div>
           </form>
         </div>
+
+        {/* 2026-09-16 pricing relaunch (Phase C) — student-only referral card. */}
+        {profile.role !== 'ADMIN' && <ReferralCard />}
       </main>
     </div>
   );

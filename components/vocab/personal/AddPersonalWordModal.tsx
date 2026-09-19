@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import Modal from '../../shared/Modal';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -35,6 +36,7 @@ const labelClass = 'block text-xs font-bold text-slate-500 dark:text-slate-400 m
 // never overwrites it again (see `touchedRef`).
 const AddPersonalWordModal: React.FC<AddPersonalWordModalProps> = ({ onClose, onCreated, editingWord }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const isEditing = Boolean(editingWord);
   const [text, setText] = useState(editingWord?.text ?? '');
   const [ipa, setIpa] = useState(editingWord?.ipa ?? '');
@@ -48,6 +50,7 @@ const AddPersonalWordModal: React.FC<AddPersonalWordModalProps> = ({ onClose, on
   const [lookupNotice, setLookupNotice] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const lookupTicket = useRef(0);
   const debounceRef = useRef<number | null>(null);
   // Editing an existing word never auto-looks-up (its content is already
@@ -120,6 +123,7 @@ const AddPersonalWordModal: React.FC<AddPersonalWordModalProps> = ({ onClose, on
     if (!trimmedText || !trimmedMeaning) return;
 
     setSaveError(null);
+    setLimitReached(false);
     setIsSaving(true);
     try {
       const tags = tagsInput
@@ -150,11 +154,15 @@ const AddPersonalWordModal: React.FC<AddPersonalWordModalProps> = ({ onClose, on
       onCreated(saved);
       onClose();
     } catch (error) {
-      setSaveError(
-        error instanceof ApiError && error.status === 409
-          ? t.myVocab.wordAlreadyExists
-          : t.myVocab.saveFailed,
-      );
+      if (error instanceof ApiError && error.code === 'VOCAB_WORD_LIMIT_REACHED') {
+        setLimitReached(true);
+      } else {
+        setSaveError(
+          error instanceof ApiError && error.status === 409
+            ? t.myVocab.wordAlreadyExists
+            : t.myVocab.saveFailed,
+        );
+      }
     } finally {
       setIsSaving(false);
     }
@@ -271,10 +279,28 @@ const AddPersonalWordModal: React.FC<AddPersonalWordModalProps> = ({ onClose, on
           />
         </div>
 
-        {saveError && (
-          <p role="alert" className="text-xs font-semibold text-rose-500">
-            {saveError}
-          </p>
+        {limitReached ? (
+          <div
+            role="alert"
+            className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10"
+          >
+            <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+              {t.myVocab.limitReachedMessage}
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/checkout')}
+              className="self-start rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors"
+            >
+              {t.myVocab.limitReachedCta}
+            </button>
+          </div>
+        ) : (
+          saveError && (
+            <p role="alert" className="text-xs font-semibold text-rose-500">
+              {saveError}
+            </p>
+          )
         )}
 
         <div className="flex items-center justify-end gap-2 pt-2">

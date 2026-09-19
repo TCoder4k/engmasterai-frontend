@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Flame } from 'lucide-react';
+import { Flame, Gem } from 'lucide-react';
 import AvatarMenu, { AvatarMenuUser } from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
 import NotificationBell from '../shared/NotificationBell';
 import { useTranslation } from '../../i18n/useTranslation';
+import { useGamification } from '../shared/GamificationProvider';
 
 interface StudentMobileHeaderProps {
   user: AvatarMenuUser;
@@ -23,6 +24,8 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
   onAvatarUpdate,
 }) => {
   const { t } = useTranslation();
+  const gamification = useGamification();
+  const level = gamification?.profile?.xp.level;
 
   return (
     <header className="lg:hidden sticky top-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
@@ -52,6 +55,16 @@ const StudentMobileHeader: React.FC<StudentMobileHeaderProps> = ({
           >
             <Flame size={19} aria-hidden="true" />
           </Link>
+          {level !== undefined && (
+            <Link
+              to="/profile"
+              aria-label={t.widgets.levelNumber.replace('{level}', String(level))}
+              className="flex h-10 max-w-[76px] shrink-0 items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-2.5 text-xs font-bold text-blue-700 whitespace-nowrap dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+            >
+              <Gem size={15} aria-hidden="true" />
+              <span>{t.widgets.levelNumber.replace('{level}', String(level))}</span>
+            </Link>
+          )}
           <NotificationBell />
           <AvatarMenu
             user={user}

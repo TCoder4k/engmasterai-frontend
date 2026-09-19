@@ -164,63 +164,100 @@ const ReviewDueCard: React.FC<ReviewDueCardProps> = ({
   return (
     <section
       aria-label={branch.eyebrow}
-      className={`rounded-2xl border p-5 sm:p-6 space-y-4 ${tone.card}`}
+      className={`rounded-2xl border p-5 sm:p-6 ${tone.card}`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-        <div
-          className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${tone.iconTile}`}
-          aria-hidden="true"
-        >
-          {branch.icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className={`text-[11px] font-bold uppercase tracking-wide ${tone.eyebrow}`}>
-            {branch.eyebrow}
-          </p>
-          {branch.headline && (
-            <p className="text-xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">
-              {branch.headline}
-            </p>
-          )}
-          {branch.subtitle && (
-            <p
-              className={`font-semibold mt-0.5 ${
-                branch.headline
-                  ? 'text-xs text-slate-600 dark:text-slate-400'
-                  : 'text-sm text-slate-700 dark:text-slate-300'
-              }`}
+      {/* Desktop hero split: content left, mascot right — the same
+          /mascot/mascot2-transparent.png artwork the old page-level greeting
+          used, moved here now that the greeting above is a plain heading with
+          no illustration of its own. Hidden below sm (no room, and this card
+          already carries an icon tile) and on narrower sm/md widths where the
+          content column alone is already tight. */}
+      <div className="flex items-center gap-6">
+        <div className="flex-1 min-w-0 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            <div
+              className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${tone.iconTile}`}
+              aria-hidden="true"
             >
-              {branch.subtitle}
-            </p>
+              {branch.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-[11px] font-bold uppercase tracking-wide ${tone.eyebrow}`}>
+                {branch.eyebrow}
+              </p>
+              {branch.headline && (
+                <p className="text-xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">
+                  {branch.headline}
+                </p>
+              )}
+              {branch.subtitle && (
+                <p
+                  className={`font-semibold mt-0.5 ${
+                    branch.headline
+                      ? 'text-xs text-slate-600 dark:text-slate-400'
+                      : 'text-sm text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {branch.subtitle}
+                </p>
+              )}
+            </div>
+            <Link
+              to={branch.ctaHref}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 flex-shrink-0 text-sm font-bold text-white px-6 py-3 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 ${tone.cta}`}
+            >
+              <span>{branch.ctaLabel}</span>
+              <ArrowRight size={15} aria-hidden="true" />
+            </Link>
+          </div>
+
+          {/* Visual-only rendering of the SAME masteredPercent already stated
+              as text below — not a second, independently-computed metric. No
+              own text label (masterySummary/masteryPercent already say the
+              number in words) to avoid stating "78%" twice on the page. */}
+          {masteredPercent !== null && (
+            <div
+              className="h-1.5 bg-white/60 dark:bg-black/20 rounded-full overflow-hidden"
+              role="progressbar"
+              aria-valuenow={masteredPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={copy.masterySummary.replace('{count}', String(masteredWords ?? 0))}
+            >
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                style={{ width: `${masteredPercent}%` }}
+              />
+            </div>
+          )}
+
+          {masteredWords !== null && (
+            <div className="pt-3 border-t border-slate-200/70 dark:border-ink-700/60 flex items-center gap-1.5">
+              <BookMarked
+                size={14}
+                className="text-slate-400 dark:text-slate-500 flex-shrink-0"
+                aria-hidden="true"
+              />
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {copy.masterySummary.replace('{count}', String(masteredWords))}
+                {masteredPercent !== null && (
+                  <span className="text-slate-400 dark:text-slate-500 font-semibold">
+                    {' · '}
+                    {copy.masteryPercent.replace('{percent}', String(masteredPercent))}
+                  </span>
+                )}
+              </p>
+            </div>
           )}
         </div>
-        <Link
-          to={branch.ctaHref}
-          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 flex-shrink-0 text-sm font-bold text-white px-6 py-3 rounded-xl transition-colors focus:outline-none focus-visible:ring-2 ${tone.cta}`}
-        >
-          <span>{branch.ctaLabel}</span>
-          <ArrowRight size={15} aria-hidden="true" />
-        </Link>
-      </div>
 
-      {masteredWords !== null && (
-        <div className="pt-3 border-t border-slate-200/70 dark:border-ink-700/60 flex items-center gap-1.5">
-          <BookMarked
-            size={14}
-            className="text-slate-400 dark:text-slate-500 flex-shrink-0"
-            aria-hidden="true"
-          />
-          <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-            {copy.masterySummary.replace('{count}', String(masteredWords))}
-            {masteredPercent !== null && (
-              <span className="text-slate-400 dark:text-slate-500 font-semibold">
-                {' · '}
-                {copy.masteryPercent.replace('{percent}', String(masteredPercent))}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
+        <img
+          src="/mascot/mascot2-transparent.png"
+          alt=""
+          aria-hidden="true"
+          className="hidden lg:block w-40 xl:w-48 flex-shrink-0 object-contain select-none pointer-events-none"
+        />
+      </div>
     </section>
   );
 };

@@ -64,7 +64,7 @@ const en = {
     changeLanguage: "Change language",
   },
   dashboard: {
-    welcomeBack: "Welcome back",
+    welcomeBack: "Hi",
     keepLearning: "Keep learning every day. Small steps, big goals.",
     continueLearning: "Continue Learning",
     noLearningActivity: "No learning activity yet",
@@ -180,6 +180,10 @@ const en = {
   },
   widgets: {
     level: "Level",
+    // 2026 dashboard redesign — one merged sidebar card title for the three
+    // usage-quota bars (see UsageQuotaWidget), grouping them as one visual
+    // unit distinct from the PRO card below it.
+    usageToday: "AI Usage Today",
     dailyGoal: "Daily Goal",
     weeklyStreak: "Weekly Streak",
     todaysProgress: "Today's Progress",
@@ -242,18 +246,41 @@ const en = {
     XP_500_HINT: "Earn 500 XP in total",
   },
   premium: {
-    goPremium: "Go Premium",
-    upgradeNow: "Upgrade Now",
-    pitch: "Unlock all courses, AI tutor and advanced features.",
+    goPremium: "Upgrade to PRO",
+    // 2026 dashboard redesign — this exact CTA copy is load-bearing (matches
+    // the checkout's own real, server-priced amount and the product owner's
+    // required wording); never shown for an already-PRO user, who sees
+    // renewNow below instead.
+    upgradeNow: "Get PRO 30 Days · 19,000đ",
+    // 2026-09-16 — rewritten: the old copy ("Unlock all courses, AI tutor
+    // and advanced features") was false, nothing was actually gated. Points
+    // at the one real differentiator this campaign adds instead.
+    pitch:
+      "Save unlimited vocabulary words and more — try PRO for just 19,000đ / 30 days.",
     // Sprint 14 — shown once a user already has an active subscription,
     // framing a repeat purchase as a renewal rather than a first buy.
     renewNow: "Renew PRO",
     activeUntil: (date: string) => `PRO active until ${date}`,
+    // 2026-09-16 — renewal-urgency state, sidebar card, within 3 days of expiry.
+    renewalUrgentTitle: "PRO expiring soon!",
+    expiringSoon: (days: number, date: string) =>
+      days <= 0
+        ? `Your PRO expires today (${date}) — renew now to avoid interruption.`
+        : `Your PRO expires in ${days} day${days === 1 ? "" : "s"} (${date}) — renew now to avoid interruption.`,
   },
   checkout: {
     title: "EngMasterAI PRO Checkout",
     subtitle: "Complete your payment to activate EngMasterAI PRO.",
     secureTransfer: "Secure bank transfer",
+    // 2026-09-16 — "Early Member" launch campaign hero band.
+    earlyMemberBadge: "Early Member Offer",
+    heroHeadline: (price: string) => `Upgrade to PRO for just ${price}`,
+    heroSubline: "Try every PRO feature for a full 30 days.",
+    reassuranceBullets: [
+      "No auto-renewal",
+      "No card required",
+      "Pay by QR transfer",
+    ],
     renewalNotice: (date: string) =>
       `You're already PRO until ${date}. This payment adds 30 more days.`,
     activationBanner:
@@ -429,6 +456,12 @@ const en = {
     suggestionAllGood: "You're all caught up — nice work!",
     wordAlreadyExists: "This word is already in your personal vocabulary list.",
     saveFailed: "Failed to save this word",
+    // 2026-09-16 — Free-tier save cap (VOCAB_WORD_LIMIT_REACHED).
+    limitReachedMessage:
+      "Free accounts can save up to 50 words. Upgrade to PRO for unlimited vocabulary.",
+    limitReachedMessageBulk:
+      "Free accounts can save up to 50 words in total — none of these words were saved. Upgrade to PRO for unlimited vocabulary.",
+    limitReachedCta: "Upgrade to PRO",
     deleteFailed: "Failed to delete this word",
     loadFailed: "Failed to load your vocabulary",
     addModalTitle: "Add a new word",
@@ -1647,7 +1680,7 @@ const vi: TranslationDict = {
     changeLanguage: "Đổi ngôn ngữ",
   },
   dashboard: {
-    welcomeBack: "Chào mừng trở lại",
+    welcomeBack: "Xin chào",
     keepLearning: "Học đều mỗi ngày. Tiến bộ từng bước nhỏ, đạt mục tiêu lớn!",
     continueLearning: "Tiếp tục học",
     noLearningActivity: "Chưa có hoạt động học tập",
@@ -1732,6 +1765,7 @@ const vi: TranslationDict = {
   },
   widgets: {
     level: "Cấp độ",
+    usageToday: "Sử dụng AI hôm nay",
     dailyGoal: "Mục tiêu hằng ngày",
     weeklyStreak: "Chuỗi học trong tuần",
     todaysProgress: "Tiến độ hôm nay",
@@ -1783,16 +1817,35 @@ const vi: TranslationDict = {
     XP_500_HINT: "Tích luỹ tổng cộng 500 XP",
   },
   premium: {
-    goPremium: "Nâng cấp Premium",
-    upgradeNow: "Nâng cấp ngay",
-    pitch: "Mở khóa toàn bộ khóa học, gia sư AI và các tính năng nâng cao.",
+    goPremium: "Nâng cấp lên PRO",
+    upgradeNow: "Mở PRO 30 ngày  19.000đ",
+    // 2026-09-16 — viết lại: copy cũ ("Mở khóa toàn bộ khóa học, gia sư AI
+    // và các tính năng nâng cao") không đúng thực tế, chưa có gì bị khóa cả.
+    // Trỏ về khác biệt thật duy nhất chiến dịch này thêm vào.
+    pitch:
+      "Lưu từ vựng không giới hạn và nhiều tính năng khác — dùng thử PRO chỉ 19.000đ / 30 ngày.",
     renewNow: "Gia hạn PRO",
     activeUntil: (date: string) => `PRO còn hiệu lực đến ${date}`,
+    // 2026-09-16 — trạng thái sắp hết hạn, hiển thị trong 3 ngày trước khi hết PRO.
+    renewalUrgentTitle: "PRO sắp hết hạn!",
+    expiringSoon: (days: number, date: string) =>
+      days <= 0
+        ? `PRO của bạn hết hạn hôm nay (${date}) — gia hạn ngay để không bị gián đoạn!`
+        : `PRO của bạn còn ${days} ngày nữa là hết hạn (${date}) — gia hạn ngay để không bị gián đoạn!`,
   },
   checkout: {
     title: "Thanh toán EngMasterAI PRO",
     subtitle: "",
     secureTransfer: "Chuyển khoản ngân hàng an toàn",
+    // 2026-09-16 — chiến dịch "Early Member".
+    earlyMemberBadge: "Ưu đãi Early Member",
+    heroHeadline: (price: string) => `Nâng cấp PRO chỉ ${price}`,
+    heroSubline: "Học thử trọn bộ tính năng PRO trong 30 ngày.",
+    reassuranceBullets: [
+      "Không tự động gia hạn",
+      "Không cần thẻ",
+      "Thanh toán QR",
+    ],
     renewalNotice: (date: string) =>
       `Bạn đang là PRO đến ${date}. Thanh toán lần này sẽ cộng thêm 30 ngày.`,
     activationBanner:
@@ -1951,6 +2004,12 @@ const vi: TranslationDict = {
     suggestionAllGood: "Bạn đã hoàn thành hết rồi — làm tốt lắm!",
     wordAlreadyExists: "Từ này đã có trong danh sách từ vựng cá nhân của bạn.",
     saveFailed: "Không thể lưu từ này",
+    // 2026-09-16 — giới hạn lưu từ ở gói Free (VOCAB_WORD_LIMIT_REACHED).
+    limitReachedMessage:
+      "Tài khoản miễn phí chỉ lưu được tối đa 50 từ. Nâng cấp PRO để lưu không giới hạn.",
+    limitReachedMessageBulk:
+      "Tài khoản miễn phí chỉ lưu được tối đa 50 từ — không có từ nào trong danh sách này được lưu. Nâng cấp PRO để lưu không giới hạn.",
+    limitReachedCta: "Nâng cấp PRO",
     deleteFailed: "Không thể xoá từ này",
     loadFailed: "Không thể tải danh sách từ vựng của bạn",
     addModalTitle: "Thêm từ mới",

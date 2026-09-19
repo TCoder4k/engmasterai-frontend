@@ -1,8 +1,10 @@
 import React, { useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../../../../i18n/useTranslation';
 import { ApiError, AuthExpiredError } from '../../../../services/apiError';
 import { requestShadowingFeedback } from '../../../../services/listeningService';
+import UsageQuotaExceededCard from '../../../shared/UsageQuotaExceededCard';
 
 // Sprint 11 Phase 4C — optional AI coaching on an attempt already graded.
 //
@@ -36,9 +38,15 @@ const AiPronunciationFeedback: React.FC<AiPronunciationFeedbackProps> = ({
   audio,
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 2026-09-16 pricing relaunch — the "aiGrading" usage quota is exhausted
+  // for this period. A distinct state from `error`: retrying the identical
+  // request cannot succeed until the next period, so this replaces the
+  // action button with an upgrade nudge instead of a generic error + button.
+  const [quotaExceeded, setQuotaExceeded] = useState<{ used: number; limit: number } | null>(null);
 
   const handleRequest = useCallback(async () => {
     if (!clientAttemptId || !audio) return;
@@ -54,7 +62,11 @@ const AiPronunciationFeedback: React.FC<AiPronunciationFeedbackProps> = ({
       // Each failure gets its own sentence, because the recoveries differ — the
       // same discipline the submit path follows. What none of them says is that
       // anything happened to the score.
-      if (caught instanceof AuthExpiredError) {
+      if (caught instanceof ApiError && caught.code === 'USAGE_QUOTA_EXCEEDED') {
+        const used = typeof caught.details?.used === 'number' ? caught.details.used : 0;
+        const limit = typeof caught.details?.limit === 'number' ? caught.details.limit : 0;
+        setQuotaExceeded({ used, limit });
+      } else if (caught instanceof AuthExpiredError) {
         setError(t.practice.shadowingErrorSessionExpired);
       } else if (caught instanceof ApiError && caught.status === 429) {
         setError(t.practice.shadowingAiFeedbackErrorRateLimited);
@@ -73,6 +85,17 @@ const AiPronunciationFeedback: React.FC<AiPronunciationFeedbackProps> = ({
 
   // No attempt key or no recording means there is nothing this could ask about.
   if (!clientAttemptId || !audio) return null;
+
+  if (quotaExceeded) {
+    return (
+      <UsageQuotaExceededCard
+        kind="aiGrading"
+        used={quotaExceeded.used}
+        limit={quotaExceeded.limit}
+        onUpgrade={() => navigate('/checkout')}
+      />
+    );
+  }
 
   if (feedback) {
     return (

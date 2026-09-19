@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Gem } from 'lucide-react';
 import AvatarMenu from '../shared/AvatarMenu';
 import ThemeToggle from '../shared/ThemeToggle';
 import LanguageSwitcher from '../shared/LanguageSwitcher';
@@ -8,6 +9,8 @@ import StudentDesktopSidebar from './StudentDesktopSidebar';
 import StudentMobileHeader from './StudentMobileHeader';
 import StudentBottomNavigation from './StudentBottomNavigation';
 import { authService } from '../../services/authService';
+import { useGamification } from '../shared/GamificationProvider';
+import { useTranslation } from '../../i18n/useTranslation';
 
 interface StudentLayoutProps {
   children: React.ReactNode;
@@ -24,8 +27,17 @@ interface StudentLayoutProps {
 // replaced it. Nothing took its place in the header.
 const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const user = authService.getUser();
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(user?.avatarUrl);
+  // Dashboard redesign (2026-09) — Level/XP moved here from its own
+  // standalone sidebar card (see StudentDesktopSidebar.tsx), so the desktop
+  // header carries it instead. Same GamificationProvider source LevelWidget
+  // already used; `null` (outside the provider, or the request failed)
+  // renders nothing rather than an error — this is a compact decorative
+  // companion to the avatar, not a widget worth its own error/retry state.
+  const gamification = useGamification();
+  const profile = gamification?.profile;
 
   const handleLogout = async () => {
     const { degraded } = await authService.logout();
@@ -61,6 +73,19 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
             <ThemeToggle />
             <LanguageSwitcher />
             <NotificationBell />
+            {profile === undefined && gamification && (
+              <span
+                className="hidden sm:block h-6 w-20 rounded-full bg-slate-100 dark:bg-slate-800 animate-pulse"
+                aria-hidden="true"
+              />
+            )}
+            {profile && (
+              <span className="hidden sm:inline-flex h-12 items-center gap-1.5 px-4 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300">
+                <Gem size={13} className="text-blue-500 dark:text-blue-400" aria-hidden="true" />
+                {t.widgets.levelNumber.replace('{level}', String(profile.xp.level))} ·{' '}
+                {profile.xp.totalXp} XP
+              </span>
+            )}
             <AvatarMenu user={avatarUser} onLogout={handleLogout} onAvatarUpdate={setAvatarUrl} />
           </div>
         </header>

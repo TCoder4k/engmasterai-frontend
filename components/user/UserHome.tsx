@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, BarChart3, Compass, Sparkles, Target } from 'lucide-react';
+import { ArrowRight, Compass, Sparkles } from 'lucide-react';
 import StudentLayout from './StudentLayout';
 import { EmailVerificationBanner } from '../auth/EmailVerificationBanner';
 import ReviewDueCard from './ReviewDueCard';
@@ -9,7 +9,6 @@ import RoadmapCard from './RoadmapCard';
 import DashboardStatCards from './DashboardStatCards';
 import LearningTrackCard from './LearningTrackCard';
 import UserSidebar from './UserSidebar';
-import DuoLeaderboardWidget from './DuoLeaderboardWidget';
 import TopStudentsWidget from './TopStudentsWidget';
 import CourseCard from './CourseCard';
 import { authService } from '../../services/authService';
@@ -335,68 +334,19 @@ const UserHome: React.FC = () => {
         {/* ---- Content ---- */}
         <div className="flex-1 min-w-0 space-y-6">
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-6">
-              {/* Phone-only: heading/subtitle shrunk (text-2xl/text-xs ->
-                  text-lg/text-[11px]) to make room for the bigger mascot
-                  next to it — sm:+ sizes unchanged (desktop untouched). */}
-              <div className="space-y-1 min-w-0">
-                <h1 className="text-lg sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                  {t.dashboard.welcomeBack}, {firstName}! 👋
-                </h1>
-                <p className="text-[11px] sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-                  {t.dashboard.keepLearning}
-                </p>
-              </div>
-              {/* mascot2-transparent.png — same Engy-at-a-laptop artwork
-                  already approved for this exact header slot in the
-                  onboarding wizard's RoadmapStep, background removed AND its
-                  two baked-in decorative icon glyphs erased (they read as
-                  flat illustration, not the crisp elevated UI chips the
-                  mockup calls for) so the two badges below can be real DOM
-                  chips instead. Reserved box sized from the asset's own real
-                  730x342 aspect ratio, so there is no layout shift whether
-                  the image is cached or still loading. object-contain
-                  (never cover) keeps its natural proportions exactly as
-                  authored. Now visible on phones too (previously hidden
-                  below sm) — sized up a little from the heading/subtitle
-                  shrink above so it reads clearly at phone width; sm:/md:
-                  sizes unchanged (desktop untouched). */}
-              <div className="relative flex-shrink-0 w-28 sm:w-48 md:w-56 max-w-full">
-                <div className="w-full overflow-hidden" style={{ aspectRatio: '730 / 342' }}>
-                  <img
-                    src="/mascot/mascot2-transparent.png"
-                    alt=""
-                    aria-hidden="true"
-                    className="w-full h-full object-contain select-none pointer-events-none"
-                  />
-                </div>
-
-                {/* Floating stat-chip badges — real elevated UI, matching the
-                    mockup's two white icon cards above the illustration.
-                    Scaled down at the base tier to stay proportional to the
-                    smaller phone-width mascot. */}
-                <div
-                  className="absolute -top-1 left-1 sm:left-4 w-5 h-5 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
-                  aria-hidden="true"
-                >
-                  <BarChart3 className="w-2.5 h-2.5 sm:w-[18px] sm:h-[18px] text-blue-500" />
-                </div>
-                <Sparkles
-                  className="absolute -top-1 left-0 w-2 h-2 sm:w-3 sm:h-3 text-blue-300 dark:text-blue-400/60"
-                  aria-hidden="true"
-                />
-
-                <div
-                  className="absolute -top-1 right-1 sm:right-4 w-5 h-5 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl bg-white dark:bg-ink-800 shadow-lg shadow-slate-300/60 dark:shadow-black/40 ring-1 ring-slate-100 dark:ring-ink-700 flex items-center justify-center"
-                  aria-hidden="true"
-                >
-                  <Target className="w-2.5 h-2.5 sm:w-[18px] sm:h-[18px] text-teal-500" />
-                </div>
-                <Sparkles
-                  className="absolute top-2 right-0 w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 text-teal-300 dark:text-teal-400/60"
-                  aria-hidden="true"
-                />
-              </div>
+            {/* Dashboard redesign (2026-09) — compact greeting, not a card:
+                the old header carried its own big illustration + floating
+                stat-chip badges; both are gone (the badges were decoration
+                with no data of their own), and the mascot artwork moved into
+                ReviewDueCard's hero instead, where it sits beside real
+                numbers rather than beside a plain "hello". */}
+            <div className="space-y-0.5">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                {t.dashboard.welcomeBack}, {firstName}! 👋
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                {t.dashboard.keepLearning}
+              </p>
             </div>
 
             {/* First actionable thing on the page — one click to reviewing.
@@ -508,19 +458,6 @@ const UserHome: React.FC = () => {
             </div>
           </section>
 
-          {/* The Duo Streak Hall of Fame preview lives in UserSidebar, which
-              is desktop-only (`hidden lg:block` below). This is the SAME
-              component rendered a second time, mobile-only, at the very
-              bottom of the page, so phones get it too without competing with
-              higher-priority content above — matching the sidebar's own
-              established convention for widgets that need both placements.
-              Not the whole sidebar: Daily Goal/Weekly Streak/Today's
-              Progress/Achievements stay desktop-only, unchanged, since only
-              this one was asked for. */}
-          <div className="lg:hidden">
-            <DuoLeaderboardWidget />
-          </div>
-
           {/* The all-time study-time leaderboard, own view of the admin
               dashboard's TopStudentsTable — requested to sit at the very
               bottom of the page. Unlike the Duo Streak preview above, this
@@ -531,9 +468,10 @@ const UserHome: React.FC = () => {
         </div>
 
         {/* ---- Desktop-only right widget column ---- */}
-        {/* Both instances share the ONE fetch above — only one is ever visible
-            at a time, and rendering the same payload twice costs no request. */}
-        <div className="hidden lg:block w-80 flex-shrink-0">
+        {/* Both instances share the ONE fetch above. The sidebar keeps a
+          bottom buffer so the floating AssistantLauncher cannot cover its
+          final cards. */}
+        <div className="w-full lg:w-[340px] xl:w-[320px] 2xl:w-[340px] flex-shrink-0 pb-28">
           <UserSidebar
             analytics={analytics}
             onRetryAnalytics={() => setAnalyticsAttempt((n) => n + 1)}

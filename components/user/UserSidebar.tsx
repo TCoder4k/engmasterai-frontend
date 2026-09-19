@@ -1,9 +1,10 @@
 import React from 'react';
-import { Flame, Target, TrendingUp } from 'lucide-react';
+import { Flame, Target } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 import { DashboardAnalytics } from '../../services/analyticsService';
-import AchievementsWidget from './AchievementsWidget';
 import DuoLeaderboardWidget from './DuoLeaderboardWidget';
+import TodaysProgressWidget from './TodaysProgressWidget';
+import AchievementsWidget from './AchievementsWidget';
 import { DEFAULT_DAILY_TARGETS, targetPercent } from './dailyTargets';
 
 // Dashboard stat widgets, restyled to `ai-studio-dashboard-reference`'s
@@ -32,6 +33,16 @@ import { DEFAULT_DAILY_TARGETS, targetPercent } from './dailyTargets';
 //
 // Renders as a single column in the desktop right rail, and as a 2-up grid on
 // tablets when it flows below the main content.
+//
+// Dashboard redesign (2026-09) — this rail now carries exactly THREE
+// widgets: Daily Goal, Weekly Streak and the Duo Streak Hall of Fame
+// preview, so the right column stays visually lighter than the main content
+// and never competes with the hero. Today's Progress and Achievements moved
+// OUT of this file into UserHome's main content column (as
+// TodaysProgressWidget + AchievementsWidget respectively) — not dropped,
+// just relocated; both still show the exact same real data. WidgetCard/
+// StatSkeleton/StatsError are exported so TodaysProgressWidget can reuse
+// them instead of duplicating this file's loading/error presentation.
 
 interface UserSidebarProps {
   /** undefined = loading, null = failed, object = loaded. */
@@ -39,7 +50,7 @@ interface UserSidebarProps {
   onRetryAnalytics?: () => void;
 }
 
-const WidgetCard: React.FC<{
+export const WidgetCard: React.FC<{
   icon: React.ReactNode;
   // Full static Tailwind classes for the icon's tile background, e.g.
   // "bg-blue-100 dark:bg-blue-500/15" — matching the icon-in-colored-tile
@@ -51,15 +62,16 @@ const WidgetCard: React.FC<{
   iconTileClass: string;
   title: string;
   trailing?: React.ReactNode;
+  compact?: boolean;
   children: React.ReactNode;
-}> = ({ icon, iconTileClass, title, trailing, children }) => (
+}> = ({ icon, iconTileClass, title, trailing, compact = false, children }) => (
   // Labelled group: each widget is an independently meaningful chunk, so a
   // screen-reader user can move between them and always know which set of
   // numbers they are in. It also gives tests a stable handle, which matters
   // here because several widgets legitimately contain the same words.
   <section
     aria-label={title}
-    className="p-6 bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-3xl shadow-sm dark:shadow-xl space-y-4"
+    className={`${compact ? 'p-3 sm:p-4 space-y-2.5' : 'p-4 sm:p-5 space-y-3'} bg-white dark:bg-ink-900 border border-slate-200 dark:border-ink-700 rounded-2xl shadow-sm dark:shadow-xl`}
   >
     <div className="flex items-center justify-between gap-2">
       <div className="flex items-center gap-2 min-w-0">
@@ -79,7 +91,7 @@ const WidgetCard: React.FC<{
   </section>
 );
 
-const StatSkeleton: React.FC = () => (
+export const StatSkeleton: React.FC = () => (
   <div className="space-y-3 pt-1" aria-hidden="true">
     {[0, 1, 2].map((row) => (
       <div key={row} className="flex items-center justify-between gap-3">
@@ -90,7 +102,7 @@ const StatSkeleton: React.FC = () => (
   </div>
 );
 
-const StatsError: React.FC<{ onRetry?: () => void }> = ({ onRetry }) => {
+export const StatsError: React.FC<{ onRetry?: () => void }> = ({ onRetry }) => {
   const { t } = useTranslation();
   return (
     <div className="space-y-2 pt-1">
@@ -149,45 +161,6 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
   // four Today's Progress bars.
   const dailyPercent =
     learnedMinutes === null ? 0 : targetPercent(learnedMinutes, targetMinutes);
-
-  // The VALUE of each row is server-derived; the TARGET is a product default
-  // (see dailyTargets.ts for why that distinction makes the bar honest).
-  const todayRows = analytics
-    ? [
-        {
-          key: 'stagesDone',
-          label: t.widgets.stagesDone,
-          value: analytics.today.stagesCompleted,
-          target: DEFAULT_DAILY_TARGETS.stagesCompleted,
-          barClass: 'bg-blue-500',
-          textClass: 'text-blue-500 dark:text-blue-400',
-        },
-        {
-          key: 'attempts',
-          label: t.widgets.attempts,
-          value: analytics.today.taskAttempts.total,
-          target: DEFAULT_DAILY_TARGETS.taskAttempts,
-          barClass: 'bg-cyan-500',
-          textClass: 'text-cyan-500 dark:text-cyan-400',
-        },
-        {
-          key: 'newWords',
-          label: t.widgets.newWords,
-          value: analytics.today.newWordsLearned,
-          target: DEFAULT_DAILY_TARGETS.newWordsLearned,
-          barClass: 'bg-emerald-500',
-          textClass: 'text-emerald-500 dark:text-emerald-400',
-        },
-        {
-          key: 'wordsReviewed',
-          label: t.widgets.wordsReviewed,
-          value: analytics.today.wordsReviewed,
-          target: DEFAULT_DAILY_TARGETS.wordsReviewed,
-          barClass: 'bg-violet-500',
-          textClass: 'text-violet-500 dark:text-violet-400',
-        },
-      ]
-    : [];
 
   const streakDays = analytics?.activity.currentStreakDays ?? null;
 
@@ -331,62 +304,16 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
         )}
       </WidgetCard>
 
-      {/* ---- Duo Streak Hall of Fame preview — takes the slot Today's
-          Progress used to sit in; Today's Progress is pushed down one slot
-          below rather than removed. Self-contained (own fetch, own
-          loading/error/empty states), same convention as AchievementsWidget. */}
+      <TodaysProgressWidget
+        compact
+        analytics={analytics}
+        onRetryAnalytics={onRetryAnalytics}
+      />
+
+      <AchievementsWidget compact />
+
+      {/* ---- Duo Streak Hall of Fame preview — the final widget on this rail. */}
       <DuoLeaderboardWidget />
-
-      {/* ---- REAL: today's counts ---- */}
-      <WidgetCard
-        icon={<TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />}
-        iconTileClass="bg-emerald-100 dark:bg-emerald-500/15"
-        title={t.widgets.todaysProgress}
-      >
-        {isLoading && <StatSkeleton />}
-        {hasFailed && <StatsError onRetry={onRetryAnalytics} />}
-
-        {analytics && (
-          <dl className="space-y-3 pt-1">
-            {todayRows.map((row) => {
-              const percent = targetPercent(row.value, row.target);
-              return (
-                <div key={row.key} className="space-y-1">
-                  <div className="flex items-center justify-between gap-3 text-xs font-bold">
-                    <dt className="text-slate-500 dark:text-slate-400">{row.label}</dt>
-                    <dd className={`${row.textClass} tabular-nums`}>
-                      {row.value} / {row.target}
-                    </dd>
-                  </div>
-                  <div
-                    className="w-full h-2 bg-slate-100 dark:bg-ink-950 rounded-full overflow-hidden border border-slate-200 dark:border-ink-700"
-                    role="progressbar"
-                    aria-valuenow={percent}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={row.label}
-                  >
-                    {/* Width is clamped to 100 so beating the target fills the
-                        track rather than overflowing it; the raw count beside it
-                        still shows the real figure (e.g. 30 / 20). */}
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${row.barClass}`}
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </dl>
-        )}
-      </WidgetCard>
-
-      {/* ---- REAL (Sprint 10): the six-badge catalog from the XP ledger ----
-          MOCK_ACHIEVEMENTS is deleted, and the "sample data" marker went with
-          it. Its own card, fed by GamificationProvider rather than by props,
-          because UserHome renders this sidebar TWICE (mobile and desktop
-          placements) and a prop-drilled fetch would issue two requests. */}
-      <AchievementsWidget />
     </aside>
   );
 };

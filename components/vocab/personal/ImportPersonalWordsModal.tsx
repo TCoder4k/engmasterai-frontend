@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle2, AlertTriangle, X } from 'lucide-react';
 import Modal from '../../shared/Modal';
 import { useTranslation } from '../../../i18n/useTranslation';
@@ -57,11 +58,13 @@ interface ImportPersonalWordsModalProps {
 // so pasting "Apple" and "apple" doesn't cost two dictionary calls.
 const ImportPersonalWordsModal: React.FC<ImportPersonalWordsModalProps> = ({ onClose, onImported }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [rawInput, setRawInput] = useState('');
   const [phase, setPhase] = useState<Phase>('input');
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [isRateLimitPaused, setIsRateLimitPaused] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [result, setResult] = useState<{ createdCount: number; skippedCount: number } | null>(null);
   const cancelledRef = useRef(false);
 
@@ -154,6 +157,7 @@ const ImportPersonalWordsModal: React.FC<ImportPersonalWordsModalProps> = ({ onC
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitError(null);
+    setLimitReached(false);
     setPhase('submitting');
     try {
       const words: CreatePersonalVocabWordInput[] = rows.map((row) => ({
@@ -169,8 +173,12 @@ const ImportPersonalWordsModal: React.FC<ImportPersonalWordsModalProps> = ({ onC
       setResult({ createdCount: res.createdCount, skippedCount: res.skippedCount });
       setPhase('result');
       onImported();
-    } catch {
-      setSubmitError(t.myVocab.saveFailed);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'VOCAB_WORD_LIMIT_REACHED') {
+        setLimitReached(true);
+      } else {
+        setSubmitError(t.myVocab.saveFailed);
+      }
       setPhase('review');
     }
   };
@@ -226,10 +234,28 @@ const ImportPersonalWordsModal: React.FC<ImportPersonalWordsModalProps> = ({ onC
             onMeaningChange={(id, value) => updateRow(id, { meaningVi: value })}
             onRemove={removeRow}
           />
-          {submitError && (
-            <p role="alert" className="text-xs font-semibold text-rose-500">
-              {submitError}
-            </p>
+          {limitReached ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10"
+            >
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                {t.myVocab.limitReachedMessageBulk}
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/checkout')}
+                className="self-start rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors"
+              >
+                {t.myVocab.limitReachedCta}
+              </button>
+            </div>
+          ) : (
+            submitError && (
+              <p role="alert" className="text-xs font-semibold text-rose-500">
+                {submitError}
+              </p>
+            )
           )}
           <div className="flex items-center justify-end gap-2">
             <button

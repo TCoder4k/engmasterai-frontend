@@ -359,6 +359,23 @@ describe('DictionaryPanel lookup states', () => {
     );
   });
 
+  it('shows an upgrade nudge, not a generic error, when the aiQuery quota is exceeded', async () => {
+    vi.spyOn(dictionaryService, 'lookupWord').mockRejectedValue(
+      new ApiError('quota exceeded', 403, 'USAGE_QUOTA_EXCEEDED'),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openPanel(user);
+
+    await user.type(screen.getByPlaceholderText(/accomplish/i), 'hello');
+    await user.keyboard('{Enter}');
+
+    await waitFor(() =>
+      expect(screen.getByText(/dùng hết lượt tra cứu ai/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByRole('button', { name: /mở pro 30 ngày/i })).toBeInTheDocument();
+  });
+
   it('discards a superseded response — only the latest query wins', async () => {
     let resolveFirst: (value: dictionaryService.DictionaryLookupResult) => void;
     const first = new Promise<dictionaryService.DictionaryLookupResult>((resolve) => {
@@ -976,6 +993,26 @@ describe('ChatPanel', () => {
     const [firstId] = sendSpy.mock.calls[0];
     const [secondId] = sendSpy.mock.calls[1];
     expect(secondId).toBe(firstId); // the retry reused the same clientMessageId
+  });
+
+  it('shows the upgrade nudge (not a retryable failure) and blocks the composer when the aiQuery quota is exceeded', async () => {
+    vi.spyOn(chatService, 'sendChatMessageStream').mockImplementation(
+      streamOnceWithError(
+        new ApiError('quota exceeded', 403, 'USAGE_QUOTA_EXCEEDED', { kind: 'aiQuery', used: 20, limit: 20 }),
+      ),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderBoundary();
+    await openChat(user);
+
+    await user.type(composer(), 'hello{Enter}');
+
+    await waitFor(() =>
+      expect(screen.getByText(/dùng hết lượt tra cứu ai/i)).toBeInTheDocument(),
+    );
+    expect(screen.getByText('20/20')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+    expect(composer()).toBeDisabled();
   });
 
   // A partial reply that streamed in before a mid-stream failure must never

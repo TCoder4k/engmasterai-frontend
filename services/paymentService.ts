@@ -14,6 +14,7 @@ export interface PaymentPresentation {
   paymentId: string;
   plan: SubscriptionPlan;
   amount: number;
+  compareAtAmount: number | null;
   currency: string;
   paymentCode: string;
   status: PaymentPresentationStatus;
