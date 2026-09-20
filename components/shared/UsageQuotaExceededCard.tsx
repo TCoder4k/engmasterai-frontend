@@ -15,7 +15,7 @@ import { UsageKind } from '../../services/usageService';
 // and that case must never show an "upgrade to PRO" pitch to someone who
 // already paid for PRO.
 
-const FREE_LIMIT: Record<UsageKind, number> = { aiQuery: 20, aiGrading: 2, speaking: 3 };
+const FREE_LIMIT: Record<UsageKind, number> = { aiQuery: 5, aiGrading: 2, speaking: 2 };
 const PRO_PERIOD_LABEL: Record<UsageKind, string> = {
   aiQuery: 'tháng này',
   aiGrading: 'tháng này',

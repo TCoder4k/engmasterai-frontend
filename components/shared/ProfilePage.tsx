@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Camera, User, Mail, Save, Check, AlertCircle, Crown, Gem } from 'lucide-react';
+import { ArrowLeft, Camera, User, Mail, Save, Check, AlertCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { getProfile, updateProfile, uploadAvatar } from '../../services/userService';
 import { handleAuthError } from '../../services/apiError';
 import { useTranslation } from '../../i18n/useTranslation';
 import ReferralCard from '../user/ReferralCard';
-import UsageQuotaWidget from '../user/UsageQuotaWidget';
-import { useGamification } from './GamificationProvider';
 
 interface UserProfile {
   id: string;
@@ -191,258 +189,238 @@ const ProfilePage: React.FC = () => {
     return profile.role === 'ADMIN' ? '/admin' : '/home';
   };
 
-  const gamification = useGamification();
-  const levelProfile = gamification?.profile;
-  const isStudent = profile.role !== 'ADMIN';
-  const dateLocale = t.profile.title === 'Hồ sơ' ? 'vi-VN' : 'en-US';
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-              <Link
-                to={getBackLink()}
-                aria-label={t.common.back}
-                className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
-              >
-                <ArrowLeft size={20} />
-              </Link>
-              <div className="min-w-0">
-                <h1 className="text-lg font-bold text-slate-900 dark:text-slate-100 truncate">{t.profile.title}</h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.profile.subtitle}</p>
-              </div>
-            </div>
-            <Link to={getBackLink()} className="flex items-center space-x-2 flex-shrink-0">
-              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">E</span>
-              </div>
-              <span className="text-lg font-bold text-slate-900 dark:text-white hidden sm:block">
-                Engmaster<span className="text-blue-500">AI</span>
-              </span>
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16 lg:pb-12">
+      {/* Header Container — aligned with main content max-width */}
+      <header className="mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-6 sm:pt-6 lg:px-8">
+        <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm sm:px-6">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <Link
+              to={getBackLink()}
+              aria-label={t.common.back}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-blue-600 transition-colors"
+            >
+              <ArrowLeft size={20} />
             </Link>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
+                {t.profile.title}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 truncate">
+                {t.profile.subtitle}
+              </p>
+            </div>
           </div>
+
+          <Link to={getBackLink()} className="flex items-center gap-2.5 shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white font-bold text-base shadow-sm">
+              E
+            </div>
+            <span className="text-xl font-bold tracking-tight text-slate-900 hidden sm:block">
+              Engmaster<span className="text-blue-600">AI</span>
+            </span>
+          </Link>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
-          {/* Profile Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 sm:px-8 py-10">
-            <div className="flex flex-col sm:flex-row items-center sm:items-end space-y-4 sm:space-y-0 sm:space-x-6">
-              {/* Avatar */}
-              <div className="relative group">
-                <div className="w-28 h-28 rounded-2xl overflow-hidden bg-white/20 backdrop-blur-sm ring-4 ring-white/30 shadow-xl flex items-center justify-center">
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 rounded-2xl">
-                      <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    </div>
-                  )}
-                  {avatarPreview || profile.avatarUrl ? (
-                    <img
-                      src={avatarPreview || profile.avatarUrl}
-                      alt={profile.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-white text-4xl font-bold">
-                      {getInitial(profile.name)}
-                    </span>
-                  )}
-                </div>
-                <button
-                  onClick={handleAvatarClick}
-                  disabled={isUploading}
-                  aria-label={t.avatarMenu.changePhoto}
-                  title={t.avatarMenu.changePhoto}
-                  className="absolute -bottom-2 -right-2 w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-colors border border-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Camera size={18} />
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/jpg,image/webp"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                />
-              </div>
+      {/* Main Content — 60/40 two-column layout on >=lg */}
+      <main className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:gap-6">
+          {/* LEFT 60%: Personal Information continuous card */}
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
+            {/* Profile Banner */}
+            <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-blue-500 px-6 py-8 sm:px-8 sm:py-9">
+              {/* Decorative gradient blur accents */}
+              <div className="pointer-events-none absolute -right-10 -bottom-10 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+              <div className="pointer-events-none absolute right-1/3 -top-10 h-44 w-44 rounded-full bg-white/10 blur-xl" />
 
-              {/* User Info */}
-              <div className="text-center sm:text-left min-w-0">
-                <h2 className="text-2xl font-bold text-white break-words">{profile.name}</h2>
-                <p className="text-blue-100 text-sm mt-1 break-words">{profile.email}</p>
-                <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold ${
-                  profile.role === 'ADMIN'
-                    ? 'bg-amber-400/20 text-amber-100'
-                    : 'bg-white/20 text-white'
-                }`}>
-                  {profile.role === 'ADMIN' ? t.roles.admin : t.roles.student}
-                </span>
+              <div className="relative flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                {/* Avatar with upload trigger */}
+                <div className="relative shrink-0">
+                  <div className="relative h-24 w-24 sm:h-28 sm:w-28 overflow-hidden rounded-2xl border-4 border-white/40 bg-white/20 shadow-md">
+                    {isUploading && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 rounded-2xl">
+                        <div className="h-8 w-8 animate-spin rounded-full border-3 border-white/30 border-t-white" />
+                      </div>
+                    )}
+                    {avatarPreview || profile.avatarUrl ? (
+                      <img
+                        src={avatarPreview || profile.avatarUrl}
+                        alt={profile.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-3xl sm:text-4xl font-bold text-white">
+                        {getInitial(profile.name)}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
+                    disabled={isUploading}
+                    aria-label={t.avatarMenu.changePhoto}
+                    title={t.avatarMenu.changePhoto}
+                    className="absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-blue-600 shadow-md border border-slate-100 transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Camera size={18} />
+                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* User Info */}
+                <div className="min-w-0 text-white">
+                  <h2 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">
+                    {profile.name || user?.name}
+                  </h2>
+                  <p className="mt-1 text-sm text-blue-100 truncate">
+                    {profile.email || user?.email}
+                  </p>
+                  <div className="mt-3">
+                    <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs sm:text-sm font-medium text-white backdrop-blur-sm">
+                      {profile.role === 'ADMIN' ? t.roles.admin : t.roles.student}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {isStudent && levelProfile && (
-            <div className="space-y-4 border-b border-slate-100 p-4 sm:p-6 dark:border-slate-800 lg:hidden">
-              <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
-                    <Gem size={20} aria-hidden="true" />
+            {/* Form Section below banner */}
+            <form onSubmit={handleSubmit} className="flex-1 p-6 sm:p-8 flex flex-col justify-between">
+              <div>
+                {/* Form header */}
+                <div className="mb-7 flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shrink-0">
+                    <User className="h-6 w-6" />
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        {t.widgets.levelNumber.replace('{level}', String(levelProfile.xp.level))}
-                      </span>
-                      <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-500 dark:text-slate-400">
-                        {levelProfile.xp.totalXp} / {levelProfile.xp.totalXp + levelProfile.xp.toNextLevel} XP
-                      </span>
-                    </div>
-                    <div
-                      className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
-                      role="progressbar"
-                      aria-valuenow={levelProfile.xp.percent}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={t.widgets.xpToNextLevel.replace('{xp}', String(levelProfile.xp.toNextLevel))}
-                    >
-                      <div className="h-full rounded-full bg-blue-600" style={{ width: `${levelProfile.xp.percent}%` }} />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-2xl border border-violet-100 bg-gradient-to-br from-amber-50 via-white to-violet-50 p-4 dark:border-violet-500/20 dark:from-amber-500/10 dark:via-slate-900 dark:to-violet-500/10">
-                <div className="flex gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-500 dark:bg-amber-500/15">
-                    <Crown size={20} aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-slate-900 dark:text-white">
-                      {profile.isPro ? 'EngMasterAI PRO' : t.premium.goPremium}
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      Thông tin cá nhân
                     </h3>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {profile.isPro && profile.proExpiresAt
-                        ? `${t.premium.activeUntil(new Date(profile.proExpiresAt).toLocaleDateString(dateLocale))}`
-                        : t.premium.pitch}
+                    <p className="text-sm text-slate-500">
+                      Cập nhật thông tin cá nhân của bạn
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => navigate('/checkout')}
-                  className="mt-4 w-full rounded-xl bg-gradient-to-r from-blue-600 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                >
-                  {profile.isPro ? t.premium.renewNow : t.premium.upgradeNow}
-                </button>
-              </section>
 
-              <UsageQuotaWidget variant="profile" />
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 sm:p-8">
-            {/* Success Message */}
-            {isSaved && (
-              <div className="mb-6 flex items-center space-x-3 p-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl">
-                <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Check size={16} className="text-white" />
-                </div>
-                <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                  {t.profile.saved}
-                </p>
-              </div>
-            )}
-
-            {/* Error Message */}
-            {error && (
-              <div className="mb-6 flex items-center space-x-3 p-4 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl">
-                <div className="w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <AlertCircle size={16} className="text-white" />
-                </div>
-                <p className="text-sm font-medium text-rose-700 dark:text-rose-400">{error}</p>
-              </div>
-            )}
-
-            <div className="space-y-6">
-              {/* Display Name */}
-              <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  {t.profile.displayName}
-                </label>
-                <div className="relative">
-                  <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={profile.name}
-                    onChange={handleInputChange}
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 dark:focus:border-blue-500 transition-all"
-                    placeholder={t.profile.displayNamePlaceholder}
-                  />
-                </div>
-                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                  {t.profile.displayNameHint}
-                </p>
-              </div>
-
-              {/* Email (Read-only) */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  {t.profile.email}
-                </label>
-                <div className="relative">
-                  <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={profile.email}
-                    readOnly
-                    className="w-full pl-12 pr-4 py-3 bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                  />
-                </div>
-                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-                  {t.profile.emailHint}
-                </p>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-slate-400 dark:text-slate-500">
-                {t.profile.saveHint}
-              </p>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg shadow-blue-500/25 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>{t.profile.saving}</span>
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    <span>{t.profile.saveChanges}</span>
-                  </>
+                {/* Success Message */}
+                {isSaved && (
+                  <div className="mb-6 flex items-center space-x-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Check size={16} className="text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-emerald-700">
+                      {t.profile.saved}
+                    </p>
+                  </div>
                 )}
-              </button>
-            </div>
-          </form>
-        </div>
 
-        {/* 2026-09-16 pricing relaunch (Phase C) — student-only referral card. */}
-        {profile.role !== 'ADMIN' && <ReferralCard />}
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-6 flex items-center space-x-3 p-4 bg-rose-50 border border-rose-200 rounded-xl">
+                    <div className="w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <AlertCircle size={16} className="text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-rose-700">{error}</p>
+                  </div>
+                )}
+
+                <div className="space-y-6">
+                  {/* Display Name */}
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-semibold text-slate-900 mb-2">
+                      {t.profile.displayName}
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={profile.name}
+                        onChange={handleInputChange}
+                        placeholder={t.profile.displayNamePlaceholder}
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">
+                      {t.profile.displayNameHint}
+                    </p>
+                  </div>
+
+                  {/* Email (Read-only) */}
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-semibold text-slate-900 mb-2">
+                      {t.profile.email}
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={profile.email}
+                        readOnly
+                        disabled
+                        className="h-12 w-full rounded-xl border border-slate-200 bg-slate-100 pl-11 pr-4 text-sm font-medium text-slate-600 cursor-not-allowed"
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">
+                      {t.profile.emailHint}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submit Button aligned bottom-right */}
+              <div className="mt-8 flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex h-12 items-center gap-2 rounded-xl bg-blue-600 px-6 font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      <span>{t.profile.saving}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-5 w-5" />
+                      <span>{t.profile.saveChanges}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </section>
+
+          {/* RIGHT 40%: Referral / Invite Friends card */}
+          <ReferralCard />
+        </div>
       </main>
+
+      {/* Footer */}
+      <footer className="mx-auto w-full max-w-[1400px] px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <p>© 2024 EngmasterAI. Cùng bạn chinh phục tiếng Anh mỗi ngày!</p>
+          <div className="flex items-center gap-4">
+            <a href="#" className="hover:text-slate-600 transition-colors">Điều khoản</a>
+            <span>|</span>
+            <a href="#" className="hover:text-slate-600 transition-colors">Bảo mật</a>
+            <span>|</span>
+            <a href="#" className="hover:text-slate-600 transition-colors">Liên hệ</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
