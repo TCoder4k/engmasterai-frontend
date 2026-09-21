@@ -183,7 +183,7 @@ const en = {
     // 2026 dashboard redesign — one merged sidebar card title for the three
     // usage-quota bars (see UsageQuotaWidget), grouping them as one visual
     // unit distinct from the PRO card below it.
-    usageToday: "AI Usage Today",
+    usageToday: "AI Usage",
     dailyGoal: "Daily Goal",
     weeklyStreak: "Weekly Streak",
     todaysProgress: "Today's Progress",
@@ -1765,7 +1765,7 @@ const vi: TranslationDict = {
   },
   widgets: {
     level: "Cấp độ",
-    usageToday: "Sử dụng AI hôm nay",
+    usageToday: "Hạn mức sử dụng AI",
     dailyGoal: "Mục tiêu hằng ngày",
     weeklyStreak: "Chuỗi học trong tuần",
     todaysProgress: "Tiến độ hôm nay",
