@@ -339,14 +339,6 @@ const CheckoutPage: React.FC = () => {
                       valueClassName="font-mono text-base font-extrabold tracking-wide text-blue-600 dark:text-blue-400"
                       action={<CopyButton label={`${t.checkout.copy} ${t.checkout.contentLabel}`} copied={copiedField === 'content'} onCopy={() => copyText('content', payment.paymentCode)} copyLabel={t.checkout.copy} copiedLabel={t.checkout.copied} />}
                     />
-
-                    <div className="flex items-start gap-2.5 rounded-2xl border border-rose-100 bg-rose-50 px-3.5 py-2.5 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200">
-                      <AlertCircle size={16} className="mt-0.5 shrink-0 text-rose-500" aria-hidden="true" />
-                      <div className="text-xs leading-relaxed sm:text-sm">
-                        <p className="font-bold">{t.checkout.warningTitle}</p>
-                        <p className="text-rose-700/80 dark:text-rose-200/80">{t.checkout.warningDetail}</p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </section>
