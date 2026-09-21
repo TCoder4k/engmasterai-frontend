@@ -59,21 +59,21 @@ const StudentDesktopSidebar: React.FC = () => {
     location.pathname.startsWith('/practice/speaking');
 
   return (
-    <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col h-screen sticky top-0 overflow-hidden flex-shrink-0">
-      <div className="p-6">
+    <aside className="hidden lg:flex w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 flex-col h-dvh sticky top-0 flex-shrink-0">
+      <div className="shrink-0 px-6 pt-6 pb-5">
         {/* The whole brand area is a real router link back to the Dashboard
             (Sprint 03E) — client-side navigation, keyboard focusable, no
             clickable <div>. */}
         <NavLink
           to="/home"
           aria-label={t.nav.goToDashboard}
-          className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+          className="rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 block"
         >
           <Logo size="md" />
         </NavLink>
       </div>
 
-      <nav aria-label={t.nav.mainNavigation} className="flex-1 px-4 space-y-1 overflow-y-auto">
+      <nav aria-label={t.nav.mainNavigation} className="min-h-0 flex-1 overflow-y-auto px-4 space-y-1 sidebar-scrollbar">
         <NavLink to="/home" end className={({ isActive }) => navLinkClass(isActive)}>
           <Home size={20} aria-hidden="true" />
           <span>{t.nav.dashboard}</span>
@@ -145,7 +145,7 @@ const StudentDesktopSidebar: React.FC = () => {
         </NavLink>
       </nav>
 
-      <div className="p-4 space-y-4">
+      <div className="shrink-0 p-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
         {/* Dashboard redesign (2026-09) — the standalone Level/XP card moved
             out of the sidebar into the desktop topbar, next to the avatar
             (StudentLayout.tsx), so this rail carries one fewer competing
@@ -157,7 +157,7 @@ const StudentDesktopSidebar: React.FC = () => {
         <UsageQuotaWidget />
 
         <div
-          className={`rounded-2xl p-5 ${
+          className={`rounded-2xl p-4 ${
             isExpiringSoon
               ? 'bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/25'
               : 'bg-slate-50 dark:bg-slate-800/60'
@@ -184,7 +184,7 @@ const StudentDesktopSidebar: React.FC = () => {
               message (still framed as informational, never blocking). */}
           {user?.isPro && user.proExpiresAt ? (
             <p
-              className={`text-xs font-medium mb-4 leading-relaxed ${
+              className={`text-xs font-medium mb-3 leading-relaxed ${
                 isExpiringSoon ? 'text-amber-800 dark:text-amber-200/80' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
@@ -196,7 +196,7 @@ const StudentDesktopSidebar: React.FC = () => {
                 : t.premium.activeUntil(new Date(user.proExpiresAt).toLocaleDateString(dateLocale))}
             </p>
           ) : (
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
               {t.premium.pitch}
             </p>
           )}
