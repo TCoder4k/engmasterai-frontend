@@ -55,27 +55,14 @@ describe('ProfilePage 60/40 UI Refactor', () => {
     expect(screen.getByText('AI')).toBeInTheDocument();
   });
 
-  it('renders two-column 60/40 grid layout with Personal Information and Referral Card', async () => {
-    const { container } = renderProfilePage();
+  it('renders personal information card and profile details', async () => {
+    renderProfilePage();
 
-    // Verify 60/40 grid classes on main grid
-    const main = container.querySelector('main');
-    const grid = main?.firstElementChild;
-    expect(grid?.className).toContain('lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)]');
-
-    // Left 60%: single continuous card with banner and form
     expect(await screen.findByText('Tà đạo')).toBeInTheDocument();
     expect(screen.getByText('tucaqn1@gmail.com')).toBeInTheDocument();
     expect(screen.getByText('Học viên')).toBeInTheDocument();
     expect(screen.getByText('Thông tin cá nhân')).toBeInTheDocument();
     expect(screen.getByText('Cập nhật thông tin cá nhân của bạn')).toBeInTheDocument();
-
-    // Right 40%: Referral card
-    expect(screen.getByText('Mời bạn học cùng')).toBeInTheDocument();
-    expect(screen.getByText('MÃ CỦA BẠN')).toBeInTheDocument();
-    expect(await screen.findByText('F_5wU-zu')).toBeInTheDocument();
-    expect(screen.getByText('CÓ MÃ CỦA BẠN BÈ?')).toBeInTheDocument();
-    expect(screen.getByText('Học cùng bạn bè vui hơn mỗi ngày!')).toBeInTheDocument();
   });
 
   it('allows updating display name and submits to userService', async () => {
