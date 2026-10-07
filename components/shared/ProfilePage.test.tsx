@@ -7,7 +7,7 @@ import { LanguageProvider } from '../../i18n/LanguageProvider';
 import ProfilePage from './ProfilePage';
 import * as userService from '../../services/userService';
 import * as authServiceModule from '../../services/authService';
-import * as referralService from '../../services/referralService';
+
 
 describe('ProfilePage 60/40 UI Refactor', () => {
   const mockUser = {
@@ -28,10 +28,6 @@ describe('ProfilePage 60/40 UI Refactor', () => {
       ...mockUser,
       name: 'Tà đạo updated',
     } as any);
-    vi.spyOn(referralService, 'getMyReferralCode').mockResolvedValue({
-      code: 'F_5wU-zu',
-    });
-    vi.spyOn(referralService, 'redeemReferralCode').mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -100,34 +96,7 @@ describe('ProfilePage 60/40 UI Refactor', () => {
     });
   });
 
-  it('allows copying referral code and redeeming a friend code', async () => {
-    const user = userEvent.setup();
-    const writeTextMock = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText: writeTextMock },
-      configurable: true,
-      writable: true,
-    });
 
-    renderProfilePage();
-
-    const copyButton = await screen.findByRole('button', { name: /Sao chép/i });
-    await user.click(copyButton);
-
-    expect(writeTextMock).toHaveBeenCalledWith('F_5wU-zu');
-    expect(await screen.findByText('Đã chép')).toBeInTheDocument();
-
-    const friendInput = screen.getByPlaceholderText('Nhập mã giới thiệu');
-    await user.type(friendInput, 'FRIEND123');
-
-    const redeemButton = screen.getByRole('button', { name: /Dùng mã/i });
-    await user.click(redeemButton);
-
-    await waitFor(() => {
-      expect(referralService.redeemReferralCode).toHaveBeenCalledWith('FRIEND123');
-    });
-    expect(await screen.findByText(/Đã áp dụng mã!/i)).toBeInTheDocument();
-  });
 
   it('renders footer at the bottom of the page', async () => {
     renderProfilePage();

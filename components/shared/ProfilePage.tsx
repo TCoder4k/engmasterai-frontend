@@ -5,7 +5,7 @@ import { authService } from '../../services/authService';
 import { getProfile, updateProfile, uploadAvatar } from '../../services/userService';
 import { handleAuthError } from '../../services/apiError';
 import { useTranslation } from '../../i18n/useTranslation';
-import ReferralCard from '../user/ReferralCard';
+
 
 interface UserProfile {
   id: string;
@@ -224,9 +224,9 @@ const ProfilePage: React.FC = () => {
       </header>
 
       {/* Main Content — 60/40 two-column layout on >=lg */}
-      <main className="mx-auto w-full max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(360px,2fr)] xl:gap-6">
-          {/* LEFT 60%: Personal Information continuous card */}
+      <main className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="flex flex-col gap-5">
+          {/* Personal Information continuous card */}
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
             {/* Profile Banner */}
             <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-blue-500 px-6 py-8 sm:px-8 sm:py-9">
@@ -237,9 +237,9 @@ const ProfilePage: React.FC = () => {
               <div className="relative flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
                 {/* Avatar with upload trigger */}
                 <div className="relative shrink-0">
-                  <div className="relative h-24 w-24 sm:h-28 sm:w-28 overflow-hidden rounded-2xl border-4 border-white/40 bg-white/20 shadow-md">
+                  <div className="relative h-24 w-24 sm:h-28 sm:w-28 shrink-0 aspect-square overflow-hidden rounded-full border-4 border-white/40 bg-white/20 shadow-md">
                     {isUploading && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 rounded-2xl">
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 rounded-full">
                         <div className="h-8 w-8 animate-spin rounded-full border-3 border-white/30 border-t-white" />
                       </div>
                     )}
@@ -294,7 +294,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Form Section below banner */}
-            <form onSubmit={handleSubmit} className="flex-1 p-6 sm:p-8 flex flex-col justify-between">
+            <form onSubmit={handleSubmit} className="p-6 sm:p-8">
               <div>
                 {/* Form header */}
                 <div className="mb-7 flex items-center gap-3">
@@ -333,7 +333,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Display Name */}
                   <div>
                     <label htmlFor="name" className="block text-sm font-semibold text-slate-900 mb-2">
@@ -402,9 +402,6 @@ const ProfilePage: React.FC = () => {
               </div>
             </form>
           </section>
-
-          {/* RIGHT 40%: Referral / Invite Friends card */}
-          <ReferralCard />
         </div>
       </main>
 

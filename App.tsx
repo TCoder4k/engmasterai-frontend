@@ -25,6 +25,7 @@ import AdminListeningContents from './components/admin/AdminListeningContents';
 import AdminListeningCategories from './components/admin/AdminListeningCategories';
 import AdminListeningEditor from './components/admin/AdminListeningEditor';
 import AdminPlacementQuestions from './components/admin/AdminPlacementQuestions';
+import AdminSpeakingScenarios from './components/admin/AdminSpeakingScenarios';
 import VocabLibraryPage from './components/vocab/VocabLibraryPage';
 import MyVocabularyPage from './components/vocab/MyVocabularyPage';
 import LibraryDetailPage from './components/vocab/LibraryDetailPage';
@@ -332,6 +333,7 @@ const App: React.FC = () => {
               /admin/courses or /admin/vocab): PlacementQuestion has no
               parent course/lesson/library, it is its own flat bank. */}
           <Route path="/admin/placement/questions" element={<AdminPlacementQuestions />} />
+          <Route path="/admin/speaking" element={<AdminSpeakingScenarios />} />
         </Route>
       </Routes>
     </BrowserRouter>

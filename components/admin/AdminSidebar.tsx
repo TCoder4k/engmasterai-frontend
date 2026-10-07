@@ -9,6 +9,7 @@ import {
   BookMarked,
   Headphones,
   ListChecks,
+  Mic,
   LogOut
 } from 'lucide-react';
 import { authService } from '../../services/authService';
@@ -110,6 +111,11 @@ const AdminSidebar: React.FC = () => {
         <NavLink to="/admin/listening" className={({ isActive }) => navLinkClass(isActive)}>
           <Headphones size={20} />
           <span>Listening (Nội dung)</span>
+        </NavLink>
+
+        <NavLink to="/admin/speaking" className={({ isActive }) => navLinkClass(isActive)}>
+          <Mic size={20} />
+          <span>Speaking (Kịch bản nói)</span>
         </NavLink>
 
         {/* Personalized Onboarding & Placement Test — the dedicated question
