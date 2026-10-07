@@ -294,46 +294,48 @@ const App: React.FC = () => {
             UX gate — the backend still enforces JWT + @Roles(ADMIN) on
             every request regardless. */}
         <Route element={<ProtectedRoute role="ADMIN" />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/users/:id" element={<AdminStudentDetail />} />
-          <Route path="/admin/courses" element={<AdminCourses />} />
-          <Route path="/admin/courses/:courseId/lessons" element={<AdminLessons />} />
-          <Route path="/admin/lessons/:lessonId/quiz" element={<AdminLessonQuiz />} />
-          {/* Sprint 06D — the same editor, pointed at the lesson's PRACTICE
-              task. Parameterised rather than duplicated: identical DTOs, one
-              backend service, so a second editor would be two places to fix
-              every authoring bug. */}
-          <Route
-            path="/admin/lessons/:lessonId/practice"
-            element={<AdminLessonQuiz taskKind="practice" />}
-          />
-          {/* Sprint 11 — Listening content authoring. `/categories` is declared
-              BEFORE `/:contentId` so it isn't swallowed by the dynamic route,
-              the same ordering GET /courses/manage needs on the backend.
-              The id is a UUID: Listening deliberately introduced no slug, so
-              these routes look like every other id-bearing route in the app. */}
-          <Route path="/admin/listening" element={<AdminListeningContents />} />
-          <Route
-            path="/admin/listening/categories"
-            element={<AdminListeningCategories />}
-          />
-          <Route
-            path="/admin/listening/:contentId"
-            element={<AdminListeningEditor />}
-          />
-          <Route path="/admin/vocab" element={<AdminVocabLibraries />} />
-          <Route path="/admin/vocab/libraries/:libraryId/decks" element={<AdminVocabDecks />} />
-          <Route path="/admin/vocab/words" element={<AdminVocabWords />} />
-          <Route path="/admin/vocab/words/new" element={<AdminVocabWordEditor />} />
-          <Route path="/admin/vocab/words/:wordId/edit" element={<AdminVocabWordEditor />} />
-          <Route path="/admin/vocab/decks/:deckId/words" element={<AdminVocabDeckWords />} />
-          {/* Personalized Onboarding & Placement Test, Phase 2 — the
-              dedicated question bank. Standalone (not nested under
-              /admin/courses or /admin/vocab): PlacementQuestion has no
-              parent course/lesson/library, it is its own flat bank. */}
-          <Route path="/admin/placement/questions" element={<AdminPlacementQuestions />} />
-          <Route path="/admin/speaking" element={<AdminSpeakingScenarios />} />
+          <Route element={<AssistantBoundary />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/users/:id" element={<AdminStudentDetail />} />
+            <Route path="/admin/courses" element={<AdminCourses />} />
+            <Route path="/admin/courses/:courseId/lessons" element={<AdminLessons />} />
+            <Route path="/admin/lessons/:lessonId/quiz" element={<AdminLessonQuiz />} />
+            {/* Sprint 06D — the same editor, pointed at the lesson's PRACTICE
+                task. Parameterised rather than duplicated: identical DTOs, one
+                backend service, so a second editor would be two places to fix
+                every authoring bug. */}
+            <Route
+              path="/admin/lessons/:lessonId/practice"
+              element={<AdminLessonQuiz taskKind="practice" />}
+            />
+            {/* Sprint 11 — Listening content authoring. `/categories` is declared
+                BEFORE `/:contentId` so it isn't swallowed by the dynamic route,
+                the same ordering GET /courses/manage needs on the backend.
+                The id is a UUID: Listening deliberately introduced no slug, so
+                these routes look like every other id-bearing route in the app. */}
+            <Route path="/admin/listening" element={<AdminListeningContents />} />
+            <Route
+              path="/admin/listening/categories"
+              element={<AdminListeningCategories />}
+            />
+            <Route
+              path="/admin/listening/:contentId"
+              element={<AdminListeningEditor />}
+            />
+            <Route path="/admin/vocab" element={<AdminVocabLibraries />} />
+            <Route path="/admin/vocab/libraries/:libraryId/decks" element={<AdminVocabDecks />} />
+            <Route path="/admin/vocab/words" element={<AdminVocabWords />} />
+            <Route path="/admin/vocab/words/new" element={<AdminVocabWordEditor />} />
+            <Route path="/admin/vocab/words/:wordId/edit" element={<AdminVocabWordEditor />} />
+            <Route path="/admin/vocab/decks/:deckId/words" element={<AdminVocabDeckWords />} />
+            {/* Personalized Onboarding & Placement Test, Phase 2 — the
+                dedicated question bank. Standalone (not nested under
+                /admin/courses or /admin/vocab): PlacementQuestion has no
+                parent course/lesson/library, it is its own flat bank. */}
+            <Route path="/admin/placement/questions" element={<AdminPlacementQuestions />} />
+            <Route path="/admin/speaking" element={<AdminSpeakingScenarios />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

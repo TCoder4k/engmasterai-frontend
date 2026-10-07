@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Users } from 'lucide-react';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { authService } from '../../../services/authService';
 import ChatToolTabBar, { ChatSubTab } from './ChatToolTabBar';
 import EngyChatView from './EngyChatView';
 import CommunityChatPanel from './community-chat/CommunityChatPanel';
@@ -22,7 +23,9 @@ import CommunityNotificationBell from './community-chat/CommunityNotificationBel
 const ChatPanel: React.FC = () => {
   const assistant = useAssistant();
   const { t } = useTranslation();
-  const [activeSubTab, setActiveSubTab] = useState<ChatSubTab>('engy');
+  const user = authService.getUser();
+  const isAdmin = user?.role === 'ADMIN';
+  const [activeSubTab, setActiveSubTab] = useState<ChatSubTab>(isAdmin ? 'community' : 'engy');
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Outside-click + Escape, same idiom as DictionaryPanel — excludes BOTH
@@ -74,7 +77,7 @@ const ChatPanel: React.FC = () => {
 
   if (!assistant) return null;
 
-  const dialogLabel = activeSubTab === 'engy' ? t.chat.title : t.communityChat.title;
+  const dialogLabel = isAdmin ? 'Hỗ trợ học viên (Tán gẫu)' : (activeSubTab === 'engy' ? t.chat.title : t.communityChat.title);
 
   return (
     <>
@@ -107,11 +110,22 @@ const ChatPanel: React.FC = () => {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1 shrink-0 border-b border-slate-100 dark:border-slate-800">
-          <ChatToolTabBar
-            activeTab={activeSubTab}
-            onChange={setActiveSubTab}
-            communityUnreadCount={assistant.communityUnreadCount}
-          />
+          {isAdmin ? (
+            <div className="flex items-center gap-2 py-1.5 px-2">
+              <div className="w-7 h-7 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center">
+                <Users size={14} />
+              </div>
+              <span className="text-xs font-bold text-slate-800 dark:text-white">
+                Hỗ trợ học viên (Tán gẫu)
+              </span>
+            </div>
+          ) : (
+            <ChatToolTabBar
+              activeTab={activeSubTab}
+              onChange={setActiveSubTab}
+              communityUnreadCount={assistant.communityUnreadCount}
+            />
+          )}
           {/* Bell + close grouped in one flex box so `justify-between` on the
               row above treats them as a single unit — otherwise a 3-item
               justify-between spreads the bell away from the X toward the
@@ -119,7 +133,7 @@ const ChatPanel: React.FC = () => {
           <div className="flex items-center gap-0.5 shrink-0">
             {/* Community-Chat-specific — absent entirely on the Engy tab
                 rather than disabled/hidden, so Engy's header is untouched. */}
-            {activeSubTab === 'community' && <CommunityNotificationBell />}
+            {(isAdmin || activeSubTab === 'community') && <CommunityNotificationBell />}
             <button
               type="button"
               onClick={() => {
@@ -159,15 +173,23 @@ const ChatPanel: React.FC = () => {
             become direct flex items of the dialog below exactly as they
             were before this tab split.
         */}
-        <div hidden={activeSubTab !== 'engy'} className={activeSubTab === 'engy' ? 'contents' : undefined}>
-          <EngyChatView />
-        </div>
-        <div
-          hidden={activeSubTab !== 'community'}
-          className={activeSubTab === 'community' ? 'contents' : undefined}
-        >
-          <CommunityChatPanel active={activeSubTab === 'community'} />
-        </div>
+        {isAdmin ? (
+          <div className="contents">
+            <CommunityChatPanel active={true} />
+          </div>
+        ) : (
+          <>
+            <div hidden={activeSubTab !== 'engy'} className={activeSubTab === 'engy' ? 'contents' : undefined}>
+              <EngyChatView />
+            </div>
+            <div
+              hidden={activeSubTab !== 'community'}
+              className={activeSubTab === 'community' ? 'contents' : undefined}
+            >
+              <CommunityChatPanel active={activeSubTab === 'community'} />
+            </div>
+          </>
+        )}
       </div>
     </>
   );

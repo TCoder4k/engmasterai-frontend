@@ -1,33 +1,42 @@
 import React from 'react';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
+import { authService } from '../../../services/authService';
+import { Users } from 'lucide-react';
 
-// Two triggers sharing one corner, Phase B — the mockup's original
-// "Dictionary trigger + Engy mascot" pair, which Phase A deferred to a
-// single mascot button (Chat didn't exist yet) with a comment promising
-// this exact shape once it did. Both share the SAME single-slot
-// `activeTool` state (see AssistantBoundary.tsx) — opening either one
-// closes the other automatically, no extra code needed for that.
-//
-// `dictionary-icon.png`/`engy-icon.png` (public/mascot/) are TRANSPARENT
-// crops of the source `1.png`/`2.png` — those sources are 1024x1536 opaque
-// -white canvases (no alpha channel) where the real icon/badge occupies a
-// small fraction of the frame, so a plain tight crop still rendered as a
-// visible white rectangle behind the artwork. These two variants had their
-// white canvas flood-filled to transparent (background-connected white only
-// — the badge's own light interior fill is untouched) and were then
-// re-cropped to the opaque content's bounding box; see the crop/removal
-// note in the sprint doc. The artwork itself IS the button: no background,
-// border, ring, or shell is layered on top — only a focus-visible ring for
-// keyboard a11y. Sizes below are starting values meant to be tuned against
-// the real app, not fixed constants.
 const AssistantLauncher: React.FC = () => {
   const assistant = useAssistant();
   const { t } = useTranslation();
+  const user = authService.getUser();
+  const isAdmin = user?.role === 'ADMIN';
 
   // Outside the boundary (admin routes, tests) — render nothing rather than
   // crash, matching useGamification's degrade-gracefully convention.
   if (!assistant) return null;
+
+  if (isAdmin) {
+    return (
+      <div className="fixed z-40 right-3 sm:right-4 lg:right-7 bottom-20 lg:bottom-6 flex flex-col items-center gap-2.5">
+        <button
+          ref={assistant.launcherRefs.chat}
+          type="button"
+          onClick={() => assistant.toggleTool('chat')}
+          aria-label="Hỗ trợ học viên / Tán gẫu"
+          aria-haspopup="dialog"
+          aria-expanded={assistant.activeTool === 'chat'}
+          className="relative w-[52px] h-[52px] bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-xl flex items-center justify-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2"
+          title="Hỗ trợ học viên / Tán gẫu"
+        >
+          <Users size={24} aria-hidden="true" />
+          {assistant.communityUnreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold leading-none">
+              {assistant.communityUnreadCount > 9 ? '9+' : assistant.communityUnreadCount}
+            </span>
+          )}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed z-40 right-3 sm:right-4 lg:right-7 bottom-20 lg:bottom-6 flex flex-col items-center gap-2.5">
