@@ -6,23 +6,18 @@ import {
   ClipboardX,
   Crown,
   Flame,
-  Lock,
   Mail,
   Mic,
   Receipt,
-  ShieldAlert,
   Target,
   TrendingUp,
-  Unlock,
 } from 'lucide-react';
 import AdminSidebar from '../AdminSidebar';
 import AdminHeader from '../AdminHeader';
-import Modal from '../../shared/Modal';
 import { authService } from '../../../services/authService';
 import { handleAuthError } from '../../../services/apiError';
 import {
   getStudentDetail,
-  setStudentActiveStatus,
   AdminStudentDetail as AdminStudentDetailData,
 } from '../../../services/adminStudentService';
 import {
@@ -50,9 +45,6 @@ const AdminStudentDetail: React.FC = () => {
   const [data, setData] = useState<AdminStudentDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusAction, setStatusAction] = useState<'block' | 'unblock' | null>(null);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [statusError, setStatusError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     if (!id) return;
@@ -68,21 +60,6 @@ const AdminStudentDetail: React.FC = () => {
   useEffect(() => {
     load();
   }, [load]);
-
-  const confirmStatusChange = async () => {
-    if (!id || !statusAction) return;
-    setIsUpdatingStatus(true);
-    setStatusError(null);
-    try {
-      await setStudentActiveStatus(id, statusAction === 'unblock');
-      setStatusAction(null);
-      load();
-    } catch (err) {
-      setStatusError(handleAuthError(err, navigate));
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
 
   const isSelf = id === currentUserId;
 
@@ -175,34 +152,6 @@ const AdminStudentDetail: React.FC = () => {
                         {formatDateVi(data.profile.proExpiresAt)}
                       </p>
                     </div>
-                  )}
-                </div>
-
-                <div className="pt-2">
-                  {isSelf ? (
-                    <span
-                      title="Không thể tự khóa/mở khóa tài khoản của chính mình"
-                      className="w-full inline-flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-slate-50 cursor-not-allowed"
-                    >
-                      <ShieldAlert size={14} />
-                      <span>Tài khoản của bạn</span>
-                    </span>
-                  ) : data.profile.isActive ? (
-                    <button
-                      onClick={() => setStatusAction('block')}
-                      className="w-full inline-flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-rose-600 text-white hover:bg-rose-700 transition-all"
-                    >
-                      <Lock size={14} />
-                      <span>Khóa tài khoản</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setStatusAction('unblock')}
-                      className="w-full inline-flex items-center justify-center space-x-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all"
-                    >
-                      <Unlock size={14} />
-                      <span>Mở khóa</span>
-                    </button>
                   )}
                 </div>
               </section>
@@ -385,46 +334,6 @@ const AdminStudentDetail: React.FC = () => {
           )}
         </main>
       </div>
-
-      {statusAction && (
-        <Modal
-          title={statusAction === 'block' ? 'Khóa tài khoản học viên?' : 'Mở khóa tài khoản học viên?'}
-          onClose={() => (isUpdatingStatus ? undefined : setStatusAction(null))}
-        >
-          <div className="space-y-4">
-            {statusError && (
-              <div className="bg-rose-50 border border-rose-100 text-rose-600 text-sm font-medium px-4 py-3 rounded-xl">
-                {statusError}
-              </div>
-            )}
-            <p className="text-sm text-slate-600">
-              {statusAction === 'block'
-                ? 'Học viên sẽ không thể đăng nhập và mọi phiên đăng nhập hiện tại sẽ bị hủy trong tối đa 10 phút. Bạn có chắc chắn muốn khóa tài khoản này?'
-                : 'Học viên sẽ có thể đăng nhập lại bình thường. Bạn có chắc chắn muốn mở khóa tài khoản này?'}
-            </p>
-            <div className="flex justify-end space-x-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setStatusAction(null)}
-                disabled={isUpdatingStatus}
-                className="px-4 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-colors disabled:opacity-50"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={confirmStatusChange}
-                disabled={isUpdatingStatus}
-                className={`px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60 ${
-                  statusAction === 'block' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-              >
-                {isUpdatingStatus ? 'Đang xử lý...' : statusAction === 'block' ? 'Khóa tài khoản' : 'Mở khóa'}
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

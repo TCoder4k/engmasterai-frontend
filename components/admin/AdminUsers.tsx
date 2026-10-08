@@ -36,7 +36,6 @@ const EXPORT_PAGE_SIZE = 20;
 // near this size; it only guards against an unbounded fetch loop.
 const EXPORT_MAX_PAGES = 200;
 type PlanFilter = 'ALL' | 'FREE' | 'PRO';
-type StatusFilter = 'ALL' | 'ACTIVE' | 'BLOCKED';
 
 const csvCell = (value: string | number): string => {
   const str = String(value);
@@ -108,14 +107,12 @@ const AdminUsers: React.FC = () => {
   // rewrites the whole `?q=` query string on every keystroke, and layering a
   // second param writer on top of that would race it.
   const [planFilter, setPlanFilter] = useState<PlanFilter>('ALL');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [isExporting, setIsExporting] = useState(false);
 
   const loadUsers = (
     targetPage: number,
     search: string,
     plan: PlanFilter,
-    status: StatusFilter,
   ) => {
     setIsLoading(true);
     setError(null);
@@ -124,7 +121,7 @@ const AdminUsers: React.FC = () => {
       PAGE_SIZE,
       search || undefined,
       plan === 'ALL' ? undefined : plan,
-      status === 'ALL' ? undefined : status,
+      undefined,
     )
       .then((res) => {
         setUsers(res.data);
@@ -137,13 +134,13 @@ const AdminUsers: React.FC = () => {
   };
 
   // The URL search term (written by AdminHeader's Topbar search) plus the
-  // two local toolbar filters together drive the fetch — always reset to
+  // plan filter together drive the fetch — always reset to
   // page 1 when any of them changes, since a page 3 of an old query is
   // meaningless for a new one.
   useEffect(() => {
-    loadUsers(1, urlSearch, planFilter, statusFilter);
+    loadUsers(1, urlSearch, planFilter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlSearch, planFilter, statusFilter]);
+  }, [urlSearch, planFilter]);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -158,7 +155,7 @@ const AdminUsers: React.FC = () => {
           EXPORT_PAGE_SIZE,
           urlSearch || undefined,
           planFilter === 'ALL' ? undefined : planFilter,
-          statusFilter === 'ALL' ? undefined : statusFilter,
+          undefined,
         );
         rows.push(...res.data);
         exportTotalPages = res.meta.totalPages || 1;
@@ -196,7 +193,7 @@ const AdminUsers: React.FC = () => {
     try {
       await updateUserAsAdmin(editingUser.id, { name: editForm.name, email: editForm.email });
       setEditingUser(null);
-      loadUsers(page, urlSearch, planFilter, statusFilter);
+      loadUsers(page, urlSearch, planFilter);
     } catch (err) {
       setFormError(handleAuthError(err, navigate));
     } finally {
@@ -211,7 +208,7 @@ const AdminUsers: React.FC = () => {
     const nextRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
     try {
       await updateUserAsAdmin(user.id, { role: nextRole });
-      loadUsers(page, urlSearch, planFilter, statusFilter);
+      loadUsers(page, urlSearch, planFilter);
     } catch (err) {
       setError(handleAuthError(err, navigate));
     } finally {
@@ -228,7 +225,7 @@ const AdminUsers: React.FC = () => {
       await deleteUser(id);
       // If we just deleted the last row on a page beyond 1, step back a page.
       const nextPage = users.length === 1 && page > 1 ? page - 1 : page;
-      loadUsers(nextPage, urlSearch, planFilter, statusFilter);
+      loadUsers(nextPage, urlSearch, planFilter);
     } catch (err) {
       setError(handleAuthError(err, navigate));
     } finally {
@@ -245,7 +242,7 @@ const AdminUsers: React.FC = () => {
 
         <main className="flex-1 overflow-y-auto p-8 space-y-6">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Học viên & Users</h1>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Học viên &amp; Users</h1>
             <p className="text-sm text-slate-500 font-medium">
               Quản lý tài khoản người dùng trong hệ thống ({total} tài khoản).
             </p>
@@ -253,15 +250,6 @@ const AdminUsers: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="ACTIVE">Active</option>
-                <option value="BLOCKED">Blocked</option>
-              </select>
               <select
                 value={planFilter}
                 onChange={(e) => setPlanFilter(e.target.value as PlanFilter)}
@@ -288,7 +276,7 @@ const AdminUsers: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-visible">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
@@ -316,7 +304,7 @@ const AdminUsers: React.FC = () => {
                       <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400 font-medium">
                         {urlSearch
                           ? `Không tìm thấy học viên nào khớp với "${urlSearch}".`
-                          : planFilter !== 'ALL' || statusFilter !== 'ALL'
+                          : planFilter !== 'ALL'
                             ? 'Không có học viên nào khớp với bộ lọc đã chọn.'
                             : 'Chưa có người dùng nào.'}
                       </td>
@@ -466,14 +454,14 @@ const AdminUsers: React.FC = () => {
                 </span>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => loadUsers(page - 1, urlSearch, planFilter, statusFilter)}
+                    onClick={() => loadUsers(page - 1, urlSearch, planFilter)}
                     disabled={page <= 1}
                     className="p-2 rounded-lg border border-slate-100 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
                   >
                     <ChevronLeft size={16} />
                   </button>
                   <button
-                    onClick={() => loadUsers(page + 1, urlSearch, planFilter, statusFilter)}
+                    onClick={() => loadUsers(page + 1, urlSearch, planFilter)}
                     disabled={page >= totalPages}
                     className="p-2 rounded-lg border border-slate-100 text-slate-500 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
                   >
