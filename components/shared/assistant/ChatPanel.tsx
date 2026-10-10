@@ -112,12 +112,9 @@ const ChatPanel: React.FC = () => {
         <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1 shrink-0 border-b border-slate-100 dark:border-slate-800">
           {isAdmin ? (
             <div className="flex items-center gap-2 py-1.5 px-2">
-              <div className="w-7 h-7 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center">
-                <Users size={14} />
+              <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center">
+                <Users size={16} />
               </div>
-              <span className="text-xs font-bold text-slate-800 dark:text-white">
-                Hỗ trợ học viên (Tán gẫu)
-              </span>
             </div>
           ) : (
             <ChatToolTabBar

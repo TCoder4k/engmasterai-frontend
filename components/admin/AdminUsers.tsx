@@ -22,8 +22,6 @@ import {
   ChevronRight,
   Pencil,
   Trash2,
-  ShieldCheck,
-  User as UserIcon,
   MoreVertical,
   Crown,
   Eye,
@@ -99,7 +97,6 @@ const AdminUsers: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const [pendingRoleChangeId, setPendingRoleChangeId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Toolbar filters (2026-09-15 feedback) — local-only state, deliberately
@@ -201,20 +198,7 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  const toggleRole = async (user: AdminStudentListRow) => {
-    setOpenMenuId(null);
-    setPendingRoleChangeId(user.id);
-    setError(null);
-    const nextRole = user.role === 'ADMIN' ? 'USER' : 'ADMIN';
-    try {
-      await updateUserAsAdmin(user.id, { role: nextRole });
-      loadUsers(page, urlSearch, planFilter);
-    } catch (err) {
-      setError(handleAuthError(err, navigate));
-    } finally {
-      setPendingRoleChangeId(null);
-    }
-  };
+
 
   const confirmDelete = async (id: string, name: string) => {
     setOpenMenuId(null);
