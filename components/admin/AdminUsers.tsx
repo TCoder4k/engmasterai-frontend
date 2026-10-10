@@ -397,20 +397,7 @@ const AdminUsers: React.FC = () => {
                                     <Pencil size={14} />
                                     <span>Chỉnh sửa</span>
                                   </button>
-                                  <button
-                                    onClick={() => toggleRole(user)}
-                                    disabled={isSelf || pendingRoleChangeId === user.id}
-                                    className="w-full flex items-center space-x-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
-                                  >
-                                    {user.role === 'ADMIN' ? <UserIcon size={14} /> : <ShieldCheck size={14} />}
-                                    <span>
-                                      {pendingRoleChangeId === user.id
-                                        ? 'Đang cập nhật...'
-                                        : user.role === 'ADMIN'
-                                          ? 'Gỡ quyền Admin'
-                                          : 'Cấp quyền Admin'}
-                                    </span>
-                                  </button>
+
                                   <button
                                     onClick={() => confirmDelete(user.id, user.name)}
                                     disabled={isSelf || pendingDeleteId === user.id}

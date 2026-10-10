@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Users } from 'lucide-react';
+import { X, Users, RefreshCw } from 'lucide-react';
 import { useAssistant } from './useAssistant';
 import { useTranslation } from '../../../i18n/useTranslation';
 import { authService } from '../../../services/authService';
@@ -27,6 +27,7 @@ const ChatPanel: React.FC = () => {
   const isAdmin = user?.role === 'ADMIN';
   const [activeSubTab, setActiveSubTab] = useState<ChatSubTab>(isAdmin ? 'community' : 'engy');
   const panelRef = useRef<HTMLDivElement>(null);
+  const communityRefreshRef = useRef<() => void>(() => {});
 
   // Outside-click + Escape, same idiom as DictionaryPanel — excludes BOTH
   // this panel and its OWN trigger (assistant.launcherRefs.chat), not the
@@ -109,11 +110,17 @@ const ChatPanel: React.FC = () => {
         className="fixed z-50 inset-x-0 bottom-0 lg:inset-x-auto lg:bottom-6 lg:right-6 w-full lg:w-[420px] h-[85vh] lg:h-[min(680px,calc(100dvh-3rem))] rounded-t-3xl lg:rounded-3xl bg-white dark:bg-ink-900 border border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col overflow-hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1 shrink-0 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
           {isAdmin ? (
-            <div className="flex items-center gap-2 py-1.5 px-2">
-              <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center">
-                <Users size={16} />
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center shrink-0">
+                <Users size={16} className="text-violet-600 dark:text-violet-300" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                  {t.communityChat.title}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.communityChat.subtitle}</p>
               </div>
             </div>
           ) : (
@@ -127,21 +134,35 @@ const ChatPanel: React.FC = () => {
               row above treats them as a single unit — otherwise a 3-item
               justify-between spreads the bell away from the X toward the
               middle of the header instead of sitting next to it. */}
-          <div className="flex items-center gap-0.5 shrink-0">
-            {/* Community-Chat-specific — absent entirely on the Engy tab
-                rather than disabled/hidden, so Engy's header is untouched. */}
-            {(isAdmin || activeSubTab === 'community') && <CommunityNotificationBell />}
-            <button
-              type="button"
-              onClick={() => {
-                assistant.closeTool();
-                assistant.launcherRefs.chat.current?.focus();
-              }}
-              aria-label={t.common.close}
-              className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-            >
-              <X size={18} />
-            </button>
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <div className="flex items-center gap-0.5">
+              {/* Community-Chat-specific — absent entirely on the Engy tab
+                  rather than disabled/hidden, so Engy's header is untouched. */}
+              {(isAdmin || activeSubTab === 'community') && <CommunityNotificationBell />}
+              {isAdmin && <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1" />}
+              <button
+                type="button"
+                onClick={() => {
+                  assistant.closeTool();
+                  assistant.launcherRefs.chat.current?.focus();
+                }}
+                aria-label={t.common.close}
+                className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => communityRefreshRef.current()}
+                aria-label={t.communityChat.refresh}
+                title={t.communityChat.refresh}
+                className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 mr-1"
+              >
+                <RefreshCw size={16} />
+              </button>
+            )}
           </div>
         </div>
 
@@ -172,7 +193,7 @@ const ChatPanel: React.FC = () => {
         */}
         {isAdmin ? (
           <div className="contents">
-            <CommunityChatPanel active={true} />
+            <CommunityChatPanel active={true} hideHeader={true} onRefreshRef={communityRefreshRef} />
           </div>
         ) : (
           <>

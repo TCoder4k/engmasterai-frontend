@@ -37,6 +37,8 @@ type PendingSend = {
 interface CommunityChatPanelProps {
   /** Whether the Community tab is the currently visible one (see ChatPanel.tsx). */
   active: boolean;
+  hideHeader?: boolean;
+  onRefreshRef?: React.MutableRefObject<() => void>;
 }
 
 // Community Chat ("Tán gẫu") — a separate domain from Engy AI end to end
@@ -44,7 +46,7 @@ interface CommunityChatPanelProps {
 // sharing only the outer panel/launcher chrome (see ChatPanel.tsx). This
 // component owns its own data/session state entirely; nothing here reuses
 // EngyChatView's history, composer state, or service calls.
-const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
+const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active, hideHeader, onRefreshRef }) => {
   const { t } = useTranslation();
   const currentUserId = authService.getUser()?.id ?? null;
   const assistant = useAssistant();
@@ -137,6 +139,12 @@ const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
         setLoadState('error');
       });
   }, []);
+
+  useEffect(() => {
+    if (onRefreshRef) {
+      onRefreshRef.current = loadMessages;
+    }
+  }, [loadMessages, onRefreshRef]);
 
   useEffect(() => {
     if (!activated) return;
@@ -249,28 +257,30 @@ const CommunityChatPanel: React.FC<CommunityChatPanelProps> = ({ active }) => {
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center shrink-0">
-            <Users size={16} className="text-violet-600 dark:text-violet-300" aria-hidden="true" />
+      {!hideHeader && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-violet-100 dark:bg-violet-500/20 flex items-center justify-center shrink-0">
+              <Users size={16} className="text-violet-600 dark:text-violet-300" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                {t.communityChat.title}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.communityChat.subtitle}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-              {t.communityChat.title}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.communityChat.subtitle}</p>
-          </div>
+          <button
+            type="button"
+            onClick={loadMessages}
+            aria-label={t.communityChat.refresh}
+            title={t.communityChat.refresh}
+            className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+          >
+            <RefreshCw size={16} />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={loadMessages}
-          aria-label={t.communityChat.refresh}
-          title={t.communityChat.refresh}
-          className="w-8 h-8 shrink-0 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
-        >
-          <RefreshCw size={16} />
-        </button>
-      </div>
+      )}
 
       <CommunityFilterBar filters={filters} activeFilterId="all" />
 
