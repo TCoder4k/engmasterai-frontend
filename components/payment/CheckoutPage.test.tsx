@@ -81,7 +81,7 @@ describe('CheckoutPage', () => {
     expect(screen.getByText('1234567890')).toBeInTheDocument();
     expect(screen.getByText('NGUYEN VAN A')).toBeInTheDocument();
     expect(screen.getByText('ENG7X9K2A4')).toBeInTheDocument();
-    expect(screen.getByAltText('EngMasterAI PRO Checkout')).toHaveAttribute(
+    expect(screen.getByAltText('EngMasterAI Plan Upgrade')).toHaveAttribute(
       'src',
       expect.stringContaining('img.vietqr.io'),
     );

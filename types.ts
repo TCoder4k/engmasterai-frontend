@@ -84,6 +84,7 @@ export interface Lesson {
   // services/lessonProgress.ts derives lessonHasQuiz/lessonHasPractice from
   // it, and a future Vocabulary or Listening task needs no DTO change at all.
   publishedTaskTypes: LessonTaskType[];
+  isPremiumLocked?: boolean;
 }
 
 export type LessonTaskType = 'VIDEO' | 'QUIZ' | 'PRACTICE';
@@ -144,6 +145,7 @@ export interface VocabDeck {
   // GET /vocab/libraries/:id/decks); this type was simply missing it even
   // though LibraryDetailPage/DeckDetailPage already read it at runtime.
   _count: { deckWords: number };
+  isPremiumLocked?: boolean;
 }
 
 export interface ManagedVocabDeck extends VocabDeck {

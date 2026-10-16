@@ -227,6 +227,11 @@ const en = {
     achievementUnlocked: "unlocked",
     achievementLocked: "locked",
     sampleData: "Sample data",
+    usageKinds: {
+      aiQuery: "AI lookups",
+      aiGrading: "AI pronunciation checks",
+      speaking: "AI speaking practice",
+    },
   },
   // Sprint 10 — keyed by the backend's AchievementKey so a badge cannot be
   // added server-side without a name here (the vi dict is type-checked against
@@ -246,36 +251,25 @@ const en = {
     XP_500_HINT: "Earn 500 XP in total",
   },
   premium: {
-    goPremium: "Upgrade to PRO",
-    // 2026 dashboard redesign — this exact CTA copy is load-bearing (matches
-    // the checkout's own real, server-priced amount and the product owner's
-    // required wording); never shown for an already-PRO user, who sees
-    // renewNow below instead.
-    upgradeNow: "Get PRO 30 Days · 19,000đ",
-    // 2026-09-16 — rewritten: the old copy ("Unlock all courses, AI tutor
-    // and advanced features") was false, nothing was actually gated. Points
-    // at the one real differentiator this campaign adds instead.
-    pitch:
-      "Save unlimited vocabulary words and more — try PRO for just 19,000đ / 30 days.",
-    // Sprint 14 — shown once a user already has an active subscription,
-    // framing a repeat purchase as a renewal rather than a first buy.
-    renewNow: "Renew PRO",
-    activeUntil: (date: string) => `PRO active until ${date}`,
-    // 2026-09-16 — renewal-urgency state, sidebar card, within 3 days of expiry.
-    renewalUrgentTitle: "PRO expiring soon!",
+    goPremium: "Upgrade your account",
+    upgradeNow: "Upgrade now",
+    pitch: "Unlock full courses and advanced features.",
+    renewNow: "Manage your plan",
+    activeUntil: (date: string) => `Your plan is active until ${date}`,
+    renewalUrgentTitle: "Your plan expires soon!",
     expiringSoon: (days: number, date: string) =>
       days <= 0
-        ? `Your PRO expires today (${date}) — renew now to avoid interruption.`
-        : `Your PRO expires in ${days} day${days === 1 ? "" : "s"} (${date}) — renew now to avoid interruption.`,
+        ? `Your plan expires today (${date}) — upgrade now to avoid interruption.`
+        : `Your plan expires in ${days} day${days === 1 ? "" : "s"} (${date}) — upgrade now to avoid interruption.`,
   },
   checkout: {
-    title: "EngMasterAI PRO Checkout",
-    subtitle: "Complete your payment to activate EngMasterAI PRO.",
+    title: "EngMasterAI Plan Upgrade",
+    subtitle: "Choose a plan and complete your payment to activate it.",
     secureTransfer: "Secure bank transfer",
     // 2026-09-16 — "Early Member" launch campaign hero band.
     earlyMemberBadge: "Early Member Offer",
-    heroHeadline: (price: string) => `Upgrade to PRO for just ${price}`,
-    heroSubline: "Try every PRO feature for a full 30 days.",
+    heroHeadline: (price: string) => `Upgrade your plan for just ${price}`,
+    heroSubline: "Choose the plan that fits your learning goals for 30 days.",
     reassuranceBullets: [
       "No auto-renewal",
       "No card required",
@@ -291,8 +285,10 @@ const en = {
     autoActivate: "Auto-activated",
     qrLabel: "Scan with your banking app (VietQR/NAPAS)",
     planLabel: "Plan",
-    planName: "EngMasterAI PRO",
+    planName: "Pro Plan",
+    planNamePremium: "Learning Plan",
     monthBadge: "1 month",
+    yearBadge: "1 year",
     amountLabel: "Total amount due",
     bankLabel: "Bank",
     accountNumberLabel: "Account number",
@@ -308,9 +304,16 @@ const en = {
     orderSummaryTitle: "Your order",
     benefitsTitle: "What's included",
     benefits: [
-      "Access PRO features",
-      "Advanced practice",
-      "Personalized learning path",
+      "Unlimited personal vocabulary (Free max 50)",
+      "300 AI lookups & Engy assistant / month",
+      "30 deep pronunciation AI checks / month",
+      "30 AI speaking partner sessions / day",
+      "Unlock advanced practice & lessons",
+    ],
+    benefitsPremium: [
+      "Unlock all courses, lessons & TOEIC 600 vocabulary library",
+      "Limited dictionary lookup & AI assistant",
+      "VIP priority support & advanced features",
     ],
     importantNotesTitle: "Important payment notes",
     noteKeepContent: "Keep the transfer content unchanged",
@@ -1801,6 +1804,11 @@ const vi: TranslationDict = {
     achievementUnlocked: "đã mở khoá",
     achievementLocked: "chưa mở khoá",
     sampleData: "Dữ liệu mẫu",
+    usageKinds: {
+      aiQuery: "Tra cứu AI",
+      aiGrading: "Chấm bài AI",
+      speaking: "Luyện nói AI",
+    },
   },
   achievements: {
     FIRST_STAGE: "Chặng đầu tiên",
@@ -1817,30 +1825,25 @@ const vi: TranslationDict = {
     XP_500_HINT: "Tích luỹ tổng cộng 500 XP",
   },
   premium: {
-    goPremium: "Nâng cấp lên PRO",
-    upgradeNow: "Mở PRO 30 ngày  19.000đ",
-    // 2026-09-16 — viết lại: copy cũ ("Mở khóa toàn bộ khóa học, gia sư AI
-    // và các tính năng nâng cao") không đúng thực tế, chưa có gì bị khóa cả.
-    // Trỏ về khác biệt thật duy nhất chiến dịch này thêm vào.
-    pitch:
-      "Lưu từ vựng không giới hạn và nhiều tính năng khác — dùng thử PRO chỉ 19.000đ / 30 ngày.",
-    renewNow: "Gia hạn PRO",
-    activeUntil: (date: string) => `PRO còn hiệu lực đến ${date}`,
-    // 2026-09-16 — trạng thái sắp hết hạn, hiển thị trong 3 ngày trước khi hết PRO.
-    renewalUrgentTitle: "PRO sắp hết hạn!",
+    goPremium: "Nâng cấp tài khoản",
+    upgradeNow: "Nâng cấp ngay",
+    pitch: "Mở khóa toàn bộ khóa học và tính năng cao cấp.",
+    renewNow: "Quản lý gói",
+    activeUntil: (date: string) => `Gói của bạn còn hiệu lực đến ${date}`,
+    renewalUrgentTitle: "Gói của bạn sắp hết hạn!",
     expiringSoon: (days: number, date: string) =>
       days <= 0
-        ? `PRO của bạn hết hạn hôm nay (${date}) — gia hạn ngay để không bị gián đoạn!`
-        : `PRO của bạn còn ${days} ngày nữa là hết hạn (${date}) — gia hạn ngay để không bị gián đoạn!`,
+        ? `Gói của bạn hết hạn hôm nay (${date}) — nâng cấp ngay để không bị gián đoạn!`
+        : `Gói của bạn còn ${days} ngày nữa là hết hạn (${date}) — nâng cấp ngay để không bị gián đoạn!`,
   },
   checkout: {
-    title: "Thanh toán EngMasterAI PRO",
+    title: "Nâng cấp gói EngMasterAI",
     subtitle: "",
     secureTransfer: "Chuyển khoản ngân hàng an toàn",
     // 2026-09-16 — chiến dịch "Early Member".
     earlyMemberBadge: "Ưu đãi Early Member",
-    heroHeadline: (price: string) => `Nâng cấp PRO chỉ ${price}`,
-    heroSubline: "Học thử trọn bộ tính năng PRO trong 30 ngày.",
+    heroHeadline: (price: string) => `Nâng cấp gói chỉ ${price}`,
+    heroSubline: "Chọn gói phù hợp để mở khóa thêm quyền lợi trong 30 ngày.",
     reassuranceBullets: [
       "Không tự động gia hạn",
       "Không cần thẻ",
@@ -1856,8 +1859,10 @@ const vi: TranslationDict = {
     autoActivate: "Tự động kích hoạt",
     qrLabel: "Quét bằng ứng dụng ngân hàng (VietQR/NAPAS)",
     planLabel: "Gói",
-    planName: "EngMasterAI PRO",
+    planName: "Gói Pro",
+    planNamePremium: "Gói Học Tập",
     monthBadge: "1 tháng",
+    yearBadge: "1 năm",
     amountLabel: "Tổng tiền cần thanh toán",
     bankLabel: "Ngân hàng",
     accountNumberLabel: "Số tài khoản",
@@ -1878,6 +1883,11 @@ const vi: TranslationDict = {
       "30 lượt AI chấm phát âm chuyên sâu / tháng",
       "30 lượt luyện nói giao tiếp cùng AI / ngày",
       "Mở khóa toàn bộ kho luyện tập & bài học nâng cao",
+    ],
+    benefitsPremium: [
+      "Mở khóa toàn bộ khóa học, bài học & Thư viện từ vựng TOEIC 600",
+      "Tra cứu từ điển và trợ lý AI giới hạn",
+      "Ưu tiên hỗ trợ VIP & tính năng cao cấp nhất",
     ],
     importantNotesTitle: "Lưu ý quan trọng",
     noteKeepContent: "Giữ nguyên nội dung chuyển khoản",

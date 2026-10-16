@@ -77,6 +77,7 @@ export interface AuthResponse {
     // getProfile() -> updateStoredUser() call" gap as `onboarded` above.
     isPro?: boolean;
     proExpiresAt?: string | null;
+    isPremium?: boolean;
   };
   accessToken: string;
   // Only ever present on register()'s response — omitted (undefined) for

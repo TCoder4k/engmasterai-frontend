@@ -36,8 +36,11 @@ export interface PricingPlan {
   id: string;
   name: string;
   description: string;
-  monthlyPrice: number;
-  yearlyPriceMonthly: number;
+  price: string;
+  compareAt?: string;
+  suffix?: string;
+  badge?: string;
+  discount?: string;
   popular?: boolean;
   features: string[];
   ctaText: string;
@@ -121,54 +124,50 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'starter',
     name: 'Trải Nghiệm',
-    description: 'Dành cho người mới bắt đầu khám phá phương pháp học AI cá nhân hóa.',
-    monthlyPrice: 0,
-    yearlyPriceMonthly: 0,
+    description: 'Trải nghiệm các tính năng cơ bản.',
+    price: 'Miễn phí',
     features: [
-      '15 phút luyện giao tiếp AI mỗi ngày',
-      'Thư viện 500 từ vựng cốt lõi',
-      'Sửa lỗi phát âm cơ bản (3 lần/ngày)',
-      'Học trên Mobile & Laptop',
-      'Cộng đồng hỗ trợ học tập',
+      'Học 3 bài đầu mỗi khóa',
+      'Truy cập bài luyện cơ bản',
+      'Theo dõi tiến độ học tập',
     ],
-    ctaText: 'Bắt đầu miễn phí',
+    ctaText: 'Gói hiện tại',
     ctaTo: '/register',
   },
   {
     id: 'pro',
-    name: 'Pro Cá Nhân',
-    description: 'Lựa chọn phổ biến nhất giúp bứt phá phản xạ nói & làm chủ tiếng Anh công sở.',
-    monthlyPrice: 199000,
-    yearlyPriceMonthly: 119000,
-    popular: true,
+    name: 'Gói Pro',
+    price: '19.000đ',
+    compareAt: '59.000đ',
+    suffix: '/ 30 ngày',
+    badge: '30 NGÀY',
+    description: 'Nhiều quyền lợi hơn cho việc học hằng ngày.',
     features: [
-      'Không giới hạn thời gian giao tiếp với AI',
-      'Phản hồi phát âm theo chuẩn âm IPA bản xứ',
-      'Trợ lý sửa bài viết & email chuyên nghiệp',
-      'Thuật toán Spaced Repetition tự động xếp lịch',
-      '100+ kịch bản roleplay (Phỏng vấn, Thuyết trình)',
-      'Báo cáo tiến độ chi tiết hàng tuần',
-      'Hỗ trợ ưu tiên 24/7',
+      'Lưu từ vựng không giới hạn (tối đa 50 từ ở gói Free)',
+      '300 lượt tra cứu AI & trợ lý Engy / tháng',
+      '30 lượt AI chấm phát âm chuyên sâu / tháng',
+      '30 lượt luyện nói giao tiếp cùng AI / ngày',
     ],
-    ctaText: 'Nâng cấp Pro ngay',
-    ctaTo: '/register',
+    ctaText: 'Nâng cấp Pro',
+    ctaTo: '/pricing',
   },
   {
-    id: 'enterprise',
-    name: 'Doanh Nghiệp / Nhóm',
-    description: 'Dành cho công ty, trung tâm đào tạo hoặc nhóm học từ 5 thành viên trở lên.',
-    monthlyPrice: 499000,
-    yearlyPriceMonthly: 349000,
+    id: 'learning',
+    name: 'Gói Học Tập',
+    price: '119.000đ',
+    compareAt: '299.000đ',
+    suffix: '/ 1 năm',
+    badge: '1 NĂM',
+    popular: true,
+    discount: 'Mở khóa trọn bộ 365 ngày – Tiết kiệm nhất cho học tập dài hạn',
+    description: 'Mở khóa toàn bộ nội dung & tính năng cao cấp.',
     features: [
-      'Tất cả tính năng của gói Pro',
-      'Bao gồm 5 tài khoản thành viên',
-      'Dashboard quản lý tiến độ tổng quan',
-      'Tùy chỉnh giáo trình theo ngành nghề công ty',
-      'Xuất chứng nhận & báo cáo KPI nhân sự',
-      'Quản lý tài khoản hỗ trợ riêng (Account Manager)',
+      'Mở khóa toàn bộ khóa học, bài học & Thư viện từ vựng TOEIC 600',
+      'Tra cứu từ điển và trợ lý AI giới hạn',
+      'Ưu tiên hỗ trợ VIP & tính năng cao cấp nhất',
     ],
-    ctaText: 'Liên hệ tư vấn nhóm',
-    ctaTo: '/register',
+    ctaText: 'Mở khóa Gói Học Tập',
+    ctaTo: '/pricing',
   },
 ];
 

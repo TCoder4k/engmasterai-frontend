@@ -10,7 +10,7 @@ import { getPublishedDecksByLibrary } from '../../services/vocabDeckService';
 import { getLibraryProgress, LibraryProgress, DeckProgress } from '../../services/learningService';
 import { handleAuthError } from '../../services/apiError';
 import { VocabLibrary, VocabDeck } from '../../types';
-import { Library as LibraryIcon, Layers, Clock3 } from 'lucide-react';
+import { Crown, Library as LibraryIcon, Layers, Clock3, Lock } from 'lucide-react';
 import { useTranslation } from '../../i18n/useTranslation';
 
 // /vocab/libraries/:id — the vocabulary library learning overview (Sprint
@@ -278,6 +278,7 @@ const LibraryDetailPage: React.FC = () => {
                 // A deck with no words has no honest action — linking into a
                 // practice session would just open a broken empty session.
                 const isEmptyDeck = deck._count.deckWords === 0;
+                const isPremiumLocked = deck.isPremiumLocked === true;
 
                 return (
                   <div
@@ -298,10 +299,13 @@ const LibraryDetailPage: React.FC = () => {
                           second link (invalid HTML) — and the two now go to
                           genuinely different places. */}
                       <Link
-                        to={`/vocab/decks/${deck.id}`}
-                        className="text-sm font-extrabold text-slate-900 dark:text-slate-100 leading-snug break-words hover:text-blue-600 dark:hover:text-blue-400 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded"
+                        to={isPremiumLocked ? '/pricing' : `/vocab/decks/${deck.id}`}
+                        className={`text-sm font-extrabold leading-snug break-words transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded ${isPremiumLocked ? 'text-amber-700 hover:text-amber-600 dark:text-amber-300' : 'text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400'}`}
                       >
-                        {deck.name}
+                        <span className="inline-flex items-center gap-2">
+                          {isPremiumLocked && <Lock size={13} aria-hidden="true" />}
+                          {deck.name}
+                        </span>
                       </Link>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1">
                         <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
@@ -356,7 +360,15 @@ const LibraryDetailPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {action && (
+                    {isPremiumLocked ? (
+                      <Link
+                        to="/pricing"
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-700 transition-opacity hover:opacity-90 dark:bg-amber-500/15 dark:text-amber-300"
+                      >
+                        <Crown size={13} aria-hidden="true" />
+                        {t.premium.goPremium}
+                      </Link>
+                    ) : action && (
                       <Link
                         to={action.to}
                         className="shrink-0 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
@@ -367,7 +379,7 @@ const LibraryDetailPage: React.FC = () => {
                     {/* Before progress resolves we still offer the canonical
                         Flashcard entry for any non-empty deck, so the page is
                         never actionless while loading. */}
-                    {!action && !isEmptyDeck && (
+                    {!isPremiumLocked && !action && !isEmptyDeck && (
                       <Link
                         to={`/practice/vocab/${deck.id}?mode=flashcard`}
                         className="shrink-0 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl text-xs sm:text-sm font-bold hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"

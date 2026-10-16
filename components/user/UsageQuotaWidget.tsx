@@ -20,12 +20,6 @@ import { getUsageQuota, UsageKind, UsageQuotaStatus } from '../../services/usage
 // any bar got low) was exactly the duplicated-CTA problem the redesign
 // asked to remove.
 
-const KIND_LABEL: Record<UsageKind, string> = {
-  aiQuery: 'Tra cứu AI',
-  aiGrading: 'Chấm bài AI',
-  speaking: 'Luyện nói AI',
-};
-
 const UsageQuotaWidget: React.FC<{ variant?: 'sidebar' | 'profile' }> = ({ variant = 'sidebar' }) => {
   const { t } = useTranslation();
   const [quota, setQuota] = useState<UsageQuotaStatus[] | null>(null);
@@ -63,7 +57,7 @@ const UsageQuotaWidget: React.FC<{ variant?: 'sidebar' | 'profile' }> = ({ varia
         return (
           <div key={q.kind}>
             <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-              <span>{KIND_LABEL[q.kind]}</span>
+              <span>{t.widgets.usageKinds[q.kind]}</span>
               <span className={atLimit ? 'text-rose-500 font-bold' : low ? 'text-amber-600 font-bold' : ''}>
                 {q.used}/{q.limit}
               </span>

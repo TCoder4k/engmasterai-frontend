@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, Clock, Play, RotateCcw } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Crown, Lock, Play, RotateCcw } from 'lucide-react';
 import { Lesson } from '../../types';
 import { LessonRowState, statusPresentation } from '../../services/courseStatus';
 import { useTranslation } from '../../i18n/useTranslation';
@@ -32,23 +32,29 @@ const LessonListItem: React.FC<LessonListItemProps> = ({
   orderNumber,
   state,
 }) => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const vi = language === 'vi';
   const presentation = statusPresentation(state, t);
 
   const isLoading = state === 'loading';
   const isError = state === 'error';
   const isCompleted = state === 'COMPLETED';
+  const isPremiumLocked = lesson.isPremiumLocked === true;
   // A lesson with no completable stage is still reachable — the student may
   // want to look at it — but it is never presented as progress they owe.
   const isNoContent = state === 'NO_CONTENT';
 
-  const borderClass = isCompleted
+  const borderClass = isPremiumLocked
+    ? 'border-amber-200/70 dark:border-amber-500/30'
+    : isCompleted
     ? 'border-emerald-200/70 dark:border-emerald-500/30'
     : state === 'IN_PROGRESS'
-      ? 'border-amber-200/70 dark:border-amber-500/30'
+      ? 'border-blue-200/70 dark:border-blue-500/30'
       : 'border-slate-100 dark:border-ink-700 hover:border-blue-200 dark:hover:border-blue-500/50';
 
-  const ctaIcon = isCompleted ? (
+  const ctaIcon = isPremiumLocked ? (
+    <Crown size={13} />
+  ) : isCompleted ? (
     <RotateCcw size={13} />
   ) : isError ? (
     <AlertCircle size={13} />
@@ -56,15 +62,14 @@ const LessonListItem: React.FC<LessonListItemProps> = ({
     <Play size={13} className="fill-current" />
   );
 
-  return (
-    <Link
-      to={`/courses/${courseId}/lessons/${lesson.id}`}
+  const content = (
+    <div
       className={`group bg-white dark:bg-ink-900 rounded-2xl border shadow-sm hover:shadow-md dark:hover:shadow-blue-500/10 p-4 sm:p-5 flex items-center gap-4 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${borderClass}`}
     >
       <div
         className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-sm font-black border ${presentation.badgeClass}`}
       >
-        {isCompleted ? <CheckCircle2 size={20} aria-hidden="true" /> : orderNumber}
+        {isPremiumLocked ? <Lock size={18} aria-hidden="true" /> : isCompleted ? <CheckCircle2 size={20} aria-hidden="true" /> : orderNumber}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -84,9 +89,20 @@ const LessonListItem: React.FC<LessonListItemProps> = ({
             />
           ) : (
             <span
-              className={`px-2 py-0.5 rounded text-[10px] font-bold border ${presentation.badgeClass}`}
+              className={`px-2 py-0.5 rounded text-[10px] font-bold border inline-flex items-center gap-1 ${
+                isPremiumLocked
+                  ? 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300'
+                  : presentation.badgeClass
+              }`}
             >
-              {presentation.label}
+              {isPremiumLocked ? (
+                <>
+                  <Crown size={11} aria-hidden="true" />
+                  {vi ? 'Gói Học Tập' : 'Learning Plan'}
+                </>
+              ) : (
+                presentation.label
+              )}
             </span>
           )}
 
@@ -119,23 +135,37 @@ const LessonListItem: React.FC<LessonListItemProps> = ({
       ) : (
         <span
           className={`hidden sm:inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-extrabold flex-shrink-0 transition-all ${
-            isError || isNoContent
+            isPremiumLocked
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+              : isError || isNoContent
               ? 'bg-slate-100 text-slate-500 dark:bg-ink-800 dark:text-slate-400'
               : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20 group-hover:from-blue-500 group-hover:to-indigo-500'
           }`}
           aria-hidden="true"
         >
           {ctaIcon}
-          <span>{presentation.cta}</span>
+          <span>{isPremiumLocked ? (vi ? 'Mở khóa bài học' : 'Unlock lessons') : presentation.cta}</span>
         </span>
       )}
 
-      <Play
+      {isPremiumLocked ? <Lock
+        size={20}
+        className="sm:hidden text-amber-500 dark:text-amber-400 flex-shrink-0"
+        aria-hidden="true"
+      /> : <Play
         size={20}
         className="sm:hidden text-blue-500 dark:text-blue-400 fill-current flex-shrink-0"
         aria-hidden="true"
-      />
+      />}
+    </div>
+  );
+
+  return isPremiumLocked ? (
+    <Link to="/pricing" aria-label={`Mở khóa tất cả bài học: ${lesson.title}`}>
+      {content}
     </Link>
+  ) : (
+    <Link to={`/courses/${courseId}/lessons/${lesson.id}`}>{content}</Link>
   );
 };
 

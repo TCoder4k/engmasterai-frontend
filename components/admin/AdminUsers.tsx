@@ -241,7 +241,7 @@ const AdminUsers: React.FC = () => {
               >
                 <option value="ALL">Tất cả gói</option>
                 <option value="FREE">Free</option>
-                <option value="PRO">PRO</option>
+                <option value="PRO">PRO / Gói Học Tập</option>
               </select>
             </div>
             <button

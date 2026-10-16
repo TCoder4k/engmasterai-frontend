@@ -75,6 +75,22 @@ const GOAL_LABEL_KEY: Record<LearningGoal, StringKeys<TranslationDict['onboardin
   REGULAR_PRACTICE: 'goalRegularPractice',
 };
 
+const localizeRoadmapText = (
+  text: string,
+  language: string,
+): string => {
+  if (language !== 'en') return text;
+
+  const translations: Record<string, string> = {
+    'Trọng Tâm Ngữ Pháp TOEIC Part 5 & 6': 'TOEIC Part 5 & 6 Grammar Focus',
+    'Điểm khởi đầu cho phần ngữ pháp.': 'A strong starting point for grammar.',
+    'Điểm khởi đầu cho phần từ vựng.': 'A strong starting point for vocabulary.',
+    'Điểm khởi đầu cho phần kỹ năng nghe.': 'A strong starting point for listening.',
+  };
+
+  return translations[text] ?? text;
+};
+
 // Phase 7 — Dashboard integration + the retake entry point, in one card.
 //
 // Self-contained (own GET /placement/roadmap fetch on mount), the same
@@ -155,7 +171,7 @@ const targetFor = (
 };
 
 const RoadmapCard: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [state, setState] = useState<LoadState>('loading');
   const [roadmap, setRoadmap] = useState<RoadmapView | null>(null);
@@ -348,10 +364,10 @@ const RoadmapCard: React.FC = () => {
 
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-                      {item.resourceTitle}
+                      {localizeRoadmapText(item.resourceTitle, language)}
                     </p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                      {item.reason}
+                      {localizeRoadmapText(item.reason, language)}
                     </p>
 
                     {/* Independent of the progress fetch below — this comes

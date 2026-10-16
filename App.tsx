@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { MotionConfig } from 'framer-motion';
 import HomePage from './components/HomePage';
 import { AuthLayout } from './components/auth/AuthLayout';
@@ -49,6 +49,7 @@ import SpeakingSessionPage from './components/practice/speaking/SpeakingSessionP
 import ProfilePage from './components/shared/ProfilePage';
 import SecurityPage from './components/shared/SecurityPage';
 import CheckoutPage from './components/payment/CheckoutPage';
+import PremiumPage from './components/payment/PremiumPage';
 import MyStreaksPage from './components/shared/streak/MyStreaksPage';
 import StreakLeaderboardPage from './components/shared/streak/StreakLeaderboardPage';
 import StreakDetailPage from './components/shared/streak/StreakDetailPage';
@@ -272,7 +273,9 @@ const App: React.FC = () => {
               none of them need to special-case it — a not-yet-onboarded user
               is redirected to /onboarding before reaching this route, same
               as every other student page. */}
-          <Route path="/checkout" element={<CheckoutPage />} />
+           <Route path="/checkout" element={<CheckoutPage />} />
+           <Route path="/pricing" element={<PremiumPage />} />
+           <Route path="/premium" element={<Navigate to="/pricing" replace />} />
           {/* Streak Together — authenticated pages, inside the same
               boundary group as every other student route (earns study time,
               has the gamification profile/dictionary/Engy chrome available).

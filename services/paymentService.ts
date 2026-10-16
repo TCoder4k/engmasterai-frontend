@@ -3,7 +3,7 @@ import { apiFetch } from './apiFetch';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-export type SubscriptionPlan = 'PRO_MONTHLY';
+export type SubscriptionPlan = 'PRO_MONTHLY' | 'PREMIUM_MONTHLY';
 
 // EXPIRED never exists in the database — it's the backend's read-time
 // projection of a PENDING row past its expiresAt (see PaymentService.toDto).

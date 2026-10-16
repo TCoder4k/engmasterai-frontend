@@ -34,8 +34,8 @@ const StudentDesktopSidebar: React.FC = () => {
   const user = authService.getUser();
   const dateLocale = language === 'vi' ? 'vi-VN' : 'en-US';
 
-  // 2026-09-16 pricing relaunch — renewal-urgency state, computed entirely
-  // client-side from data GET /users/me already returns (isPro/proExpiresAt)
+  // Renewal urgency is computed from the live subscription expiry already
+  // returned by GET /users/me; the card represents all available plans.
   // — no new backend call. "Soon" = within 3 days of expiry (inclusive).
   const daysUntilExpiry = user?.proExpiresAt
     ? Math.ceil((new Date(user.proExpiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
@@ -160,12 +160,12 @@ const StudentDesktopSidebar: React.FC = () => {
           className={`rounded-2xl p-4 ${
             isExpiringSoon
               ? 'bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/25'
-              : 'bg-slate-50 dark:bg-slate-800/60'
+              : 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-white border border-amber-200 shadow-sm dark:from-amber-500/15 dark:via-orange-500/10 dark:to-slate-900 dark:border-amber-500/25'
           }`}
         >
           <div className="flex items-center space-x-2 mb-1.5">
             <Crown
-              size={18}
+              size={22}
               className={isExpiringSoon ? 'text-amber-500 fill-amber-500' : 'text-amber-400 fill-amber-400'}
               aria-hidden="true"
             />
@@ -196,17 +196,17 @@ const StudentDesktopSidebar: React.FC = () => {
                 : t.premium.activeUntil(new Date(user.proExpiresAt).toLocaleDateString(dateLocale))}
             </p>
           ) : (
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 leading-relaxed line-clamp-2">
               {t.premium.pitch}
             </p>
           )}
           <button
             type="button"
-            onClick={() => navigate('/checkout')}
-            className={`w-full py-2.5 text-white rounded-xl text-sm font-bold transition-all focus:outline-none focus-visible:ring-2 inline-flex items-center justify-center gap-1.5 ${
+            onClick={() => navigate('/pricing')}
+            className={`w-full py-3 px-4 text-white rounded-xl text-sm font-bold whitespace-nowrap transition-all transform active:scale-[.98] focus:outline-none focus-visible:ring-2 inline-flex items-center justify-center ${
               isExpiringSoon
                 ? 'bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-400'
-                : 'bg-blue-600 hover:bg-blue-700 focus-visible:ring-blue-400'
+                : 'bg-gradient-to-r from-[#f5a000] to-[#f26a00] shadow-lg shadow-orange-500/30 hover:from-[#e89000] hover:to-[#e85d00] focus-visible:ring-orange-400'
             }`}
           >
             {user?.isPro ? t.premium.renewNow : t.premium.upgradeNow}

@@ -30,6 +30,7 @@ const REAL_ROUTES = [
   '/courses',
   '/practice/listening',
   '/practice/review',
+  '/pricing',
   '/home',
   '/admin',
 ];
@@ -80,13 +81,13 @@ describe('HomePage — every link goes somewhere real', () => {
     expect(within(nav).getByRole('link', { name: /trang chủ/i })).toHaveAttribute('href', '/');
   });
 
-  it('sends every pricing plan to a real signup, since nothing here can take a payment', () => {
+  it('sends each pricing plan to its correct route', () => {
     renderPage();
 
     PRICING_PLANS.forEach((plan) => {
       expect(screen.getByRole('link', { name: new RegExp(plan.ctaText, 'i') })).toHaveAttribute(
         'href',
-        '/register',
+        plan.ctaTo,
       );
     });
   });
@@ -186,26 +187,14 @@ describe('HomePage — the interactive parts actually respond', () => {
     expect(SAMPLE_ANALYSIS_PRESETS[SAMPLE_SENTENCES[2].text]).toBeDefined();
   });
 
-  it('re-prices the plans when the billing cycle is toggled', async () => {
+  it('renders the pricing plans with correct prices', () => {
     renderPage();
 
-    const pro = PRICING_PLANS.find((plan) => plan.popular)!;
-    // Intl puts a non-breaking space before ₫, and Testing Library
-    // normalizes whitespace on the DOM side but not on the matcher side —
-    // so the expectation has to be normalized to match.
-    const vnd = (amount: number) =>
-      new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
-        .format(amount)
-        .replace(/\s/g, ' ');
-    const yearly = vnd(pro.yearlyPriceMonthly);
-    const monthly = vnd(pro.monthlyPrice);
-
-    expect(screen.getByText(yearly)).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: /Thanh toán hàng tháng/ }));
-
-    expect(screen.getByText(monthly)).toBeInTheDocument();
-    expect(screen.queryByText(yearly)).not.toBeInTheDocument();
+    expect(screen.getByText('Trải Nghiệm')).toBeInTheDocument();
+    expect(screen.getByText('Gói Pro')).toBeInTheDocument();
+    expect(screen.getByText('Gói Học Tập')).toBeInTheDocument();
+    expect(screen.getByText('19.000đ')).toBeInTheDocument();
+    expect(screen.getByText('119.000đ')).toBeInTheDocument();
   });
 
   it('opens and closes an FAQ answer', async () => {

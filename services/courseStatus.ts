@@ -39,6 +39,8 @@ const NEUTRAL =
   'bg-slate-50 text-slate-500 border-slate-200 dark:bg-ink-950 dark:text-slate-400 dark:border-ink-700';
 const AMBER =
   'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/40';
+const BLUE =
+  'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/40';
 const EMERALD =
   'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/40';
 const ROSE =
@@ -60,7 +62,7 @@ export const statusPresentation = (
       return {
         label: t.course.statusInProgress,
         cta: t.course.ctaContinue,
-        badgeClass: AMBER,
+        badgeClass: BLUE,
         actionable: true,
       };
     case 'NOT_STARTED':

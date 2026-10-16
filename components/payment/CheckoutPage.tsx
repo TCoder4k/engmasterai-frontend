@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Copy, Check, Zap, Clock, AlertCircle, CheckCircle2, Info, Crown, Landmark, CreditCard, User, MessageSquare, Sparkles } from 'lucide-react';
 import StudentLayout from '../user/StudentLayout';
 import BackButton from '../shared/BackButton';
@@ -83,18 +83,19 @@ const InfoRow: React.FC<{
   </div>
 );
 
-// Frontend-facing checkout page for the one plan this sprint supports
-// (PRO_MONTHLY). No fake success state — the page only ever shows PAID once
+// Frontend-facing checkout page for the supported subscription plans. No fake
+// success state — the page only ever shows PAID once
 // getPayment's poll actually reports it, never optimistically.
 //
 // Uses the normal StudentLayout shell (sidebar + top utility bar) — a
-// checkout flow reached from the sidebar's own "Nâng cấp PRO" entry should
+// checkout flow reached from the sidebar's own plan-upgrade entry should
 // keep that same chrome, not drop the student into an unfamiliar shell.
 // The content itself stays deliberately compact (merged status/step strip,
 // tightened spacing) so the whole flow still fits one screen without
 // scrolling, even with the sidebar taking up its own width.
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t, language } = useTranslation();
   const user = authService.getUser();
   const dateLocale = language === 'vi' ? 'vi-VN' : 'en-US';
@@ -108,10 +109,16 @@ const CheckoutPage: React.FC = () => {
   const [copiedField, setCopiedField] = useState<'bank' | 'account' | 'name' | 'content' | null>(null);
   const copiedTimeoutRef = useRef<number | null>(null);
 
+  const plan = searchParams.get('plan') === 'PREMIUM_MONTHLY' ? 'PREMIUM_MONTHLY' : 'PRO_MONTHLY';
+  const isPremium = plan === 'PREMIUM_MONTHLY';
+  const displayPlanName = isPremium ? t.checkout.planNamePremium : t.checkout.planName;
+  const displayBenefits = isPremium ? t.checkout.benefitsPremium : t.checkout.benefits;
+  const displayBadge = isPremium ? t.checkout.yearBadge : t.checkout.monthBadge;
+
   const load = () => {
     setLoadState('loading');
     setError(null);
-    createPayment('PRO_MONTHLY')
+    createPayment(plan)
       .then((result) => {
         setPayment(result);
         setLoadState('ready');
@@ -123,7 +130,7 @@ const CheckoutPage: React.FC = () => {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(load, []);
+  useEffect(load, [plan]);
 
   // Poll for a status change while PENDING — same shape as
   // NotificationBell.tsx (window.setInterval + cleanup), stopped once the
@@ -167,7 +174,7 @@ const CheckoutPage: React.FC = () => {
   // Refreshes the locally stored user's isPro/proExpiresAt once, the moment
   // the poll observes PAID — same "fetch the full profile, then
   // updateStoredUser()" idiom LoginForm.tsx/RegisterForm.tsx already use
-  // after sign-in, so the sidebar's "Go Premium" card reflects PRO status on
+  // after sign-in, so the sidebar's plan card reflects the current entitlement on
   // the very next navigation without requiring a full page reload.
   useEffect(() => {
     if (payment?.status !== 'PAID') return;
@@ -409,14 +416,14 @@ const CheckoutPage: React.FC = () => {
                   <div>
                     <h2 className="text-base font-extrabold text-slate-900 dark:text-white">{t.checkout.orderSummaryTitle}</h2>
                     <p className="mt-2.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">{t.checkout.planLabel}</p>
-                    <p className="text-sm font-extrabold text-slate-900 dark:text-white">{t.checkout.planName}</p>
+                    <p className="text-sm font-extrabold text-slate-900 dark:text-white">{displayPlanName}</p>
                   </div>
-                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{t.checkout.monthBadge}</span>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">{displayBadge}</span>
                 </div>
                 <div className="mt-3.5 border-t border-slate-100 pt-3.5 dark:border-slate-700/80">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{t.checkout.benefitsTitle}</p>
                   <ul className="mt-2 space-y-1.5">
-                    {t.checkout.benefits.map((benefit) => <li key={benefit} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"><Check size={15} className="mt-0.5 shrink-0 text-emerald-500" aria-hidden="true" />{benefit}</li>)}
+                    {displayBenefits.map((benefit) => <li key={benefit} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"><Check size={15} className="mt-0.5 shrink-0 text-emerald-500" aria-hidden="true" />{benefit}</li>)}
                   </ul>
                 </div>
                 <div className="mt-3.5 flex items-center justify-between gap-3 rounded-xl bg-blue-50 px-3.5 py-3 dark:bg-blue-500/10">
