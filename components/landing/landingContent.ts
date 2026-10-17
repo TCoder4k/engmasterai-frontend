@@ -149,7 +149,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       '30 lượt luyện nói giao tiếp cùng AI / ngày',
     ],
     ctaText: 'Nâng cấp Pro',
-    ctaTo: '/pricing',
+    ctaTo: '/premium',
   },
   {
     id: 'learning',
@@ -167,7 +167,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Ưu tiên hỗ trợ VIP & tính năng cao cấp nhất',
     ],
     ctaText: 'Mở khóa Gói Học Tập',
-    ctaTo: '/pricing',
+    ctaTo: '/premium',
   },
 ];
 

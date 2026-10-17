@@ -253,6 +253,8 @@ const en = {
   premium: {
     goPremium: "Upgrade your account",
     upgradeNow: "Upgrade now",
+    renewPlan: "Renew plan",
+    learningPlan: "Learning plan",
     pitch: "Unlock full courses and advanced features.",
     renewNow: "Manage your plan",
     activeUntil: (date: string) => `Your plan is active until ${date}`,
@@ -277,8 +279,12 @@ const en = {
     ],
     renewalNotice: (date: string) =>
       `You're already PRO until ${date}. This payment adds 30 more days.`,
+    renewalNoticeLearningPlan: (date: string) =>
+      `Your Learning Plan is active until ${date}. This payment extends it.`,
     activationBanner:
       "Your PRO account activates automatically after payment is confirmed.",
+    activationBannerLearningPlan:
+      "Your Learning Plan activates automatically after payment is confirmed.",
     transferTitle: "Transfer information",
     transferSubtitle:
       "Scan the QR code with your banking app or use the bank details below.",
@@ -1827,6 +1833,8 @@ const vi: TranslationDict = {
   premium: {
     goPremium: "Nâng cấp tài khoản",
     upgradeNow: "Nâng cấp ngay",
+    renewPlan: "Gia hạn gói",
+    learningPlan: "Gói Học Tập",
     pitch: "Mở khóa toàn bộ khóa học và tính năng cao cấp.",
     renewNow: "Quản lý gói",
     activeUntil: (date: string) => `Gói của bạn còn hiệu lực đến ${date}`,
@@ -1851,8 +1859,12 @@ const vi: TranslationDict = {
     ],
     renewalNotice: (date: string) =>
       `Bạn đang là PRO đến ${date}. Thanh toán lần này sẽ cộng thêm 30 ngày.`,
+    renewalNoticeLearningPlan: (date: string) =>
+      `Gói Học Tập của bạn còn hiệu lực đến ${date}. Thanh toán lần này sẽ gia hạn gói.`,
     activationBanner:
       "Sau khi thanh toán thành công, tài khoản PRO sẽ được kích hoạt tự động.",
+    activationBannerLearningPlan:
+      "Sau khi thanh toán thành công, Gói Học Tập sẽ được kích hoạt tự động.",
     transferTitle: "Thông tin chuyển khoản",
     transferSubtitle:
       "Quét mã QR bằng ứng dụng ngân hàng hoặc chuyển khoản theo thông tin bên dưới.",

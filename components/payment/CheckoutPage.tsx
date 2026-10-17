@@ -114,6 +114,8 @@ const CheckoutPage: React.FC = () => {
   const displayPlanName = isPremium ? t.checkout.planNamePremium : t.checkout.planName;
   const displayBenefits = isPremium ? t.checkout.benefitsPremium : t.checkout.benefits;
   const displayBadge = isPremium ? t.checkout.yearBadge : t.checkout.monthBadge;
+  const activeExpiry = isPremium ? user?.hocTapExpiresAt : user?.proExpiresAt;
+  const hasSelectedPlan = isPremium ? user?.isPremium : user?.isPro;
 
   const load = () => {
     setLoadState('loading');
@@ -180,7 +182,7 @@ const CheckoutPage: React.FC = () => {
     if (payment?.status !== 'PAID') return;
     getProfile()
       .then((profile) => {
-        setPaidExpiry(profile.proExpiresAt);
+        setPaidExpiry(isPremium ? profile.hocTapExpiresAt ?? null : profile.proExpiresAt ?? null);
         authService.updateStoredUser({ ...profile, avatarUrl: profile.avatarUrl ?? undefined });
       })
       .catch(() => {
@@ -188,7 +190,7 @@ const CheckoutPage: React.FC = () => {
         // natural profile fetch (e.g. the next login); the success screen
         // itself does not depend on this.
       });
-  }, [payment?.status]);
+  }, [isPremium, payment?.status]);
 
   const copyText = async (field: 'bank' | 'account' | 'name' | 'content', text: string): Promise<void> => {
     try {
@@ -247,7 +249,7 @@ const CheckoutPage: React.FC = () => {
   const isPending = payment.status === 'PENDING';
   const isExpired = !isPaid && !isPending;
   const stepState = isPaid ? 3 : isExpired ? 0 : 1;
-  const expiryIso = paidExpiry ?? user?.proExpiresAt;
+  const expiryIso = paidExpiry ?? activeExpiry;
   const expiryDate = expiryIso ? formatDate(expiryIso) : null;
 
   const steps = [t.checkout.stepTransfer, t.checkout.stepConfirm, t.checkout.stepActivate];
@@ -265,9 +267,11 @@ const CheckoutPage: React.FC = () => {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <TitleBlock />
         </div>
-        {user?.isPro && user.proExpiresAt ? (
+        {hasSelectedPlan && activeExpiry ? (
           <p className="-mt-2 text-sm text-slate-500 dark:text-slate-400">
-            {t.checkout.renewalNotice(formatDate(user.proExpiresAt))}
+            {(isPremium ? t.checkout.renewalNoticeLearningPlan : t.checkout.renewalNotice)(
+              formatDate(activeExpiry),
+            )}
           </p>
         ) : (
           <section className="-mt-1 flex flex-col gap-3 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-indigo-50 to-white p-4 dark:border-blue-500/20 dark:from-blue-500/15 dark:via-indigo-500/10 dark:to-slate-900 sm:p-5">
@@ -294,7 +298,7 @@ const CheckoutPage: React.FC = () => {
 
         <div className="flex items-center gap-2.5 rounded-xl border border-blue-100 bg-blue-50/80 px-3.5 py-2.5 text-xs font-medium text-blue-900 sm:text-sm dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-100">
           <Info size={16} className="shrink-0 text-blue-600 dark:text-blue-300" aria-hidden="true" />
-          <span>{t.checkout.activationBanner}</span>
+          <span>{isPremium ? t.checkout.activationBannerLearningPlan : t.checkout.activationBanner}</span>
         </div>
 
         <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,360px)]">

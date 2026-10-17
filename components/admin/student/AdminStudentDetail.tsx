@@ -126,17 +126,19 @@ const AdminStudentDetail: React.FC = () => {
                     <span className={`${BADGE_BASE} ${positiveNegativeBadgeClass(data.profile.isActive)}`}>
                       {data.profile.isActive ? 'Active' : 'Blocked'}
                     </span>
-                    {data.profile.isHocTap ? (
+                    {data.profile.isHocTap && (
                       <span className={`${BADGE_BASE} ${planBadgeClass('HOC_TAP')}`}>
                         <Crown size={12} />
                         <span>Gói Học Tập</span>
                       </span>
-                    ) : data.profile.isPro ? (
+                    )}
+                    {data.profile.isPro && (
                       <span className={`${BADGE_BASE} ${planBadgeClass('PRO')}`}>
                         <Crown size={12} />
                         <span>PRO</span>
                       </span>
-                    ) : (
+                    )}
+                    {!data.profile.isHocTap && !data.profile.isPro && (
                       <span className={`${BADGE_BASE} ${planBadgeClass('FREE')}`}>Free</span>
                     )}
                   </div>

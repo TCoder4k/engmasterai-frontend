@@ -24,6 +24,8 @@ export interface AdminStudentListRow {
   completedTestCount: number;
   isPro: boolean;
   proExpiresAt: string | null;
+  isHocTap?: boolean;
+  hocTapExpiresAt?: string | null;
   isActive: boolean;
   createdAt: string;
 }
@@ -66,6 +68,8 @@ export interface AdminStudentDetail {
     isActive: boolean;
     isPro: boolean;
     proExpiresAt: string | null;
+    isHocTap?: boolean;
+    hocTapExpiresAt?: string | null;
   };
   progress: {
     progressPercent: number | null;
@@ -83,9 +87,11 @@ export interface AdminStudentDetail {
     speakingSessionsCompleted: number;
   };
   billing: {
-    plan: 'PRO_MONTHLY' | null;
+    plan: 'PRO_MONTHLY' | 'PREMIUM_MONTHLY' | null;
     isPro: boolean;
     proExpiresAt: string | null;
+    isHocTap?: boolean;
+    hocTapExpiresAt?: string | null;
     payments: AdminStudentPaymentRow[];
     paymentsTotal: number;
   };
@@ -96,7 +102,7 @@ export const getStudentOverview = async (
   page?: number,
   limit?: number,
   search?: string,
-  plan?: 'FREE' | 'PRO',
+  plan?: 'FREE' | 'PRO' | 'HOC_TAP',
   status?: 'ACTIVE' | 'BLOCKED',
 ): Promise<AdminStudentListResponse> => {
   const params = new URLSearchParams();

@@ -37,10 +37,12 @@ const StudentDesktopSidebar: React.FC = () => {
   // Renewal urgency is computed from the live subscription expiry already
   // returned by GET /users/me; the card represents all available plans.
   // — no new backend call. "Soon" = within 3 days of expiry (inclusive).
-  const daysUntilExpiry = user?.proExpiresAt
-    ? Math.ceil((new Date(user.proExpiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+  const activeExpiry = user?.isPremium ? user.hocTapExpiresAt : user?.proExpiresAt;
+  const daysUntilExpiry = activeExpiry
+    ? Math.ceil((new Date(activeExpiry).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
     : null;
-  const isExpiringSoon = Boolean(user?.isPro) && daysUntilExpiry !== null && daysUntilExpiry <= 3;
+  const isSubscribed = Boolean(user?.isPro || user?.isPremium);
+  const isExpiringSoon = isSubscribed && daysUntilExpiry !== null && daysUntilExpiry <= 3;
 
   // /practice is now this item's own target (the shared Nghe-nói hub), so
   // NavLink's own `to`-based matching would need to cover /practice AND every
@@ -182,7 +184,7 @@ const StudentDesktopSidebar: React.FC = () => {
               and the button is framed as a renewal, not hidden.
               2026-09-16 — within 3 days of expiry, swap in an urgency
               message (still framed as informational, never blocking). */}
-          {user?.isPro && user.proExpiresAt ? (
+          {isSubscribed && activeExpiry ? (
             <p
               className={`text-xs font-medium mb-3 leading-relaxed ${
                 isExpiringSoon ? 'text-amber-800 dark:text-amber-200/80' : 'text-slate-500 dark:text-slate-400'
@@ -191,9 +193,9 @@ const StudentDesktopSidebar: React.FC = () => {
               {isExpiringSoon
                 ? t.premium.expiringSoon(
                     Math.max(0, daysUntilExpiry ?? 0),
-                    new Date(user.proExpiresAt).toLocaleDateString(dateLocale),
+                    new Date(activeExpiry).toLocaleDateString(dateLocale),
                   )
-                : t.premium.activeUntil(new Date(user.proExpiresAt).toLocaleDateString(dateLocale))}
+                : t.premium.activeUntil(new Date(activeExpiry).toLocaleDateString(dateLocale))}
             </p>
           ) : (
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 leading-relaxed line-clamp-2">
@@ -202,14 +204,14 @@ const StudentDesktopSidebar: React.FC = () => {
           )}
           <button
             type="button"
-            onClick={() => navigate('/pricing')}
+            onClick={() => navigate('/premium')}
             className={`w-full py-3 px-4 text-white rounded-xl text-sm font-bold whitespace-nowrap transition-all transform active:scale-[.98] focus:outline-none focus-visible:ring-2 inline-flex items-center justify-center ${
               isExpiringSoon
                 ? 'bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-400'
                 : 'bg-gradient-to-r from-[#f5a000] to-[#f26a00] shadow-lg shadow-orange-500/30 hover:from-[#e89000] hover:to-[#e85d00] focus-visible:ring-orange-400'
             }`}
           >
-            {user?.isPro ? t.premium.renewNow : t.premium.upgradeNow}
+            {isSubscribed ? t.premium.renewPlan : t.premium.upgradeNow}
           </button>
         </div>
       </div>

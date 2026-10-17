@@ -299,7 +299,7 @@ const LibraryDetailPage: React.FC = () => {
                           second link (invalid HTML) — and the two now go to
                           genuinely different places. */}
                       <Link
-                        to={isPremiumLocked ? '/pricing' : `/vocab/decks/${deck.id}`}
+                        to={isPremiumLocked ? '/premium' : `/vocab/decks/${deck.id}`}
                         className={`text-sm font-extrabold leading-snug break-words transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 rounded ${isPremiumLocked ? 'text-amber-700 hover:text-amber-600 dark:text-amber-300' : 'text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400'}`}
                       >
                         <span className="inline-flex items-center gap-2">
@@ -362,11 +362,11 @@ const LibraryDetailPage: React.FC = () => {
 
                     {isPremiumLocked ? (
                       <Link
-                        to="/pricing"
+                        to="/premium"
                         className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-amber-100 px-4 py-2 text-xs font-bold text-amber-700 transition-opacity hover:opacity-90 dark:bg-amber-500/15 dark:text-amber-300"
                       >
                         <Crown size={13} aria-hidden="true" />
-                        {t.premium.goPremium}
+                        {t.premium.learningPlan}
                       </Link>
                     ) : action && (
                       <Link

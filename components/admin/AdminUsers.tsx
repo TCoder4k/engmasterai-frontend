@@ -60,7 +60,7 @@ const buildStudentsCsv = (rows: AdminStudentListRow[]): string => {
       learningGoalLabel(r.learningGoal),
       r.progressPercent ?? '',
       r.averageTestScore ?? '',
-      r.isHocTap ? 'Gói Học Tập' : r.isPro ? 'PRO' : 'Free',
+      [r.isHocTap && 'Gói Học Tập', r.isPro && 'PRO'].filter(Boolean).join(' + ') || 'Free',
       r.isActive ? 'Active' : 'Blocked',
       formatDateVi(r.createdAt),
     ]
@@ -348,7 +348,8 @@ const AdminUsers: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          {user.isHocTap ? (
+                          <div className="flex flex-col gap-1">
+                            {user.isHocTap && (
                             <div>
                               <span className={`${BADGE_BASE} ${planBadgeClass('HOC_TAP')}`}>
                                 <Crown size={12} />
@@ -360,7 +361,8 @@ const AdminUsers: React.FC = () => {
                                 </p>
                               )}
                             </div>
-                          ) : user.isPro ? (
+                            )}
+                            {user.isPro && (
                             <div>
                               <span className={`${BADGE_BASE} ${planBadgeClass('PRO')}`}>
                                 <Crown size={12} />
@@ -372,9 +374,11 @@ const AdminUsers: React.FC = () => {
                                 </p>
                               )}
                             </div>
-                          ) : (
+                            )}
+                            {!user.isHocTap && !user.isPro && (
                             <span className={`${BADGE_BASE} ${planBadgeClass('FREE')}`}>Free</span>
-                          )}
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4">
                           <span className={`${BADGE_BASE} ${positiveNegativeBadgeClass(user.isActive)}`}>

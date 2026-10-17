@@ -4,11 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import StudentLayout from '../user/StudentLayout';
 import BackButton from '../shared/BackButton';
 import { useTranslation } from '../../i18n/useTranslation';
+import { authService } from '../../services/authService';
 
 const PremiumPage: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useTranslation();
   const vi = language === 'vi';
+  const user = authService.getUser();
+  const activePlan = user?.isPremium ? 'PREMIUM_MONTHLY' : user?.isPro ? 'PRO_MONTHLY' : null;
+  const planButton = (plan: 'PRO_MONTHLY' | 'PREMIUM_MONTHLY', upgrade: string) =>
+    activePlan === plan ? (vi ? 'Gia hạn gói' : 'Renew plan') : upgrade;
 
   const plans = [
     {
@@ -43,7 +48,7 @@ const PremiumPage: React.FC = () => {
           ],
       tone: 'border-blue-200 dark:border-blue-500/40',
       badge: vi ? '30 NGÀY' : '30 DAYS',
-      button: vi ? 'Nâng cấp Pro' : 'Upgrade to Pro',
+      button: planButton('PRO_MONTHLY', vi ? 'Nâng cấp Pro' : 'Upgrade to Pro'),
       onClick: () => navigate('/checkout'),
     },
     {
@@ -66,7 +71,7 @@ const PremiumPage: React.FC = () => {
           ],
       tone: 'border-amber-300 dark:border-amber-500/50 ring-2 ring-amber-100 dark:ring-amber-500/10',
       badge: vi ? '1 NĂM' : '1 YEAR',
-      button: vi ? 'Mở khóa Gói Học Tập' : 'Unlock Learning Plan',
+      button: planButton('PREMIUM_MONTHLY', vi ? 'Mở khóa Gói Học Tập' : 'Unlock Learning Plan'),
       onClick: () => navigate('/checkout?plan=PREMIUM_MONTHLY'),
       premium: true,
     },

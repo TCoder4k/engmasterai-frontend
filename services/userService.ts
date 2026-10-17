@@ -30,6 +30,8 @@ export interface User {
   // null for a user who has never subscribed.
   isPro: boolean;
   proExpiresAt: string | null;
+  isHocTap: boolean;
+  hocTapExpiresAt: string | null;
 }
 
 export interface UserListResponse {

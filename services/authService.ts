@@ -78,6 +78,8 @@ export interface AuthResponse {
     isPro?: boolean;
     proExpiresAt?: string | null;
     isPremium?: boolean;
+    isHocTap?: boolean;
+    hocTapExpiresAt?: string | null;
   };
   accessToken: string;
   // Only ever present on register()'s response — omitted (undefined) for

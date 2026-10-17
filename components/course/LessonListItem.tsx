@@ -144,7 +144,7 @@ const LessonListItem: React.FC<LessonListItemProps> = ({
           aria-hidden="true"
         >
           {ctaIcon}
-          <span>{isPremiumLocked ? (vi ? 'Mở khóa bài học' : 'Unlock lessons') : presentation.cta}</span>
+          <span>{isPremiumLocked ? (vi ? 'Mở khóa Gói Học Tập' : 'Unlock Learning Plan') : presentation.cta}</span>
         </span>
       )}
 
@@ -161,7 +161,7 @@ const LessonListItem: React.FC<LessonListItemProps> = ({
   );
 
   return isPremiumLocked ? (
-    <Link to="/pricing" aria-label={`Mở khóa tất cả bài học: ${lesson.title}`}>
+    <Link to="/premium" aria-label={`Mở khóa tất cả bài học: ${lesson.title}`}>
       {content}
     </Link>
   ) : (
