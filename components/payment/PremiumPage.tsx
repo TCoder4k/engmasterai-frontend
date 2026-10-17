@@ -11,9 +11,10 @@ const PremiumPage: React.FC = () => {
   const { language } = useTranslation();
   const vi = language === 'vi';
   const user = authService.getUser();
-  const activePlan = user?.isPremium ? 'PREMIUM_MONTHLY' : user?.isPro ? 'PRO_MONTHLY' : null;
   const planButton = (plan: 'PRO_MONTHLY' | 'PREMIUM_MONTHLY', upgrade: string) =>
-    activePlan === plan ? (vi ? 'Gia hạn gói' : 'Renew plan') : upgrade;
+    (plan === 'PRO_MONTHLY' ? user?.isPro : user?.isPremium)
+      ? (vi ? 'Gia hạn gói' : 'Renew plan')
+      : upgrade;
 
   const plans = [
     {
