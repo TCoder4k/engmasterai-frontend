@@ -126,10 +126,19 @@ const AdminStudentDetail: React.FC = () => {
                     <span className={`${BADGE_BASE} ${positiveNegativeBadgeClass(data.profile.isActive)}`}>
                       {data.profile.isActive ? 'Active' : 'Blocked'}
                     </span>
-                    <span className={`${BADGE_BASE} ${planBadgeClass(data.profile.isPro)}`}>
-                      <Crown size={12} />
-                      <span>{data.profile.isPro ? 'PRO' : 'Free'}</span>
-                    </span>
+                    {data.profile.isHocTap ? (
+                      <span className={`${BADGE_BASE} ${planBadgeClass('HOC_TAP')}`}>
+                        <Crown size={12} />
+                        <span>Gói Học Tập</span>
+                      </span>
+                    ) : data.profile.isPro ? (
+                      <span className={`${BADGE_BASE} ${planBadgeClass('PRO')}`}>
+                        <Crown size={12} />
+                        <span>PRO</span>
+                      </span>
+                    ) : (
+                      <span className={`${BADGE_BASE} ${planBadgeClass('FREE')}`}>Free</span>
+                    )}
                   </div>
                 </div>
 
@@ -145,6 +154,14 @@ const AdminStudentDetail: React.FC = () => {
                       <span>{learningGoalLabel(data.profile.learningGoal)}</span>
                     </p>
                   </div>
+                  {data.profile.isHocTap && data.profile.hocTapExpiresAt && (
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Hạn Gói Học Tập</p>
+                      <p className="text-sm font-bold text-slate-700 mt-1.5">
+                        {formatDateVi(data.profile.hocTapExpiresAt)}
+                      </p>
+                    </div>
+                  )}
                   {data.profile.isPro && data.profile.proExpiresAt && (
                     <div>
                       <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Hạn PRO</p>
@@ -280,10 +297,19 @@ const AdminStudentDetail: React.FC = () => {
               <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">Thanh toán &amp; gói PRO</h2>
-                  <span className={`${BADGE_BASE} ${planBadgeClass(data.billing.isPro)}`}>
-                    <Crown size={12} />
-                    <span>{data.billing.plan ?? 'Free'}</span>
-                  </span>
+                  {data.billing.isHocTap ? (
+                    <span className={`${BADGE_BASE} ${planBadgeClass('HOC_TAP')}`}>
+                      <Crown size={12} />
+                      <span>Gói Học Tập</span>
+                    </span>
+                  ) : data.billing.isPro ? (
+                    <span className={`${BADGE_BASE} ${planBadgeClass('PRO')}`}>
+                      <Crown size={12} />
+                      <span>PRO</span>
+                    </span>
+                  ) : (
+                    <span className={`${BADGE_BASE} ${planBadgeClass('FREE')}`}>Free</span>
+                  )}
                 </div>
 
                 {data.billing.payments.length === 0 ? (

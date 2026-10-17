@@ -19,7 +19,6 @@ const PremiumPage: React.FC = () => {
         ? ['Học 3 bài đầu mỗi khóa', 'Truy cập bài luyện cơ bản', 'Theo dõi tiến độ học tập']
         : ['First 3 lessons in each course', 'Core practice activities', 'Learning progress tracking'],
       tone: 'border-slate-200 dark:border-slate-700',
-      button: vi ? 'Gói hiện tại' : 'Current plan',
       disabled: true,
     },
     {
@@ -148,22 +147,21 @@ const PremiumPage: React.FC = () => {
                   </li>
                 ))}
               </ul>
-              <button
-                type="button"
-                disabled={plan.disabled}
-                onClick={plan.onClick}
-                className={`mt-6 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black transition focus:outline-none focus-visible:ring-2 ${
-                  plan.disabled
-                    ? 'cursor-default bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
-                    : plan.premium
+              {!plan.disabled && (
+                <button
+                  type="button"
+                  onClick={plan.onClick}
+                  className={`mt-6 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-black transition focus:outline-none focus-visible:ring-2 ${
+                    plan.premium
                       ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-amber-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-orange-400 focus-visible:ring-amber-400'
                       : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-500 focus-visible:ring-blue-400'
-                }`}
-              >
-                {plan.premium && <ShieldCheck size={15} aria-hidden="true" />}
-                {plan.button}
-                {plan.onClick && <ArrowRight size={15} aria-hidden="true" />}
-              </button>
+                  }`}
+                >
+                  {plan.premium && <ShieldCheck size={15} aria-hidden="true" />}
+                  {plan.button}
+                  {plan.onClick && <ArrowRight size={15} aria-hidden="true" />}
+                </button>
+              )}
             </article>
           ))}
         </div>

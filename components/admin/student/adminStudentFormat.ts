@@ -54,10 +54,15 @@ export const positiveNegativeBadgeClass = (isPositive: boolean): string =>
     ? 'bg-emerald-50 text-emerald-600 ring-1 ring-inset ring-emerald-100'
     : 'bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-100';
 
-export const planBadgeClass = (isPro: boolean): string =>
-  isPro
-    ? 'bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100'
-    : 'bg-slate-50 text-slate-500 ring-1 ring-inset ring-slate-200';
+export const planBadgeClass = (plan: 'PRO' | 'HOC_TAP' | 'FREE'): string => {
+  if (plan === 'HOC_TAP') {
+    return 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 font-bold';
+  }
+  if (plan === 'PRO') {
+    return 'bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-100 font-bold';
+  }
+  return 'bg-slate-50 text-slate-500 ring-1 ring-inset ring-slate-200';
+};
 
 export const neutralBadgeClass =
   'bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-100';

@@ -33,7 +33,7 @@ const EXPORT_PAGE_SIZE = 20;
 // Defensive upper bound on the export loop — real admin lists are nowhere
 // near this size; it only guards against an unbounded fetch loop.
 const EXPORT_MAX_PAGES = 200;
-type PlanFilter = 'ALL' | 'FREE' | 'PRO';
+type PlanFilter = 'ALL' | 'FREE' | 'PRO' | 'HOC_TAP';
 
 const csvCell = (value: string | number): string => {
   const str = String(value);
@@ -60,7 +60,7 @@ const buildStudentsCsv = (rows: AdminStudentListRow[]): string => {
       learningGoalLabel(r.learningGoal),
       r.progressPercent ?? '',
       r.averageTestScore ?? '',
-      r.isPro ? 'PRO' : 'Free',
+      r.isHocTap ? 'Gói Học Tập' : r.isPro ? 'PRO' : 'Free',
       r.isActive ? 'Active' : 'Blocked',
       formatDateVi(r.createdAt),
     ]
@@ -241,7 +241,8 @@ const AdminUsers: React.FC = () => {
               >
                 <option value="ALL">Tất cả gói</option>
                 <option value="FREE">Free</option>
-                <option value="PRO">PRO / Gói Học Tập</option>
+                <option value="PRO">Pro</option>
+                <option value="HOC_TAP">Gói Học Tập</option>
               </select>
             </div>
             <button
@@ -347,9 +348,21 @@ const AdminUsers: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          {user.isPro ? (
+                          {user.isHocTap ? (
                             <div>
-                              <span className={`${BADGE_BASE} ${planBadgeClass(true)}`}>
+                              <span className={`${BADGE_BASE} ${planBadgeClass('HOC_TAP')}`}>
+                                <Crown size={12} />
+                                <span>Gói Học Tập</span>
+                              </span>
+                              {user.hocTapExpiresAt && (
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                  Đến {formatDateVi(user.hocTapExpiresAt)}
+                                </p>
+                              )}
+                            </div>
+                          ) : user.isPro ? (
+                            <div>
+                              <span className={`${BADGE_BASE} ${planBadgeClass('PRO')}`}>
                                 <Crown size={12} />
                                 <span>PRO</span>
                               </span>
@@ -360,7 +373,7 @@ const AdminUsers: React.FC = () => {
                               )}
                             </div>
                           ) : (
-                            <span className={`${BADGE_BASE} ${planBadgeClass(false)}`}>Free</span>
+                            <span className={`${BADGE_BASE} ${planBadgeClass('FREE')}`}>Free</span>
                           )}
                         </td>
                         <td className="px-6 py-4">
