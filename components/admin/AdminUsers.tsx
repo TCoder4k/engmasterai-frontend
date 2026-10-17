@@ -11,6 +11,11 @@ import {
   AdminStudentListRow,
 } from '../../services/adminStudentService';
 import {
+  grantStudentSubscription,
+  renewStudentSubscription,
+  revokeStudentSubscription,
+} from '../../services/adminStudentService';
+import {
   learningGoalLabel,
   formatDateVi,
   BADGE_BASE,
@@ -26,6 +31,12 @@ import {
   Crown,
   Eye,
   Download,
+  Search,
+  RefreshCw,
+  X,
+  CalendarDays,
+  UserRound,
+  PackageOpen,
 } from 'lucide-react';
 
 const PAGE_SIZE = 10;
@@ -98,6 +109,11 @@ const AdminUsers: React.FC = () => {
 
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminStudentListRow | null>(null);
+  const [subscriptionAction, setSubscriptionAction] = useState<'PRO' | 'HOC_TAP' | null>(null);
+  const [subscriptionActionKind, setSubscriptionActionKind] = useState<'grant' | 'renew' | 'adjust' | null>(null);
+  const [subscriptionDays, setSubscriptionDays] = useState('30');
+  const [isSubscriptionSaving, setIsSubscriptionSaving] = useState(false);
 
   // Toolbar filters (2026-09-15 feedback) — local-only state, deliberately
   // not synced into the URL: AdminHeader's own debounced-search effect
@@ -106,28 +122,32 @@ const AdminUsers: React.FC = () => {
   const [planFilter, setPlanFilter] = useState<PlanFilter>('ALL');
   const [isExporting, setIsExporting] = useState(false);
 
-  const loadUsers = (
+  const loadUsers = async (
     targetPage: number,
     search: string,
     plan: PlanFilter,
   ) => {
     setIsLoading(true);
     setError(null);
-    getStudentOverview(
-      targetPage,
-      PAGE_SIZE,
-      search || undefined,
-      plan === 'ALL' ? undefined : plan,
-      undefined,
-    )
-      .then((res) => {
+    try {
+      const res = await getStudentOverview(
+        targetPage,
+        PAGE_SIZE,
+        search || undefined,
+        plan === 'ALL' ? undefined : plan,
+        undefined,
+      );
         setUsers(res.data);
         setTotalPages(res.meta.totalPages || 1);
         setTotal(res.meta.total);
         setPage(res.meta.page);
-      })
-      .catch((err) => setError(handleAuthError(err, navigate)))
-      .finally(() => setIsLoading(false));
+      return res;
+    } catch (err) {
+      setError(handleAuthError(err, navigate));
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // The URL search term (written by AdminHeader's Topbar search) plus the
@@ -217,23 +237,125 @@ const AdminUsers: React.FC = () => {
     }
   };
 
+  const manageSubscription = async (
+    user: AdminStudentListRow,
+    plan: 'PRO' | 'HOC_TAP',
+  ) => {
+    setIsSubscriptionSaving(true);
+    setError(null);
+    try {
+      const durationDays = Number(subscriptionDays);
+      if (!Number.isInteger(durationDays) || durationDays <= 0) {
+        throw new Error('Thời hạn gói không hợp lệ.');
+      }
+      if (plan === 'PRO' ? user.isPro : user.isHocTap) {
+        await renewStudentSubscription(user.id, {
+          plan,
+          durationDays,
+          reason: 'Gia hạn từ panel quản lý gói',
+        });
+      } else {
+        await grantStudentSubscription(user.id, {
+          plan,
+          durationDays,
+          reason: 'Cấp gói từ panel quản lý gói',
+        });
+      }
+      closeSubscriptionForm();
+      const refreshed = await loadUsers(page, urlSearch, planFilter);
+      const refreshedUser = refreshed?.data.find((item) => item.id === user.id);
+      if (refreshedUser) setSelectedUser(refreshedUser);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : handleAuthError(err, navigate));
+    } finally {
+      setIsSubscriptionSaving(false);
+    }
+  };
+
+  const openSubscriptionForm = (
+    plan: 'PRO' | 'HOC_TAP',
+    kind: 'grant' | 'renew' | 'adjust',
+  ) => {
+    setSubscriptionAction(plan);
+    setSubscriptionActionKind(kind);
+  };
+
+  const closeSubscriptionForm = () => {
+    setSubscriptionAction(null);
+    setSubscriptionActionKind(null);
+  };
+
+  const revokeSubscription = async (user: AdminStudentListRow, plan: 'PRO' | 'HOC_TAP') => {
+    if (!window.confirm(`Thu hồi ${plan === 'PRO' ? 'gói Pro' : 'Gói Học Tập'} của ${user.name}?`)) return;
+    setIsSubscriptionSaving(true);
+    setError(null);
+    try {
+      await revokeStudentSubscription(user.id, plan, {
+        reason: 'Thu hồi từ panel quản lý gói',
+      });
+      const refreshed = await loadUsers(page, urlSearch, planFilter);
+      const refreshedUser = refreshed?.data.find((item) => item.id === user.id);
+      if (refreshedUser) setSelectedUser(refreshedUser);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : handleAuthError(err, navigate));
+    } finally {
+      setIsSubscriptionSaving(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex bg-[#fbfcfd]">
+    <div className="min-h-screen flex bg-[#f6f9ff]">
       <AdminSidebar />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <AdminHeader />
 
-        <main className="flex-1 overflow-y-auto p-8 space-y-6">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Học viên &amp; Users</h1>
-            <p className="text-sm text-slate-500 font-medium">
-              Quản lý tài khoản người dùng trong hệ thống ({total} tài khoản).
-            </p>
+        <main className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 shadow-sm">
+              <Crown size={23} />
+            </span>
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 tracking-tight">Quản lý gói học viên</h1>
+              <p className="text-sm text-slate-500 font-medium mt-1">
+                Xem, cấp, gia hạn và quản lý gói học tập cho từng học viên.
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+            {[
+              { label: 'Tổng số học viên', value: total, icon: UserRound, color: 'blue' },
+              { label: 'Gói Pro', value: users.filter((u) => u.isPro).length, icon: Crown, color: 'blue' },
+              { label: 'Gói Học Tập', value: users.filter((u) => u.isHocTap).length, icon: PackageOpen, color: 'violet' },
+              { label: 'Gói Free', value: users.filter((u) => !u.isPro && !u.isHocTap).length, icon: UserRound, color: 'slate' },
+            ].map((card) => {
+              const Icon = card.icon;
+              return (
+                <div key={card.label} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                  <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${
+                    card.color === 'violet' ? 'bg-violet-100 text-violet-600' : card.color === 'blue' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    <Icon size={17} />
+                  </div>
+                  <p className="text-xs font-semibold text-slate-400">{card.label}</p>
+                  <p className="mt-1 text-2xl font-black text-slate-900">{card.value}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+            <div className="flex flex-1 flex-wrap items-center gap-2">
+              <label className="relative min-w-[240px] flex-1">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={urlSearch}
+                  onChange={(e) => navigate(`/admin/subscriptions${e.target.value ? `?q=${encodeURIComponent(e.target.value)}` : ''}`)}
+                  placeholder="Tìm kiếm theo tên, email hoặc ID học viên..."
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                />
+              </label>
               <select
                 value={planFilter}
                 onChange={(e) => setPlanFilter(e.target.value as PlanFilter)}
@@ -244,6 +366,13 @@ const AdminUsers: React.FC = () => {
                 <option value="PRO">Pro</option>
                 <option value="HOC_TAP">Gói Học Tập</option>
               </select>
+              <button
+                type="button"
+                onClick={() => loadUsers(1, urlSearch, planFilter)}
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-bold text-slate-600 hover:bg-slate-50"
+              >
+                <RefreshCw size={14} /> Làm mới
+              </button>
             </div>
             <button
               onClick={handleExport}
@@ -299,7 +428,11 @@ const AdminUsers: React.FC = () => {
                   {!isLoading && users.map((user) => {
                     const isSelf = user.id === currentUserId;
                     return (
-                      <tr key={user.id} className="hover:bg-slate-50/30 transition-colors">
+                      <tr
+                        key={user.id}
+                        onClick={() => setSelectedUser(user)}
+                        className="cursor-pointer hover:bg-blue-50/40 transition-colors"
+                      >
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-3">
                             <img
@@ -386,10 +519,22 @@ const AdminUsers: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setSelectedUser(user);
+                              }}
+                              className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-[11px] font-bold text-blue-600 hover:bg-blue-100"
+                            >
+                              Quản lý gói
+                            </button>
                             <div className="relative">
                               <button
-                                onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setOpenMenuId(openMenuId === user.id ? null : user.id);
+                                }}
                                 className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all"
                                 aria-label="Thêm thao tác"
                               >
@@ -461,6 +606,152 @@ const AdminUsers: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {selectedUser && (
+        <aside className="fixed inset-y-0 right-0 z-40 flex w-full max-w-[430px] flex-col border-l border-slate-200 bg-white shadow-2xl">
+          <div className="flex items-start justify-between border-b border-slate-100 px-6 py-5">
+            <div>
+              <p className="text-sm font-black text-slate-900">Quản lý gói cho học viên</p>
+              <div className="mt-4 flex items-center gap-3">
+                <img
+                  src={selectedUser.avatarUrl || `https://picsum.photos/seed/${selectedUser.id}/100/100`}
+                  className="h-12 w-12 rounded-2xl object-cover"
+                  alt=""
+                />
+                <div>
+                  <p className="text-sm font-black text-slate-900">{selectedUser.name}</p>
+                  <p className="text-xs text-slate-400">{selectedUser.email}</p>
+                  <p className="mt-1 text-[10px] font-semibold text-slate-400">ID: {selectedUser.id}</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/admin/users/${selectedUser.id}`)}
+                    className="mt-1 text-[10px] font-bold text-blue-600 hover:underline"
+                  >
+                    Xem hồ sơ chi tiết
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedUser(null)}
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+              aria-label="Đóng quản lý gói"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="flex-1 space-y-5 overflow-y-auto bg-[#f8faff] p-5">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {[
+                { title: 'Gói Pro', plan: 'PRO' as const, active: selectedUser.isPro, expiry: selectedUser.proExpiresAt, tone: 'blue' },
+                { title: 'Gói Học Tập', plan: 'HOC_TAP' as const, active: selectedUser.isHocTap, expiry: selectedUser.hocTapExpiresAt, tone: 'violet' },
+              ].map((plan) => (
+                <div key={plan.title} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-black text-slate-800">{plan.title}</p>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${
+                      plan.active
+                        ? plan.tone === 'violet' ? 'bg-violet-100 text-violet-700' : 'bg-emerald-100 text-emerald-700'
+                        : 'bg-slate-100 text-slate-400'
+                    }`}>
+                      {plan.active ? 'Đang hoạt động' : 'Chưa có'}
+                    </span>
+                  </div>
+                  <p className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-400">
+                    <CalendarDays size={13} />
+                    {plan.expiry ? `Hết hạn: ${formatDateVi(plan.expiry)}` : '—'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => openSubscriptionForm(plan.plan, plan.active ? 'renew' : 'grant')}
+                    className="mt-4 w-full rounded-xl border border-blue-200 py-2 text-xs font-bold text-blue-600 hover:bg-blue-50"
+                  >
+                    {plan.active ? `Gia hạn ${plan.title.replace('Gói ', '')}` : `Cấp ${plan.title}`}
+                  </button>
+                  {plan.active && (
+                    <button
+                      type="button"
+                      onClick={() => openSubscriptionForm(plan.plan, 'adjust')}
+                      className="mt-2 w-full rounded-xl border border-slate-200 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                    >
+                      Quản lý thời hạn
+                    </button>
+                  )}
+                  {plan.active && (
+                    <button
+                      type="button"
+                      disabled={isSubscriptionSaving}
+                      onClick={() => revokeSubscription(selectedUser, plan.plan)}
+                      className="mt-2 w-full text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50"
+                    >
+                      Thu hồi gói
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {selectedUser && subscriptionAction && subscriptionActionKind && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-black text-slate-900">
+                  {subscriptionActionKind === 'adjust'
+                    ? `Điều chỉnh thời hạn ${subscriptionAction === 'PRO' ? 'gói Pro' : 'Gói Học Tập'}`
+                    : subscriptionActionKind === 'renew'
+                      ? `Gia hạn ${subscriptionAction === 'PRO' ? 'gói Pro' : 'Gói Học Tập'}`
+                      : `Cấp ${subscriptionAction === 'PRO' ? 'gói Pro' : 'Gói Học Tập'}`}
+                </h2>
+                <p className="mt-1 text-xs text-slate-500">{selectedUser.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeSubscriptionForm}
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
+                aria-label="Đóng biểu mẫu gói"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <label className="mt-5 block text-xs font-bold text-slate-500">
+              Thời hạn gói
+              <select
+                value={subscriptionDays}
+                onChange={(event) => setSubscriptionDays(event.target.value)}
+                className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="7">7 ngày</option>
+                <option value="30">30 ngày</option>
+                <option value="90">90 ngày</option>
+                <option value="365">1 năm</option>
+              </select>
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeSubscriptionForm}
+                className="rounded-xl px-4 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={isSubscriptionSaving}
+                onClick={() => manageSubscription(selectedUser, subscriptionAction)}
+                className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                {isSubscriptionSaving ? 'Đang lưu...' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editingUser && (
         <Modal title={`Chỉnh sửa: ${editingUser.name}`} onClose={() => setEditingUser(null)}>

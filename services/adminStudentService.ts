@@ -127,6 +127,93 @@ export const getStudentDetail = async (id: string): Promise<AdminStudentDetail> 
   return response.json();
 };
 
+export interface AdminSubscriptionHistoryRow {
+  id: string;
+  action: 'GRANT' | 'RENEW' | 'CHANGE' | 'REVOKE';
+  planBefore: string | null;
+  planAfter: string | null;
+  expiresBefore: string | null;
+  expiresAfter: string | null;
+  reason: string;
+  adminEmail: string;
+  createdAt: string;
+}
+
+// Admin Subscription Management API
+export const grantStudentSubscription = async (
+  userId: string,
+  payload: {
+    plan: 'PRO' | 'HOC_TAP';
+    durationDays?: number;
+    startDate?: string;
+    endDate?: string;
+    reason: string;
+    note?: string;
+  },
+): Promise<any> => {
+  const response = await apiFetch(`${API_BASE_URL}/users/${userId}/subscriptions/grant`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) return throwApiError(response, 'Failed to grant subscription');
+  return response.json();
+};
+
+export const renewStudentSubscription = async (
+  userId: string,
+  payload: {
+    plan: 'PRO' | 'HOC_TAP';
+    durationDays?: number;
+    endDate?: string;
+    reason: string;
+  },
+): Promise<any> => {
+  const response = await apiFetch(`${API_BASE_URL}/users/${userId}/subscriptions/renew`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) return throwApiError(response, 'Failed to renew subscription');
+  return response.json();
+};
+
+export const changeStudentSubscription = async (
+  userId: string,
+  payload: {
+    targetPlan: 'PRO' | 'HOC_TAP';
+    reason: string;
+  },
+): Promise<any> => {
+  const response = await apiFetch(`${API_BASE_URL}/users/${userId}/subscriptions/change`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) return throwApiError(response, 'Failed to change subscription');
+  return response.json();
+};
+
+export const revokeStudentSubscription = async (
+  userId: string,
+  plan: 'PRO' | 'HOC_TAP',
+  payload: { reason: string },
+): Promise<any> => {
+  const response = await apiFetch(`${API_BASE_URL}/users/${userId}/subscriptions/revoke`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...payload, plan }),
+  });
+  if (!response.ok) return throwApiError(response, 'Failed to revoke subscription');
+  return response.json();
+};
+
+export const getStudentSubscriptionHistory = async (userId: string): Promise<AdminSubscriptionHistoryRow[]> => {
+  const response = await apiFetch(`${API_BASE_URL}/users/${userId}/subscription-history`);
+  if (!response.ok) return throwApiError(response, 'Failed to load subscription history');
+  return response.json();
+};
+
 // PATCH /users/:id/status — block/unblock. 403 if the admin targets their
 // own account with isActive:false (server-enforced; see UserController).
 export const setStudentActiveStatus = async (

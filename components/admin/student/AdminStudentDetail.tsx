@@ -11,14 +11,29 @@ import {
   Receipt,
   Target,
   TrendingUp,
+  PlusCircle,
+  RefreshCw,
+  Repeat,
+  Trash2,
+  History,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import AdminSidebar from '../AdminSidebar';
 import AdminHeader from '../AdminHeader';
+import Modal from '../../shared/Modal';
 import { authService } from '../../../services/authService';
 import { handleAuthError } from '../../../services/apiError';
 import {
   getStudentDetail,
+  setStudentActiveStatus,
+  grantStudentSubscription,
+  renewStudentSubscription,
+  changeStudentSubscription,
+  revokeStudentSubscription,
+  getStudentSubscriptionHistory,
   AdminStudentDetail as AdminStudentDetailData,
+  AdminSubscriptionHistoryRow,
 } from '../../../services/adminStudentService';
 import {
   learningGoalLabel,

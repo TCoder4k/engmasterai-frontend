@@ -10,7 +10,7 @@ import {
   Headphones,
   ListChecks,
   Mic,
-  LogOut
+  LogOut,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { Logo } from '../shared/Logo';

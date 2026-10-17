@@ -300,6 +300,7 @@ const App: React.FC = () => {
           <Route element={<AssistantBoundary />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/subscriptions" element={<AdminUsers />} />
             <Route path="/admin/users/:id" element={<AdminStudentDetail />} />
             <Route path="/admin/courses" element={<AdminCourses />} />
             <Route path="/admin/courses/:courseId/lessons" element={<AdminLessons />} />
