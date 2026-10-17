@@ -31,7 +31,6 @@ import {
   Crown,
   Eye,
   Download,
-  Search,
   RefreshCw,
   X,
   CalendarDays,
@@ -347,15 +346,6 @@ const AdminUsers: React.FC = () => {
 
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
             <div className="flex flex-1 flex-wrap items-center gap-2">
-              <label className="relative min-w-[240px] flex-1">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={urlSearch}
-                  onChange={(e) => navigate(`/admin/subscriptions${e.target.value ? `?q=${encodeURIComponent(e.target.value)}` : ''}`)}
-                  placeholder="Tìm kiếm theo tên, email hoặc ID học viên..."
-                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-medium text-slate-700 outline-none transition focus:border-blue-300 focus:bg-white focus:ring-2 focus:ring-blue-100"
-                />
-              </label>
               <select
                 value={planFilter}
                 onChange={(e) => setPlanFilter(e.target.value as PlanFilter)}
