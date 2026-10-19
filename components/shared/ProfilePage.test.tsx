@@ -4,6 +4,8 @@ import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from '../../i18n/LanguageProvider';
+import { ThemeProvider } from '../../theme/ThemeProvider';
+import { GamificationProvider } from './GamificationProvider';
 import ProfilePage from './ProfilePage';
 import * as userService from '../../services/userService';
 import * as authServiceModule from '../../services/authService';
@@ -40,27 +42,30 @@ describe('ProfilePage 60/40 UI Refactor', () => {
     return render(
       <MemoryRouter initialEntries={['/profile']}>
         <LanguageProvider>
-          <ProfilePage />
+          <ThemeProvider>
+            <GamificationProvider>
+              <ProfilePage />
+            </GamificationProvider>
+          </ThemeProvider>
         </LanguageProvider>
       </MemoryRouter>
     );
   };
 
-  it('renders header inside max-w-[1400px] container with title, subtitle, and logo', async () => {
+  it('renders the shared student layout and profile page heading', async () => {
     renderProfilePage();
 
-    expect(await screen.findByText('Thông tin tài khoản')).toBeInTheDocument();
+    expect((await screen.findAllByText('Thông tin tài khoản')).length).toBeGreaterThan(0);
     expect(screen.getByText('Quản lý hồ sơ cá nhân của bạn')).toBeInTheDocument();
-    expect(screen.getByText('Engmaster')).toBeInTheDocument();
-    expect(screen.getByText('AI')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Điều hướng chính' })).toBeInTheDocument();
   });
 
   it('renders personal information card and profile details', async () => {
     renderProfilePage();
 
-    expect(await screen.findByText('Tà đạo')).toBeInTheDocument();
+    expect((await screen.findAllByText('Tà đạo')).length).toBeGreaterThan(0);
     expect(screen.getByText('tucaqn1@gmail.com')).toBeInTheDocument();
-    expect(screen.getByText('Học viên')).toBeInTheDocument();
+    expect(screen.getAllByText('Học viên').length).toBeGreaterThan(0);
     expect(screen.getByText('Thông tin cá nhân')).toBeInTheDocument();
     expect(screen.getByText('Cập nhật thông tin cá nhân của bạn')).toBeInTheDocument();
   });
@@ -85,14 +90,10 @@ describe('ProfilePage 60/40 UI Refactor', () => {
 
 
 
-  it('renders footer at the bottom of the page', async () => {
+  it('keeps the shared navigation available instead of a standalone profile footer', async () => {
     renderProfilePage();
 
-    expect(
-      await screen.findByText(/© 2024 EngmasterAI. Cùng bạn chinh phục tiếng Anh mỗi ngày!/i)
-    ).toBeInTheDocument();
-    expect(screen.getByText('Điều khoản')).toBeInTheDocument();
-    expect(screen.getByText('Bảo mật')).toBeInTheDocument();
-    expect(screen.getByText('Liên hệ')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Trang chủ' })).toBeInTheDocument();
+    expect(screen.queryByText(/© 2024 EngmasterAI/i)).not.toBeInTheDocument();
   });
 });

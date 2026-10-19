@@ -29,8 +29,10 @@ export interface User {
   // flag that could go stale once a subscription lapses. `proExpiresAt` is
   // null for a user who has never subscribed.
   isPro: boolean;
+  proStartsAt: string | null;
   proExpiresAt: string | null;
   isHocTap: boolean;
+  hocTapStartsAt: string | null;
   hocTapExpiresAt: string | null;
 }
 

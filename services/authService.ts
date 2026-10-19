@@ -76,9 +76,11 @@ export interface AuthResponse {
     // register()/login() response, arrives moments later via the awaited
     // getProfile() -> updateStoredUser() call" gap as `onboarded` above.
     isPro?: boolean;
+    proStartsAt?: string | null;
     proExpiresAt?: string | null;
     isPremium?: boolean;
     isHocTap?: boolean;
+    hocTapStartsAt?: string | null;
     hocTapExpiresAt?: string | null;
   };
   accessToken: string;

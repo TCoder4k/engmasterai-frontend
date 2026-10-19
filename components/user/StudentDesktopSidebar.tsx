@@ -8,6 +8,7 @@ import {
   User as UserIcon,
   Settings,
   Crown,
+  Zap,
   Gem,
   Flame,
 } from 'lucide-react';
@@ -34,15 +35,30 @@ const StudentDesktopSidebar: React.FC = () => {
   const user = authService.getUser();
   const dateLocale = language === 'vi' ? 'vi-VN' : 'en-US';
 
-  // Renewal urgency is computed from the live subscription expiry already
-  // returned by GET /users/me; the card represents all available plans.
-  // — no new backend call. "Soon" = within 3 days of expiry (inclusive).
-  const activeExpiry = user?.isPremium ? user.hocTapExpiresAt : user?.proExpiresAt;
-  const daysUntilExpiry = activeExpiry
-    ? Math.ceil((new Date(activeExpiry).getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+  const hasPro = Boolean(user?.isPro);
+  const hasHocTap = Boolean(user?.isHocTap || user?.isPremium);
+  const isSubscribed = hasPro || hasHocTap;
+  const proDaysUntilExpiry = user?.proExpiresAt
+    ? Math.ceil((new Date(user.proExpiresAt).getTime() - Date.now()) / 86400000)
     : null;
-  const isSubscribed = Boolean(user?.isPro || user?.isPremium);
-  const isExpiringSoon = isSubscribed && daysUntilExpiry !== null && daysUntilExpiry <= 3;
+  const hocTapDaysUntilExpiry = user?.hocTapExpiresAt
+    ? Math.ceil((new Date(user.hocTapExpiresAt).getTime() - Date.now()) / 86400000)
+    : null;
+  const expiringPlan =
+    hasPro && hasHocTap
+      ? (proDaysUntilExpiry ?? Infinity) <= (hocTapDaysUntilExpiry ?? Infinity)
+        ? 'PRO'
+        : 'HOC_TAP'
+      : hasPro
+        ? 'PRO'
+        : hasHocTap
+          ? 'HOC_TAP'
+          : null;
+  const expiringDays = expiringPlan === 'PRO' ? proDaysUntilExpiry : hocTapDaysUntilExpiry;
+  const isExpiringSoon =
+    isSubscribed && expiringDays !== null && expiringDays !== null && expiringDays <= 14;
+  const expiringDate =
+    expiringPlan === 'PRO' ? user?.proExpiresAt : user?.hocTapExpiresAt;
 
   // /practice is now this item's own target (the shared Nghe-nói hub), so
   // NavLink's own `to`-based matching would need to cover /practice AND every
@@ -158,60 +174,98 @@ const StudentDesktopSidebar: React.FC = () => {
             fetched independently on mount; renders nothing on failure. */}
         <UsageQuotaWidget />
 
-        <div
-          className={`rounded-2xl p-4 ${
-            isExpiringSoon
-              ? 'bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/25'
-              : 'bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-white border border-amber-200 shadow-sm dark:from-amber-500/15 dark:via-orange-500/10 dark:to-slate-900 dark:border-amber-500/25'
-          }`}
-        >
+        <div className={`rounded-2xl border p-4 ${
+          isExpiringSoon
+            ? 'border-amber-200 bg-amber-50 dark:border-amber-500/25 dark:bg-amber-500/10'
+            : hasPro && hasHocTap
+              ? 'border-blue-200 bg-blue-50/60 dark:border-blue-500/25 dark:bg-blue-500/10'
+              : 'border-amber-200 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-white shadow-sm dark:from-amber-500/15 dark:via-orange-500/10 dark:to-slate-900 dark:border-amber-500/25'
+        }`}>
           <div className="flex items-center space-x-2 mb-1.5">
-            <Crown
+            {isExpiringSoon && expiringPlan === 'PRO' ? <Zap
               size={22}
-              className={isExpiringSoon ? 'text-amber-500 fill-amber-500' : 'text-amber-400 fill-amber-400'}
+              className="text-blue-500 fill-blue-500"
               aria-hidden="true"
-            />
+            /> : <Crown
+              size={22}
+              className="text-amber-400 fill-amber-400"
+              aria-hidden="true"
+            />}
             <p
               className={`text-sm font-extrabold ${
                 isExpiringSoon ? 'text-amber-900 dark:text-amber-200' : 'text-slate-900 dark:text-slate-100'
               }`}
             >
-              {isExpiringSoon ? t.premium.renewalUrgentTitle : t.premium.goPremium}
+              {!isSubscribed
+                ? 'Nâng cấp tài khoản'
+                : isExpiringSoon
+                  ? expiringPlan === 'PRO'
+                    ? 'Gói Pro AI sắp hết hạn'
+                    : 'Gói Học Tập sắp hết hạn'
+                  : hasPro && hasHocTap
+                    ? 'Premium All-Access'
+                    : hasHocTap
+                      ? 'Gói Học Tập'
+                      : 'Gói Pro AI'}
             </p>
           </div>
-          {/* Sprint 14 — real now. Renewal is never blocked: an already-PRO
-              user sees their current expiry instead of the first-time pitch,
-              and the button is framed as a renewal, not hidden.
-              2026-09-16 — within 3 days of expiry, swap in an urgency
-              message (still framed as informational, never blocking). */}
-          {isSubscribed && activeExpiry ? (
+          {isExpiringSoon && expiringDate ? (
             <p
-              className={`text-xs font-medium mb-3 leading-relaxed ${
-                isExpiringSoon ? 'text-amber-800 dark:text-amber-200/80' : 'text-slate-500 dark:text-slate-400'
-              }`}
+              className="mb-3 text-xs font-medium leading-relaxed text-amber-800 dark:text-amber-200/80"
             >
-              {isExpiringSoon
-                ? t.premium.expiringSoon(
-                    Math.max(0, daysUntilExpiry ?? 0),
-                    new Date(activeExpiry).toLocaleDateString(dateLocale),
-                  )
-                : t.premium.activeUntil(new Date(activeExpiry).toLocaleDateString(dateLocale))}
+              Còn {Math.max(0, expiringDays ?? 0)} ngày (Hết hạn: {new Date(expiringDate).toLocaleDateString(dateLocale)})
+            </p>
+          ) : !isSubscribed ? (
+            <p className="mb-3 line-clamp-2 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              Mở khóa trọn bộ bài học & AI
+            </p>
+          ) : hasPro && hasHocTap ? (
+            <p className="mb-3 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              Đã kích hoạt trọn bộ đặc quyền
+            </p>
+          ) : hasHocTap ? (
+            <p className="mb-3 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              Hiệu lực: {new Date(user?.hocTapExpiresAt ?? '').toLocaleDateString(dateLocale)}
             </p>
           ) : (
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-3 leading-relaxed line-clamp-2">
-              {t.premium.pitch}
+            <p className="mb-3 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+              Hiệu lực: {new Date(user?.proExpiresAt ?? '').toLocaleDateString(dateLocale)}
             </p>
           )}
           <button
             type="button"
-            onClick={() => navigate('/premium')}
-            className={`w-full py-3 px-4 text-white rounded-xl text-sm font-bold whitespace-nowrap transition-all transform active:scale-[.98] focus:outline-none focus-visible:ring-2 inline-flex items-center justify-center ${
+            onClick={() => navigate(
+              !isSubscribed
+                ? '/premium'
+                : isExpiringSoon
+                  ? expiringPlan === 'PRO'
+                    ? '/checkout'
+                    : '/checkout?plan=PREMIUM_MONTHLY'
+                  : hasPro && hasHocTap
+                    ? '/profile'
+                    : hasHocTap
+                      ? '/checkout'
+                      : '/checkout?plan=PREMIUM_MONTHLY',
+            )}
+            className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-bold whitespace-nowrap transition-all transform active:scale-[.98] focus:outline-none focus-visible:ring-2 ${
               isExpiringSoon
-                ? 'bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-400'
-                : 'bg-gradient-to-r from-[#f5a000] to-[#f26a00] shadow-lg shadow-orange-500/30 hover:from-[#e89000] hover:to-[#e85d00] focus-visible:ring-orange-400'
+                ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 hover:bg-amber-600 focus-visible:ring-amber-400'
+                : hasPro && hasHocTap
+                  ? 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus-visible:ring-blue-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                  : 'bg-gradient-to-r from-[#f5a000] to-[#f26a00] text-white shadow-lg shadow-orange-500/30 hover:from-[#e89000] hover:to-[#e85d00] focus-visible:ring-orange-400'
             }`}
           >
-            {isSubscribed ? t.premium.renewPlan : t.premium.upgradeNow}
+            {!isSubscribed
+              ? 'Nâng cấp ngay ➔'
+              : isExpiringSoon
+                ? expiringPlan === 'PRO'
+                  ? 'Gia hạn Pro (19k/tháng)'
+                  : 'Gia hạn Gói Học Tập'
+                : hasPro && hasHocTap
+                  ? 'Xem chi tiết gói ➔'
+                  : hasHocTap
+                    ? 'Nâng cấp Pro AI (+19k)'
+                    : 'Mở khóa Gói Học Tập 👑'}
           </button>
         </div>
       </div>

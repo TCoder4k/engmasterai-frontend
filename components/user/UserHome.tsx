@@ -32,6 +32,7 @@ import {
 import { handleAuthError } from '../../services/apiError';
 import { Course, CourseType } from '../../types';
 import { useTranslation } from '../../i18n/useTranslation';
+import SubscriptionStatusBadges from './SubscriptionStatusBadges';
 
 const TRACK_TYPES: CourseType[] = ['GRAMMAR', 'VOCABULARY', 'LISTENING'];
 
@@ -340,13 +341,16 @@ const UserHome: React.FC = () => {
                 with no data of their own), and the mascot artwork moved into
                 ReviewDueCard's hero instead, where it sits beside real
                 numbers rather than beside a plain "hello". */}
-            <div className="space-y-0.5">
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                {t.dashboard.welcomeBack}, {firstName}! 👋
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-                {t.dashboard.keepLearning}
-              </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-0.5">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {t.dashboard.welcomeBack}, {firstName}! 👋
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
+                  {t.dashboard.keepLearning}
+                </p>
+              </div>
+              <SubscriptionStatusBadges user={user} />
             </div>
 
             {/* First actionable thing on the page — one click to reviewing.
