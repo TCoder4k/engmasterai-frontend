@@ -20,8 +20,19 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ role }) => {
     return <Navigate to="/login" replace />;
   }
 
+  const currentUser = authService.getUser();
+  if (currentUser?.emailVerified !== true) {
+    return (
+      <Navigate
+        to="/verify-email"
+        replace
+        state={{ email: currentUser?.email }}
+      />
+    );
+  }
+
   if (role) {
-    const user = authService.getUser();
+    const user = currentUser;
     if (user?.role !== role) {
       // Logged in but wrong role — bounce to the normal user area rather
       // than back to /login (they are authenticated, just not authorized).

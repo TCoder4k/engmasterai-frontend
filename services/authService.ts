@@ -90,6 +90,11 @@ export interface AuthResponse {
   emailDeliveryStatus?: 'sent' | 'failed';
 }
 
+export type RegistrationResponse = Pick<
+  AuthResponse,
+  'message' | 'user' | 'emailDeliveryStatus'
+>;
+
 export interface ErrorResponse {
   message: string;
   errors?: Array<{
@@ -147,7 +152,7 @@ export interface LogoutResult {
 // never a global logout/redirect (see apiError.ts's handleAuthError doc
 // comment for the authenticated-request side of this same boundary).
 export const authService = {
-  async register(data: RegisterRequest): Promise<AuthResponse> {
+  async register(data: RegisterRequest): Promise<RegistrationResponse> {
     // credentials: 'include' is required here (not just on refresh/logout)
     // — the frontend (5174) and backend (3000) are different origins, and
     // without it the browser silently discards the response's Set-Cookie
@@ -272,15 +277,20 @@ export const authService = {
     return response.json();
   },
 
-  // POST /auth/email-verification/resend (Sprint 02B) — authenticated; no
-  // email is ever supplied by the caller, identity comes from the bearer
-  // token apiFetch attaches. Uses apiFetch (not fetchWithTimeout directly)
-  // specifically so an expired access token is transparently refreshed and
-  // retried once, exactly like every other authenticated call in this app.
-  async resendVerification(): Promise<{ message: string; delivered?: boolean }> {
-    const response = await apiFetch(
+  // POST /auth/email-verification/resend — public and enumeration-safe. The
+  // backend accepts the submitted email only to locate a pending account;
+  // every branch returns the same generic response.
+  async resendVerification(
+    email: string,
+  ): Promise<{ message: string; delivered?: boolean }> {
+    const response = await fetchWithTimeout(
       `${API_BASE_URL}/auth/email-verification/resend`,
-      { method: 'POST' },
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      },
     );
 
     if (!response.ok) {

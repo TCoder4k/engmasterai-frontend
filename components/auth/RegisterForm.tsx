@@ -157,33 +157,10 @@ export const RegisterForm: React.FC = () => {
       // as enterSession()'s identical call above.
       setLanguage('vi');
 
-      // Save auth response
-      authService.saveAuth(response);
-
-      // Fetch full profile to get avatarUrl and other details — routed
-      // through authService so AUTH_CHANGED_EVENT fires for this update too
-      // (see the matching note in LoginForm.tsx).
-      try {
-        const fullProfile = await getProfile();
-        authService.updateStoredUser(fullProfile);
-      } catch (profileErr) {
-        console.warn('Could not fetch full profile:', profileErr);
-      }
-
-      // Sprint 02B: honest, not assumed — the account is created either
-      // way, but whether the verification email actually went out is a
-      // real, separate fact reported by the backend (see
-      // docs/sprints/sprint-02B-email-verification.md's Email Sending
-      // Failure Semantics).
       setEmailDeliveryStatus(response.emailDeliveryStatus);
       setSuccess(true);
-      // saveAuth already ran above, so the account is a real authenticated
-      // session at this point — when a `from` destination was set (see
-      // LoginForm.tsx's identical handling), send the visitor straight
-      // there instead of the default /login bounce.
-      const from = (location.state as { from?: string } | null)?.from;
       setTimeout(() => {
-        navigate(from ?? '/login');
+        navigate('/login', { state: { email } });
       }, 2000);
     } catch (err: any) {
       if (err.errors && Array.isArray(err.errors)) {

@@ -27,7 +27,9 @@ export const EmailVerificationBanner: React.FC = () => {
     setIsLoading(true);
     setResult(null);
     try {
-      const response = await authService.resendVerification();
+      const email = authService.getUser()?.email;
+      if (!email) throw new Error('Không tìm thấy email tài khoản.');
+      const response = await authService.resendVerification(email);
       setResult({
         text: response.delivered === false
           ? 'Chưa gửi được email. Vui lòng thử lại sau ít phút.'

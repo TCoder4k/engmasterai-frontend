@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Logo } from './Logo';
 import { authService } from '../../services/authService';
 
@@ -20,7 +20,13 @@ type VerifyState =
 export const VerifyEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [state, setState] = useState<VerifyState>('loading');
+  const [pendingEmail, setPendingEmail] = useState(
+    () => (location.state as { email?: string } | null)?.email ?? '',
+  );
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
   // Guards against React 18 StrictMode's double-invoked effect (and any
   // other accidental re-run) firing the verify POST twice for one token.
   const attempted = useRef(false);
@@ -31,7 +37,7 @@ export const VerifyEmailPage: React.FC = () => {
 
     const token = searchParams.get('token');
     if (!token) {
-      setState('invalid');
+      setState('already-verified');
       return;
     }
 
@@ -62,6 +68,24 @@ export const VerifyEmailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately runs once on mount only (attempted ref guards re-entry)
   }, []);
 
+  const handleResend = async () => {
+    if (!pendingEmail || resendLoading) return;
+    setResendLoading(true);
+    setResendMessage(null);
+    try {
+      const result = await authService.resendVerification(pendingEmail);
+      setResendMessage(result.message);
+    } catch (err: any) {
+      setResendMessage(
+        err?.statusCode === 429
+          ? 'Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau ít phút.'
+          : 'Không thể gửi email lúc này. Vui lòng thử lại sau.',
+      );
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const content = (() => {
     switch (state) {
       case 'loading':
@@ -81,7 +105,37 @@ export const VerifyEmailPage: React.FC = () => {
       case 'already-verified':
         return (
           <div className="p-5 bg-blue-50 border-2 border-blue-100 rounded-2xl text-center space-y-2">
-            <p className="text-blue-700 font-bold">Email của bạn đã được xác nhận trước đó.</p>
+            <p className="text-blue-700 font-bold">
+              Email của bạn chưa được xác thực.
+            </p>
+            <p className="text-sm text-blue-600">
+              Vui lòng kiểm tra hộp thư đến hoặc thư mục Spam/Junk.
+            </p>
+            <input
+              type="email"
+              value={pendingEmail}
+              onChange={(event) => setPendingEmail(event.target.value)}
+              placeholder="Email đăng ký"
+              className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl"
+            />
+            <button
+              type="button"
+              onClick={() => void handleResend()}
+              disabled={!pendingEmail || resendLoading}
+              className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl disabled:opacity-60"
+            >
+              {resendLoading ? 'Đang gửi...' : 'Gửi lại email xác thực'}
+            </button>
+            {resendMessage && (
+              <p className="text-sm text-blue-700">{resendMessage}</p>
+            )}
+            <button
+              type="button"
+              onClick={() => navigate('/login', { replace: true })}
+              className="w-full py-3 bg-white border border-blue-200 text-blue-700 font-bold rounded-xl"
+            >
+              Tôi đã xác thực email - Kiểm tra lại
+            </button>
           </div>
         );
       case 'invalid':

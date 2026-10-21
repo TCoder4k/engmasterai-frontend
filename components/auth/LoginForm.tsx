@@ -173,6 +173,10 @@ export const LoginForm: React.FC = () => {
 
       await enterSession(response);
     } catch (err: any) {
+      if (err?.code === 'EMAIL_NOT_VERIFIED') {
+        navigate('/verify-email', { state: { email } });
+        return;
+      }
       setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
       setIsLoading(false);
