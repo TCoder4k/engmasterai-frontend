@@ -301,6 +301,27 @@ export const authService = {
     return response.json();
   },
 
+  async getEmailVerificationStatus(
+    email: string,
+  ): Promise<{ verified: boolean }> {
+    const response = await fetchWithTimeout(
+      `${API_BASE_URL}/auth/email-verification/status`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      },
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw error;
+    }
+
+    return response.json();
+  },
+
   // POST /auth/password/forgot (Sprint 02C) — public. The backend always
   // returns the identical generic 200 body regardless of account existence,
   // password-having status, or mail-delivery outcome — this method does not
