@@ -82,7 +82,8 @@ export const VerifyEmailPage: React.FC = () => {
       const result = await authService.getEmailVerificationStatus(pendingEmail);
       setState(result.verified ? 'verified' : 'pending');
     } catch (err: any) {
-      setState(mapStatusError(err));
+      setState('pending');
+      setResendMessage('Không thể kết nối để kiểm tra trạng thái. Vui lòng thử lại sau.');
     } finally {
       statusCheckInFlight.current = false;
     }
