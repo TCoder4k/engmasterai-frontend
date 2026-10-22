@@ -94,11 +94,7 @@ export const VerifyEmailPage: React.FC = () => {
 
     const token = searchParams.get('token');
     if (!token) {
-      if (pendingEmail) {
-        void checkLatestStatus();
-      } else {
-        setState('pending');
-      }
+      setState('pending');
       return;
     }
 
