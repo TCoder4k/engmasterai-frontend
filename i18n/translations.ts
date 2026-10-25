@@ -414,7 +414,7 @@ const en = {
     pageTitle: "My Vocabulary",
     pageSubtitle:
       "Save words you get wrong on practice tests, and review them on your own schedule.",
-    addWord: "+ Add new word",
+    addWord: "Add new word",
     importWords: "Import vocabulary",
     statTotal: "Total saved",
     // Compact count caption used ONLY by the library page's corner banner
@@ -1982,7 +1982,7 @@ const vi: TranslationDict = {
     pageTitle: "Từ vựng của tôi",
     pageSubtitle:
       "Lưu lại những từ hay sai khi làm đề để ôn tập riêng theo lịch của bạn.",
-    addWord: "+ Thêm từ mới",
+    addWord: "Thêm từ mới",
     importWords: "Nhập từ vựng",
     statTotal: "Tổng số đã lưu",
     bannerSavedWords: "từ đã lưu",
