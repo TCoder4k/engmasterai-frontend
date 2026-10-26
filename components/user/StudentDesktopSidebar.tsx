@@ -15,7 +15,6 @@ import {
 import { useTranslation } from '../../i18n/useTranslation';
 import { authService } from '../../services/authService';
 import { Logo } from '../shared/Logo';
-import UsageQuotaWidget from './UsageQuotaWidget';
 
 const HEXAGON_CLIP = 'polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)';
 
@@ -169,10 +168,6 @@ const StudentDesktopSidebar: React.FC = () => {
             (StudentLayout.tsx), so this rail carries one fewer competing
             card. Level/XP data itself is unchanged — same GamificationProvider
             source, just a different, more compact presentation. */}
-
-        {/* 2026-09-16 pricing relaunch — "AI 17/20" style quota display,
-            fetched independently on mount; renders nothing on failure. */}
-        <UsageQuotaWidget />
 
         <div className={`rounded-2xl border p-4 ${
           isExpiringSoon

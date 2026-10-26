@@ -6,6 +6,7 @@ import { getProfile, updateProfile, uploadAvatar } from '../../services/userServ
 import { handleAuthError } from '../../services/apiError';
 import { useTranslation } from '../../i18n/useTranslation';
 import StudentLayout from '../user/StudentLayout';
+import UsageQuotaWidget from '../user/UsageQuotaWidget';
 
 
 interface UserProfile {
@@ -228,15 +229,15 @@ const ProfilePage: React.FC = () => {
   ];
 
   const profileContent = (
-      <main className="mx-auto w-full max-w-3xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-        <div className="flex flex-col gap-4">
+      <main className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <div className="flex flex-col gap-5">
           <div className="mb-1">
             <h1 className="text-xl font-bold text-slate-900">{t.profile.title}</h1>
             <p className="mt-0.5 text-xs text-slate-500">{t.profile.subtitle}</p>
           </div>
 
-          {/* Personal Information continuous card */}
-          <section className="order-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
+          {/* 1. Thông tin cá nhân / Hồ sơ người dùng */}
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col">
             {/* Profile Banner */}
             <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-blue-500 to-blue-500 px-5 py-5 sm:px-6 sm:py-6">
               {/* Decorative gradient blur accents */}
@@ -412,7 +413,8 @@ const ProfilePage: React.FC = () => {
             </form>
           </section>
 
-          <section className="order-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          {/* Thông tin gói của bạn */}
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="mb-5">
               <h3 className="text-base font-bold text-slate-900">Thông tin gói của bạn</h3>
               <p className="mt-1 text-xs text-slate-500">
@@ -473,6 +475,9 @@ const ProfilePage: React.FC = () => {
               })}
             </div>
           </section>
+
+          {/* Hạn mức sử dụng AI */}
+          <UsageQuotaWidget variant="profile" />
         </div>
       </main>
 
