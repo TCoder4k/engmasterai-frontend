@@ -98,6 +98,10 @@ const AdminUsers: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [systemTotal, setSystemTotal] = useState(0);
+  const [proTotal, setProTotal] = useState(0);
+  const [hocTapTotal, setHocTapTotal] = useState(0);
+  const [freeTotal, setFreeTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,6 +143,10 @@ const AdminUsers: React.FC = () => {
         setUsers(res.data);
         setTotalPages(res.meta.totalPages || 1);
         setTotal(res.meta.total);
+        setSystemTotal(res.meta.systemTotal ?? res.meta.total);
+        setProTotal(res.meta.proTotal ?? 0);
+        setHocTapTotal(res.meta.hocTapTotal ?? 0);
+        setFreeTotal(res.meta.freeTotal ?? 0);
         setPage(res.meta.page);
       return res;
     } catch (err) {
@@ -324,10 +332,10 @@ const AdminUsers: React.FC = () => {
 
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
             {[
-              { label: 'Tổng số học viên', value: total, icon: UserRound, color: 'blue' },
-              { label: 'Gói Pro', value: users.filter((u) => u.isPro).length, icon: Crown, color: 'blue' },
-              { label: 'Gói Học Tập', value: users.filter((u) => u.isHocTap).length, icon: PackageOpen, color: 'violet' },
-              { label: 'Gói Free', value: users.filter((u) => !u.isPro && !u.isHocTap).length, icon: UserRound, color: 'slate' },
+              { label: 'Tổng số học viên', value: systemTotal, icon: UserRound, color: 'blue' },
+              { label: 'Gói Pro', value: proTotal, icon: Crown, color: 'blue' },
+              { label: 'Gói Học Tập', value: hocTapTotal, icon: PackageOpen, color: 'violet' },
+              { label: 'Gói Free', value: freeTotal, icon: UserRound, color: 'slate' },
             ].map((card) => {
               const Icon = card.icon;
               return (
