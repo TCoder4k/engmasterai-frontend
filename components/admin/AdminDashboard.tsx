@@ -68,15 +68,9 @@ const AdminDashboard: React.FC = () => {
               <p className="text-sm text-slate-500 font-medium">Theo dõi dữ liệu học tập, sự tăng trưởng cấp độ và hiệu suất nội dung.</p>
             </div>
 
-            <div className="flex items-center space-x-3 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
-              <div className="px-4 py-2 border-r border-slate-100 flex flex-col items-center">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</span>
-                <span className="text-sm font-black text-slate-800">{today}</span>
-              </div>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-all">
-                <Download size={16} />
-                <span>Báo cáo tuần</span>
-              </button>
+            <div className="flex items-center space-x-3 bg-white px-4 py-2.5 rounded-2xl border border-slate-100 shadow-sm">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Hôm nay</span>
+              <span className="text-sm font-black text-slate-800">{today}</span>
             </div>
           </div>
 

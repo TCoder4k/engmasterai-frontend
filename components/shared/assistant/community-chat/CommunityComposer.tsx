@@ -71,9 +71,9 @@ const CommunityComposer: React.FC<CommunityComposerProps> = ({
             onChange={(event) => onChange(event.target.value.slice(0, maxLength))}
             onKeyDown={handleKeyDown}
             placeholder={t.communityChat.composerPlaceholder}
-            rows={1}
+            rows={2}
             disabled={disabled}
-            className="w-full max-h-32 resize-none px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
+            className="w-full max-h-32 min-h-[50px] resize-none px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 disabled:opacity-60"
           />
         </label>
         <button

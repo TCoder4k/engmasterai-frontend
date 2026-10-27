@@ -146,6 +146,11 @@ const ProfilePage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
+    if (profile.name.trim() === '') {
+      setError('Tên hiển thị không được để trống');
+      return;
+    }
+
     // Check what has changed
     const updates: any = {};
     const currentUser = authService.getUser();
