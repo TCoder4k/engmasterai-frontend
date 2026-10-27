@@ -19,7 +19,7 @@ import CommunityMessageBubble from './CommunityMessageBubble';
 import CommunityComposer from './CommunityComposer';
 import { useCommunityChatSocket } from './useCommunityChatSocket';
 
-const MAX_COMMUNITY_MESSAGE_LENGTH = 2000; // mirrors SendCommunityMessageDto's backend limit
+const MAX_COMMUNITY_MESSAGE_LENGTH = 5000; // mirrors SendCommunityMessageDto's backend limit
 // A busy room sending several messages in a burst while the tab is open
 // must produce ONE mark-read call, not one per message — see the debounced
 // trigger inside upsertMessage below.
