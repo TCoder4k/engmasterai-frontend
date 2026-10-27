@@ -57,6 +57,22 @@ const CommunityComposer: React.FC<CommunityComposerProps> = ({
     onSend();
   };
 
+  const handlePaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    event.preventDefault();
+    const text = event.clipboardData.getData('text');
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const currentValue = textarea.value;
+    const newValue = (currentValue.substring(0, start) + text + currentValue.substring(end)).slice(0, maxLength);
+    onChange(newValue);
+    const newCursorPos = start + Math.min(text.length, maxLength - start);
+    requestAnimationFrame(() => {
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    });
+  };
+
   return (
     <div
       className="px-3 pb-2.5 pt-1 border-t border-slate-100 dark:border-slate-800 shrink-0"
@@ -70,6 +86,7 @@ const CommunityComposer: React.FC<CommunityComposerProps> = ({
             value={value}
             onChange={(event) => onChange(event.target.value.slice(0, maxLength))}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={t.communityChat.composerPlaceholder}
             rows={2}
             disabled={disabled}
